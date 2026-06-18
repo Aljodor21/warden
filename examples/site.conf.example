@@ -1,0 +1,17 @@
+# site.conf — configuración de TU servidor.
+# Copiá este archivo a  site/site.conf  y editalo. NO se sube al repo.
+
+# Nombre con el que warden identifica este server (reportes, MOTD).
+WARDEN_HOSTNAME="mi-server"
+
+# Zona horaria.
+WARDEN_TIMEZONE="America/Bogota"
+
+# Subred de tu LAN (para las reglas de firewall).
+WARDEN_LAN="192.168.0.0/24"
+
+# Preset por defecto:  minimal | media | dev   (vacío = elegir en el menú)
+WARDEN_PRESET=""
+
+# UUID del disco de backup (opcional; si está vacío, se autodetecta).
+WARDEN_BACKUP_UUID=""

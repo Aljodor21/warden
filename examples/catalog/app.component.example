@@ -1,0 +1,22 @@
+# Plantilla de componente del catálogo.
+# Copiá a  site/catalog/<nombre>.component  y ajustá a tu app.
+#
+# warden usa esto para instalar, respaldar y publicar la app.
+# SIN contraseñas: las credenciales de BD se leen del contenedor en runtime.
+
+COMP_NAME="Mi App"
+COMP_TAG="miapp"
+COMP_KIND="files+db"          # files | db | files+db | none
+
+COMP_PATHS=( "/ruta/a/los/datos" )
+COMP_EXCLUDES=( )
+
+COMP_DB_TYPE="postgres"       # postgres | mssql | (vacío si no tiene BD)
+COMP_DB_CONTAINER="miapp-db"
+COMP_DB_NAME="miapp"
+COMP_DB_USER="miapp"
+
+COMP_INSTALL="stacks/miapp/docker-compose.yml"
+COMP_CF_HOST="miapp.midominio.com"   # hostname público (Cloudflare), o vacío
+COMP_CF_PORT="8080"
+COMP_NOTE=""
