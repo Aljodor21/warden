@@ -16,6 +16,7 @@
 #   verify              [root] restic check (integridad del repo)
 #   register            [root] Fija el disco en fstab + activa los timers
 #   publish             [root] (Re)genera el ingress de Cloudflare desde el catálogo
+#   runner <url> <tok>  [root] Registra un self-hosted runner de GitHub Actions
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -39,6 +40,8 @@ source "$HERE/modules/register.sh"
 source "$HERE/modules/doctor.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/cloudflare.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/runner.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -173,6 +176,7 @@ case "${1:-menu}" in
   verify)      need_root; warden_verify ;;
   register)    need_root; warden_register ;;
   publish)     need_root; warden_publish ;;
+  runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
   restore)     exec sudo bash "$HERE/restore/restore.sh" ;;
   list-disks)  lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL | awk '$3=="disk"' ;;
   catalog)     catalog_each ;;
