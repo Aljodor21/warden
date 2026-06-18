@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Auditoría root de uburoom — solo lectura, no cambia nada.
+# Auditoría root del servidor — solo lectura, no cambia nada.
 set +e
 line(){ echo; echo "########## $1 ##########"; }
 
@@ -29,8 +29,8 @@ ss -tlnp 2>/dev/null | awk 'NR==1 || /LISTEN/' | sed -E 's/users:\(\("([^"]+)".*
 line "8) USUARIOS SAMBA"
 pdbedit -L 2>/dev/null || echo "(sin usuarios samba / solo guest)"
 
-line "9) TAMAÑO REAL BD docmost (postgres/redis en /home/alejo)"
-du -sh /home/alejo/postgres /home/alejo/redis 2>/dev/null
+line "9) USO DE DISCO EN /home"
+du -sh /home/* 2>/dev/null | sort -rh | head
 
 line "10) USB conectados (lsusb) y discos fisicos"
 lsusb 2>/dev/null | grep -viE "hub|root" | head

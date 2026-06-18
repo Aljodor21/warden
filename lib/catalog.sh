@@ -3,7 +3,7 @@
 #
 # Cada componente vive en catalog/<algo>.component y define variables COMP_*.
 # El catálogo es la ÚNICA fuente de verdad: lo usan el instalador (bootstrap),
-# el backup/restore (uburoom-backup) y el CI/CD (cloudflare).
+# el backup/restore (warden) y el CI/CD (cloudflare).
 #
 # NOTA: ningún .component guarda contraseñas. Las credenciales de BD se leen
 # del propio contenedor en tiempo de ejecución (docker inspect / printenv).

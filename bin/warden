@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# uburoom-backup — gestor de backups/restauración consciente de discos.
+# warden — gestor de backups/restauración consciente de discos.
 #
 #   Detecta CUALQUIER disco (interno o externo), identifica los discos de
-#   backup uburoom (por marcador + repo restic con tags) y permite respaldar
+#   backup warden (por marcador + repo restic con tags) y permite respaldar
 #   o restaurar los componentes que elijas. El disco es la "opción": conectás
 #   uno y el tool decide si se restaura desde él o se inicializa como destino.
 #
@@ -25,9 +25,9 @@ source "$HERE/lib/distro.sh"
 # shellcheck source=/dev/null
 source "$HERE/lib/catalog.sh"
 
-CONFIG_DIR="/etc/uburoom-backup"
+CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
-MARKER=".uburoom-backup.id"     # marca que identifica un disco de backup uburoom
+MARKER=".warden-backup.id"     # marca que identifica un disco de backup warden
 
 # --- colores (solo si es terminal) -------------------------------------------
 if [ -t 1 ]; then
@@ -78,13 +78,13 @@ classify_disk() {
   fi
   if mp="$(disk_marker_mount "$disk")"; then
     id="$(cat "$mp/$MARKER" 2>/dev/null)"
-    echo "BACKUP|backup uburoom · montado en $mp · id=${id:-?}"; return
+    echo "BACKUP|backup warden · montado en $mp · id=${id:-?}"; return
   fi
   if [ -n "$reg" ] && lsblk -rpno UUID "$disk" 2>/dev/null | grep -qx "$reg"; then
-    echo "BACKUP|backup uburoom (registrado, sin montar)"; return
+    echo "BACKUP|backup warden (registrado, sin montar)"; return
   fi
   if disk_has_fs "$disk"; then
-    echo "OTHER|tiene datos (no es backup uburoom)"
+    echo "OTHER|tiene datos (no es backup warden)"
   else
     echo "EMPTY|vacío / sin formato"
   fi
@@ -102,7 +102,7 @@ icon_for() {
 # --- subcomandos -------------------------------------------------------------
 
 cmd_status() {
-  echo "${C_B}== uburoom-backup ==${C_RESET}"
+  echo "${C_B}== warden ==${C_RESET}"
   echo
   echo "${C_B}Discos detectados:${C_RESET}"
   printf "  %-7s %-8s %-5s %-20s %s\n" "DISCO" "TAM" "BUS" "MODELO" "ROL"
@@ -139,7 +139,7 @@ case "${1:-status}" in
   catalog)     catalog_each ;;
   init|backup|restore|register|verify)
     echo "⏳ '$1' aún no implementado (próxima iteración)."
-    echo "   Validá primero la detección con:  uburoom-backup status"
+    echo "   Validá primero la detección con:  warden status"
     ;;
   -h|--help|help) sed -n '2,30p' "$0" | sed 's/^#\s\{0,1\}//' ;;
   *) echo "Subcomando desconocido: $1 (probá: status, list-disks, catalog)"; exit 1 ;;
