@@ -1,0 +1,20 @@
+# Secretos: nunca en el repo en texto plano (usar age/sops -> *.age)
+secrets/*
+!secrets/.gitkeep
+!secrets/*.age
+*.key
+*.pem
+*.env
+.env
+
+# Credenciales restic / cloudflared
+restic-password*
+*.json.cred
+
+# Config específica de TU server (privada). Plantillas en examples/.
+site/
+
+# Basura
+*.bak
+*.tmp
+*~
