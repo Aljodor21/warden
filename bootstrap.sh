@@ -80,4 +80,9 @@ if ui_confirm "¿Instalar Cockpit (panel del sistema, web en :9090)?"; then
 fi
 
 echo
+if ui_confirm "¿Instalar Homepage (tablero principal del server)?"; then
+  warden_homepage_install
+fi
+
+echo
 ok "Base lista. Estado:  warden status"
