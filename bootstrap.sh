@@ -21,6 +21,8 @@ source "$HERE/lib/distro.sh"
 source "$HERE/lib/ui.sh"
 # shellcheck source=/dev/null
 source "$HERE/lib/catalog.sh"
+# shellcheck source=/dev/null
+source "$HERE/lib/presets.sh"
 for m in "$HERE"/modules/*.sh; do
   # shellcheck source=/dev/null
   source "$m"
@@ -52,62 +54,44 @@ warden_base_install
 warden_docker_install
 
 echo
-# --- Selección de componentes a instalar (a la carta, desde el catálogo) ---
-mapfile -t CAT_LINES < <(catalog_each)
-if [ "${#CAT_LINES[@]}" -eq 0 ]; then
-  warn "El catálogo está vacío (site/catalog o examples/catalog). Nada de apps por ahora."
-else
-  OPTS=()
-  for line in "${CAT_LINES[@]}"; do
-    IFS='|' read -r tag nm _ _ <<<"$line"
-    OPTS+=("$tag — $nm")
-  done
-  log "Elegí qué componentes instalar:"
-  CHOSEN="$(ui_choose_multi 'Componentes a instalar' "${OPTS[@]}")"
-  if [ -n "$CHOSEN" ]; then
-    while IFS= read -r row; do
-      [ -n "$row" ] || continue
-      warden_stack_install "${row%% — *}" || warn "Falló ${row%% — *}, sigo con el resto"
-    done <<<"$CHOSEN"
-  else
-    log "No elegiste componentes (queda solo base + Docker)."
-  fi
-fi
+# --- Modo de instalación: preset (combo) o a la carta ---
+MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
+  'minimal — dashboard + backup (lo básico)' \
+  'media — minimal + Immich (fotos/medios)' \
+  'dev — minimal + apps de desarrollo' \
+  'a la carta — elegir manual')"
 
-echo
-if ui_confirm "¿Instalar Cockpit (panel del sistema, web en :9090)?"; then
-  warden_cockpit_install
-fi
-
-echo
-if ui_confirm "¿Instalar Homepage (tablero principal del server)?"; then
-  warden_homepage_install
-fi
-
-echo
-if ui_confirm "¿Instalar Backrest (UI de backups, web en :9898)?"; then
-  warden_backrest_install
-fi
-
-echo
-if ui_confirm "¿Instalar ntfy (alertas push al celular, web en :8080)?"; then
-  warden_ntfy_install
-fi
-
-echo
-if ui_confirm "¿Configurar el shell (zsh + oh-my-zsh + powerlevel10k)?"; then
-  warden_dotfiles_install
-fi
-
-echo
-if ui_confirm "¿Instalar el saludo (MOTD) de warden al iniciar sesión?"; then
-  warden_motd_install
-fi
-
-echo
-if ui_confirm "¿Aplicar firewall equilibrado (ufw)?"; then
-  warden_firewall_install
-fi
+case "$MODE" in
+  minimal*) warden_preset_install minimal ;;
+  media*)   warden_preset_install media ;;
+  dev*)     warden_preset_install dev ;;
+  *)
+    # A la carta: apps del catálogo + módulos, uno por uno.
+    mapfile -t CAT_LINES < <(catalog_each)
+    if [ "${#CAT_LINES[@]}" -gt 0 ]; then
+      OPTS=()
+      for line in "${CAT_LINES[@]}"; do
+        IFS='|' read -r tag nm _ _ <<<"$line"; OPTS+=("$tag — $nm")
+      done
+      CHOSEN="$(ui_choose_multi 'Apps a instalar' "${OPTS[@]}")"
+      while IFS= read -r row; do
+        [ -n "$row" ] || continue
+        warden_stack_install "${row%% — *}" || warn "Falló ${row%% — *}, sigo"
+      done <<<"$CHOSEN"
+    fi
+    for q in \
+      "Cockpit (panel del sistema, :9090):warden_cockpit_install" \
+      "Homepage (tablero principal):warden_homepage_install" \
+      "Backrest (UI de backups, :9898):warden_backrest_install" \
+      "ntfy (alertas, :8080):warden_ntfy_install" \
+      "shell (zsh + oh-my-zsh + p10k):warden_dotfiles_install" \
+      "MOTD (saludo al iniciar sesión):warden_motd_install" \
+      "firewall equilibrado (ufw):warden_firewall_install"; do
+      echo
+      if ui_confirm "¿Instalar ${q%%:*}?"; then "${q#*:}" || warn "Falló ${q%%:*}, sigo"; fi
+    done
+    ;;
+esac
 
 echo
 log "Dejando 'warden' disponible en el PATH"
