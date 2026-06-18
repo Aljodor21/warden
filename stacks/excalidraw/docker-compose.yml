@@ -1,0 +1,8 @@
+# Excalidraw — pizarra colaborativa. Sin datos persistentes.
+services:
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    container_name: excalidraw
+    restart: unless-stopped
+    ports:
+      - "${EXCALIDRAW_PORT:-5000}:80"
