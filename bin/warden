@@ -24,7 +24,9 @@
 #
 set -uo pipefail
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolver el symlink (ej. /usr/local/bin/warden) para hallar la raíz real del repo.
+_self="$(readlink -f "${BASH_SOURCE[0]}")"
+HERE="$(cd "$(dirname "$_self")/.." && pwd)"
 WARDEN_ROOT="$HERE"; export WARDEN_ROOT
 # shellcheck source=/dev/null
 source "$HERE/lib/distro.sh"
