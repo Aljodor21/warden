@@ -12,6 +12,8 @@
 #   status              Muestra discos, config y catálogo
 #   install             Lanza el instalador (bootstrap.sh)
 #   backup              [root] Respalda todo el catálogo (restic)
+#   verify              [root] restic check (integridad del repo)
+#   register            [root] Fija el disco en fstab + activa los timers
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -29,6 +31,8 @@ source "$HERE/lib/core.sh"
 source "$HERE/lib/ui.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/backup.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/register.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -141,12 +145,14 @@ cmd_status() {
 cmd_menu() {
   local opt
   opt="$(ui_menu 'warden — ¿qué querés hacer?' \
-    'Estado del sistema' 'Hacer un backup' 'Restaurar un backup' 'Instalar / configurar' 'Salir')"
+    'Estado del sistema' 'Hacer un backup' 'Restaurar un backup' \
+    'Activar backup automático' 'Instalar / configurar' 'Salir')"
   case "$opt" in
-    'Estado del sistema')    cmd_status ;;
-    'Hacer un backup')       exec sudo bash "$HERE/bin/warden" backup ;;
-    'Restaurar un backup')   exec sudo bash "$HERE/restore/restore.sh" ;;
-    'Instalar / configurar') exec sudo bash "$HERE/bootstrap.sh" ;;
+    'Estado del sistema')        cmd_status ;;
+    'Hacer un backup')           exec sudo bash "$HERE/bin/warden" backup ;;
+    'Restaurar un backup')       exec sudo bash "$HERE/restore/restore.sh" ;;
+    'Activar backup automático') exec sudo bash "$HERE/bin/warden" register ;;
+    'Instalar / configurar')     exec sudo bash "$HERE/bootstrap.sh" ;;
     *) : ;;
   esac
 }
@@ -156,6 +162,8 @@ case "${1:-menu}" in
   status)      cmd_status ;;
   install)     exec sudo bash "$HERE/bootstrap.sh" ;;
   backup)      need_root; warden_backup ;;
+  verify)      need_root; warden_verify ;;
+  register)    need_root; warden_register ;;
   restore)     exec sudo bash "$HERE/restore/restore.sh" ;;
   list-disks)  lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL | awk '$3=="disk"' ;;
   catalog)     catalog_each ;;

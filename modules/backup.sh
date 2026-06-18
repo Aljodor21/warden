@@ -67,3 +67,17 @@ warden_backup() {
   rm -rf "$dumps"
   ok "Backup completo en $repo"
 }
+
+# warden_verify — comprueba la integridad del repositorio (restic check).
+warden_verify() {
+  local mount repo passfile
+  mount="${WARDEN_BACKUP_MOUNT:-/mnt/warden-backup}"
+  repo="$mount/restic-repo"
+  passfile="${RESTIC_PASS_FILE:-/root/.warden-restic-password}"
+  [ -d "$repo" ]     || die "No hay repositorio en $repo"
+  [ -f "$passfile" ] || die "Falta la contraseña restic ($passfile)"
+  log "Verificando integridad (restic check)"
+  docker run --rm -e RESTIC_PASSWORD_FILE=/pass \
+    -v "$passfile:/pass:ro" -v "$repo:/repo" restic/restic -r /repo check
+  ok "Repositorio íntegro"
+}

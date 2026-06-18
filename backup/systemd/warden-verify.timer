@@ -1,0 +1,9 @@
+[Unit]
+Description=warden verify nocturno (4am)
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
