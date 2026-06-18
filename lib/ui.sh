@@ -54,3 +54,17 @@ ui_choose_multi() {
     printf '%s\n' "${sel[@]}"
   fi
 }
+
+# ui_menu "Título" op1 op2 ...  -> imprime UNA opción elegida
+ui_menu() {
+  local title="$1"; shift
+  if has gum; then
+    printf '%s\n' "$@" | gum choose --header "$title"
+  else
+    local opts=("$@") i=1 n
+    echo "$title" >&2
+    for o in "${opts[@]}"; do echo "  $i) $o" >&2; i=$((i+1)); done
+    read -rp "> " n
+    echo "${opts[$((n-1))]:-}"
+  fi
+}

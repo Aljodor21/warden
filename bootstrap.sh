@@ -105,4 +105,8 @@ if ui_confirm "¿Aplicar firewall equilibrado (ufw)?"; then
 fi
 
 echo
-ok "Base lista. Estado:  warden status"
+log "Dejando 'warden' disponible en el PATH"
+run "ln -sf '$WARDEN_ROOT/bin/warden' /usr/local/bin/warden"
+
+echo
+ok "Listo. Escribí:  warden"

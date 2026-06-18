@@ -8,14 +8,12 @@
 #   uno y el tool decide si se restaura desde él o se inicializa como destino.
 #
 # Subcomandos:
-#   status              (por defecto) Muestra discos, config y catálogo
-#   list-disks          Lista discos físicos en formato simple
+#   menu                (por defecto) Menú principal
+#   status              Muestra discos, config y catálogo
+#   install             Lanza el instalador (bootstrap.sh)
+#   restore             Restaura un backup (restore/restore.sh)
+#   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
-#   init <disco>        [root] Inicializa un disco como destino de backup
-#   backup [--auto]     [root] Respalda los componentes registrados
-#   restore             [root] Restaura desde un disco de backup
-#   register <disco>    [root] Registra el disco fijo para backup automático
-#   verify              [root] restic check + reporte de salud (incl. SMART)
 #
 set -uo pipefail
 
@@ -24,6 +22,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$HERE/lib/distro.sh"
 # shellcheck source=/dev/null
 source "$HERE/lib/catalog.sh"
+# shellcheck source=/dev/null
+source "$HERE/lib/core.sh"
+# shellcheck source=/dev/null
+source "$HERE/lib/ui.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -130,17 +132,28 @@ cmd_status() {
     printf "  %-18s %-10s %s\n" "$tag" "$kind" "$nm"
   done < <(catalog_each)
   echo
-  echo "${C_DIM}Acciones (siguientes iteraciones): init <disco> · backup · restore · register <disco> · verify${C_RESET}"
+  echo "${C_DIM}Más:  warden install · warden restore${C_RESET}"
 }
 
-case "${1:-status}" in
+cmd_menu() {
+  local opt
+  opt="$(ui_menu 'warden — ¿qué querés hacer?' \
+    'Estado del sistema' 'Instalar / configurar' 'Restaurar un backup' 'Salir')"
+  case "$opt" in
+    'Estado del sistema')    cmd_status ;;
+    'Instalar / configurar') exec sudo bash "$HERE/bootstrap.sh" ;;
+    'Restaurar un backup')   exec sudo bash "$HERE/restore/restore.sh" ;;
+    *) : ;;
+  esac
+}
+
+case "${1:-menu}" in
+  menu)        cmd_menu ;;
   status)      cmd_status ;;
+  install)     exec sudo bash "$HERE/bootstrap.sh" ;;
+  restore)     exec sudo bash "$HERE/restore/restore.sh" ;;
   list-disks)  lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL | awk '$3=="disk"' ;;
   catalog)     catalog_each ;;
-  init|backup|restore|register|verify)
-    echo "⏳ '$1' aún no implementado (próxima iteración)."
-    echo "   Validá primero la detección con:  warden status"
-    ;;
   -h|--help|help) sed -n '2,30p' "$0" | sed 's/^#\s\{0,1\}//' ;;
-  *) echo "Subcomando desconocido: $1 (probá: status, list-disks, catalog)"; exit 1 ;;
+  *) echo "Subcomando desconocido: $1 (probá: menu, status, install, restore)"; exit 1 ;;
 esac
