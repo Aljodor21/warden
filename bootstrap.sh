@@ -90,4 +90,9 @@ if ui_confirm "¿Instalar Backrest (UI de backups, web en :9898)?"; then
 fi
 
 echo
+if ui_confirm "¿Instalar ntfy (alertas push al celular, web en :8080)?"; then
+  warden_ntfy_install
+fi
+
+echo
 ok "Base lista. Estado:  warden status"
