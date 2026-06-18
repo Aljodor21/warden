@@ -11,6 +11,7 @@
 #   menu                (por defecto) Menú principal
 #   status              Muestra discos, config y catálogo
 #   install             Lanza el instalador (bootstrap.sh)
+#   backup              [root] Respalda todo el catálogo (restic)
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -26,6 +27,8 @@ source "$HERE/lib/catalog.sh"
 source "$HERE/lib/core.sh"
 # shellcheck source=/dev/null
 source "$HERE/lib/ui.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/backup.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -138,11 +141,12 @@ cmd_status() {
 cmd_menu() {
   local opt
   opt="$(ui_menu 'warden — ¿qué querés hacer?' \
-    'Estado del sistema' 'Instalar / configurar' 'Restaurar un backup' 'Salir')"
+    'Estado del sistema' 'Hacer un backup' 'Restaurar un backup' 'Instalar / configurar' 'Salir')"
   case "$opt" in
     'Estado del sistema')    cmd_status ;;
-    'Instalar / configurar') exec sudo bash "$HERE/bootstrap.sh" ;;
+    'Hacer un backup')       exec sudo bash "$HERE/bin/warden" backup ;;
     'Restaurar un backup')   exec sudo bash "$HERE/restore/restore.sh" ;;
+    'Instalar / configurar') exec sudo bash "$HERE/bootstrap.sh" ;;
     *) : ;;
   esac
 }
@@ -151,6 +155,7 @@ case "${1:-menu}" in
   menu)        cmd_menu ;;
   status)      cmd_status ;;
   install)     exec sudo bash "$HERE/bootstrap.sh" ;;
+  backup)      need_root; warden_backup ;;
   restore)     exec sudo bash "$HERE/restore/restore.sh" ;;
   list-disks)  lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL | awk '$3=="disk"' ;;
   catalog)     catalog_each ;;
