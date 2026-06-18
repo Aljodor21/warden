@@ -28,7 +28,11 @@ warden_dotfiles_install() {
   _omz_clone "$u" https://github.com/romkatv/powerlevel10k             "$custom/themes/powerlevel10k"
 
   local zrc="$home/.zshrc"
-  if [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
+  if [ "${WARDEN_DRY_RUN:-0}" = 1 ]; then
+    echo "[dry-run] configuraría $zrc (powerlevel10k + plugins esenciales)"
+  elif grep -q 'powerlevel10k/powerlevel10k' "$zrc" 2>/dev/null; then
+    ok ".zshrc ya está configurado por warden (no lo toco)"
+  else
     backup_file "$zrc"
     cat > "$zrc" <<'EOF'
 export ZSH="$HOME/.oh-my-zsh"
@@ -38,8 +42,6 @@ source "$ZSH/oh-my-zsh.sh"
 [[ -f "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 EOF
     run "chown '$u' '$zrc'"
-  else
-    echo "[dry-run] escribiría $zrc (powerlevel10k + plugins esenciales)"
   fi
 
   run "chsh -s \"\$(command -v zsh)\" '$u'" || warn "No pude cambiar el shell por defecto a zsh"
