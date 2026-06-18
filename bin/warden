@@ -10,6 +10,7 @@
 # Subcomandos:
 #   menu                (por defecto) Menú principal
 #   status              Muestra discos, config y catálogo
+#   doctor              Chequeo de salud del sistema
 #   install             Lanza el instalador (bootstrap.sh)
 #   backup              [root] Respalda todo el catálogo (restic)
 #   verify              [root] restic check (integridad del repo)
@@ -33,6 +34,8 @@ source "$HERE/lib/ui.sh"
 source "$HERE/modules/backup.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/register.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/doctor.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -145,10 +148,11 @@ cmd_status() {
 cmd_menu() {
   local opt
   opt="$(ui_menu 'warden — ¿qué querés hacer?' \
-    'Estado del sistema' 'Hacer un backup' 'Restaurar un backup' \
+    'Estado del sistema' 'Chequeo de salud' 'Hacer un backup' 'Restaurar un backup' \
     'Activar backup automático' 'Instalar / configurar' 'Salir')"
   case "$opt" in
     'Estado del sistema')        cmd_status ;;
+    'Chequeo de salud')          warden_doctor ;;
     'Hacer un backup')           exec sudo bash "$HERE/bin/warden" backup ;;
     'Restaurar un backup')       exec sudo bash "$HERE/restore/restore.sh" ;;
     'Activar backup automático') exec sudo bash "$HERE/bin/warden" register ;;
@@ -160,6 +164,7 @@ cmd_menu() {
 case "${1:-menu}" in
   menu)        cmd_menu ;;
   status)      cmd_status ;;
+  doctor)      warden_doctor ;;
   install)     exec sudo bash "$HERE/bootstrap.sh" ;;
   backup)      need_root; warden_backup ;;
   verify)      need_root; warden_verify ;;
