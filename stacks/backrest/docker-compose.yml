@@ -1,0 +1,20 @@
+# Backrest — UI web para restic (agenda, restaurar, Backblaze B2).
+services:
+  backrest:
+    image: garethgeorge/backrest:latest
+    container_name: backrest
+    restart: unless-stopped
+    ports:
+      - "${BACKREST_PORT:-9898}:9898"
+    environment:
+      BACKREST_DATA: /data
+      BACKREST_CONFIG: /config/config.json
+      XDG_CACHE_HOME: /cache
+    volumes:
+      - "${BACKREST_HOME:-/etc/warden/backrest}/config:/config"
+      - "${BACKREST_HOME:-/etc/warden/backrest}/data:/data"
+      - "${BACKREST_HOME:-/etc/warden/backrest}/cache:/cache"
+      # Dónde viven los repos restic (el disco de backup):
+      - "${WARDEN_BACKUP_MOUNT:-/mnt/warden-backup}:/repos"
+      # Acceso de solo lectura al host para respaldar lo que elijas:
+      - /:/hostfs:ro
