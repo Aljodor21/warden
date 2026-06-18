@@ -85,4 +85,9 @@ if ui_confirm "¿Instalar Homepage (tablero principal del server)?"; then
 fi
 
 echo
+if ui_confirm "¿Instalar Backrest (UI de backups, web en :9898)?"; then
+  warden_backrest_install
+fi
+
+echo
 ok "Base lista. Estado:  warden status"
