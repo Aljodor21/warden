@@ -17,6 +17,7 @@
 #   register            [root] Fija el disco en fstab + activa los timers
 #   publish             [root] (Re)genera el ingress de Cloudflare desde el catálogo
 #   runner <url> <tok>  [root] Registra un self-hosted runner de GitHub Actions
+#   secrets <accion>    [root] Cifra/restaura secretos con age (init|save|restore)
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -24,6 +25,7 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WARDEN_ROOT="$HERE"; export WARDEN_ROOT
 # shellcheck source=/dev/null
 source "$HERE/lib/distro.sh"
 # shellcheck source=/dev/null
@@ -42,6 +44,8 @@ source "$HERE/modules/doctor.sh"
 source "$HERE/modules/cloudflare.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/runner.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/secrets.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -177,6 +181,15 @@ case "${1:-menu}" in
   register)    need_root; warden_register ;;
   publish)     need_root; warden_publish ;;
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
+  secrets)
+    need_root
+    case "${2:-}" in
+      init)    warden_secrets_init ;;
+      save)    warden_secrets_save ;;
+      restore) warden_secrets_restore ;;
+      *) echo "Uso: warden secrets {init|save|restore}"; exit 1 ;;
+    esac
+    ;;
   restore)     exec sudo bash "$HERE/restore/restore.sh" ;;
   list-disks)  lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL | awk '$3=="disk"' ;;
   catalog)     catalog_each ;;
