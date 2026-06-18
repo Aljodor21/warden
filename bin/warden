@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+#
+# uburoom-backup — gestor de backups/restauración consciente de discos.
+#
+#   Detecta CUALQUIER disco (interno o externo), identifica los discos de
+#   backup uburoom (por marcador + repo restic con tags) y permite respaldar
+#   o restaurar los componentes que elijas. El disco es la "opción": conectás
+#   uno y el tool decide si se restaura desde él o se inicializa como destino.
+#
+# Subcomandos:
+#   status              (por defecto) Muestra discos, config y catálogo
+#   list-disks          Lista discos físicos en formato simple
+#   catalog             Lista los componentes del catálogo
+#   init <disco>        [root] Inicializa un disco como destino de backup
+#   backup [--auto]     [root] Respalda los componentes registrados
+#   restore             [root] Restaura desde un disco de backup
+#   register <disco>    [root] Registra el disco fijo para backup automático
+#   verify              [root] restic check + reporte de salud (incl. SMART)
+#
+set -uo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=/dev/null
+source "$HERE/lib/distro.sh"
+# shellcheck source=/dev/null
+source "$HERE/lib/catalog.sh"
+
+CONFIG_DIR="/etc/uburoom-backup"
+CONFIG_FILE="$CONFIG_DIR/config"
+MARKER=".uburoom-backup.id"     # marca que identifica un disco de backup uburoom
+
+# --- colores (solo si es terminal) -------------------------------------------
+if [ -t 1 ]; then
+  C_RESET=$'\e[0m'; C_DIM=$'\e[2m'; C_B=$'\e[1m'
+  C_GREEN=$'\e[32m'; C_YEL=$'\e[33m'; C_BLUE=$'\e[34m'
+else
+  C_RESET=""; C_DIM=""; C_B=""; C_GREEN=""; C_YEL=""; C_BLUE=""
+fi
+
+# --- helpers de disco --------------------------------------------------------
+
+# Nombre del disco que contiene la raíz '/'  (p.ej. "sda")
+system_disk() {
+  local src pk
+  src="$(findmnt -no SOURCE / 2>/dev/null)"
+  pk="$(lsblk -no PKNAME "$src" 2>/dev/null | head -n1)"
+  [ -n "$pk" ] && echo "$pk" || echo "${src##*/}"
+}
+
+# UUID del disco fijo registrado (si existe config)
+registered_uuid() {
+  [ -r "$CONFIG_FILE" ] || return 0
+  awk -F= '/^BACKUP_UUID=/{print $2}' "$CONFIG_FILE" 2>/dev/null
+}
+
+# Si alguna partición montada del disco tiene el marcador, imprime su mountpoint
+disk_marker_mount() {
+  local disk="$1" name mp
+  while read -r name mp; do
+    [ -n "${mp:-}" ] || continue
+    if [ -f "$mp/$MARKER" ]; then echo "$mp"; return 0; fi
+  done < <(lsblk -rpno NAME,MOUNTPOINT "$disk" 2>/dev/null)
+  return 1
+}
+
+# ¿El disco tiene algún sistema de archivos? (=> tiene datos)
+disk_has_fs() {
+  lsblk -rpno FSTYPE "$1" 2>/dev/null | grep -qE '\S'
+}
+
+# Clasifica un disco -> imprime "ROL|detalle"
+classify_disk() {
+  local disk="$1" sysd reg mp id
+  sysd="$(system_disk)"
+  reg="$(registered_uuid)"
+  if [ "${disk##*/}" = "$sysd" ]; then
+    echo "SYSTEM|disco del sistema (/)"; return
+  fi
+  if mp="$(disk_marker_mount "$disk")"; then
+    id="$(cat "$mp/$MARKER" 2>/dev/null)"
+    echo "BACKUP|backup uburoom · montado en $mp · id=${id:-?}"; return
+  fi
+  if [ -n "$reg" ] && lsblk -rpno UUID "$disk" 2>/dev/null | grep -qx "$reg"; then
+    echo "BACKUP|backup uburoom (registrado, sin montar)"; return
+  fi
+  if disk_has_fs "$disk"; then
+    echo "OTHER|tiene datos (no es backup uburoom)"
+  else
+    echo "EMPTY|vacío / sin formato"
+  fi
+}
+
+icon_for() {
+  case "$1" in
+    SYSTEM) printf '%s' "${C_BLUE}■${C_RESET}" ;;
+    BACKUP) printf '%s' "${C_GREEN}✔${C_RESET}" ;;
+    OTHER)  printf '%s' "${C_YEL}?${C_RESET}" ;;
+    EMPTY)  printf '%s' "${C_DIM}o${C_RESET}" ;;
+  esac
+}
+
+# --- subcomandos -------------------------------------------------------------
+
+cmd_status() {
+  echo "${C_B}== uburoom-backup ==${C_RESET}"
+  echo
+  echo "${C_B}Discos detectados:${C_RESET}"
+  printf "  %-7s %-8s %-5s %-20s %s\n" "DISCO" "TAM" "BUS" "MODELO" "ROL"
+  local name size type tran model role cls
+  while read -r name size type tran model; do
+    [ "$type" = "disk" ] || continue
+    cls="$(classify_disk "$name")"; role="${cls%%|*}"
+    printf "  %-7s %-8s %-5s %-20s %s %s\n" \
+      "${name##*/}" "$size" "${tran:-?}" "${model:-?}" "$(icon_for "$role")" "${cls#*|}"
+  done < <(lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL)
+  echo
+
+  local reg; reg="$(registered_uuid)"
+  if [ -n "$reg" ]; then
+    echo "${C_B}Disco fijo (backup automático):${C_RESET} UUID=$reg"
+  else
+    echo "${C_B}Disco fijo (backup automático):${C_RESET} ${C_DIM}ninguno registrado aún${C_RESET}"
+  fi
+  echo
+
+  echo "${C_B}Catálogo (qué se puede instalar / respaldar):${C_RESET}"
+  printf "  %-18s %-10s %s\n" "TAG" "TIPO" "DESCRIPCIÓN"
+  local tag nm kind src
+  while IFS='|' read -r tag nm kind src; do
+    printf "  %-18s %-10s %s\n" "$tag" "$kind" "$nm"
+  done < <(catalog_each)
+  echo
+  echo "${C_DIM}Acciones (siguientes iteraciones): init <disco> · backup · restore · register <disco> · verify${C_RESET}"
+}
+
+case "${1:-status}" in
+  status)      cmd_status ;;
+  list-disks)  lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL | awk '$3=="disk"' ;;
+  catalog)     catalog_each ;;
+  init|backup|restore|register|verify)
+    echo "⏳ '$1' aún no implementado (próxima iteración)."
+    echo "   Validá primero la detección con:  uburoom-backup status"
+    ;;
+  -h|--help|help) sed -n '2,30p' "$0" | sed 's/^#\s\{0,1\}//' ;;
+  *) echo "Subcomando desconocido: $1 (probá: status, list-disks, catalog)"; exit 1 ;;
+esac
