@@ -57,6 +57,19 @@ sudo ./bootstrap.sh                               # elegí preset o a la carta
 
 Al terminar, `warden` queda disponible en el `PATH`.
 
+## Presets
+
+Al instalar, `bootstrap.sh` te pregunta el **modo**:
+
+| Preset | Instala |
+|---|---|
+| `minimal` | Cockpit + Homepage + shell (zsh/p10k) + MOTD + firewall |
+| `media` | `minimal` + Backrest + Immich (fotos/medios) |
+| `dev` | `minimal` + Excalidraw |
+| `a la carta` | elegís manualmente apps y módulos, uno por uno |
+
+Se definen en [`lib/presets.sh`](lib/presets.sh) — fáciles de editar o de sumar el tuyo.
+
 ## El comando `warden`
 
 ```bash

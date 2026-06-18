@@ -4,6 +4,26 @@ Que un `git push` a un repo de app construya y actualice su contenedor en tu
 server y lo publique en Cloudflare — sin entrar por SSH. Funciona tras CGNAT
 porque el runner **sale** hacia GitHub a buscar trabajo.
 
+## Conceptos
+
+- **CI** (Integración Continua): cada `git push` dispara revisiones/pruebas automáticas.
+- **CD** (Despliegue Continuo): si pasan, se despliega solo.
+
+En este proyecto hay **dos CI/CD distintos**:
+
+1. **CI de warden** (`.github/workflows/ci.yml`, este repo): revisa el *código de
+   warden* (shellcheck + `bash -n`) en los runners de GitHub. No despliega nada.
+2. **CD de tus apps** (esta guía): al hacer push a un repo de app, un runner **en tu
+   server** construye y actualiza su contenedor, y publica en Cloudflare.
+
+**¿Por qué un runner en tu server?** Estás tras **CGNAT**: GitHub no puede entrar a
+tu red. El self-hosted runner **sale** hacia GitHub, toma el trabajo y lo ejecuta
+localmente — el despliegue ocurre dentro de tu red sin abrir puertos.
+
+**Conexión con el catálogo:** `warden publish` no inventa nada — lee el
+`COMP_CF_HOST` y `COMP_CF_PORT` de cada app en el catálogo y regenera el ingress
+de Cloudflare. Definís la app una vez y el despliegue la publica solo.
+
 ## Piezas
 - `warden runner <url> <token>` — instala el agente (runner) en tu server.
 - `warden publish` — regenera el ingress de Cloudflare desde el catálogo.
