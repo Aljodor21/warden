@@ -75,4 +75,9 @@ else
 fi
 
 echo
+if ui_confirm "¿Instalar Cockpit (panel del sistema, web en :9090)?"; then
+  warden_cockpit_install
+fi
+
+echo
 ok "Base lista. Estado:  warden status"
