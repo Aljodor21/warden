@@ -12,6 +12,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WARDEN_ROOT="$HERE"; export WARDEN_ROOT
 # shellcheck source=/dev/null
 source "$HERE/lib/core.sh"
 # shellcheck source=/dev/null
@@ -64,11 +65,10 @@ else
   log "Elegí qué componentes instalar:"
   CHOSEN="$(ui_choose_multi 'Componentes a instalar' "${OPTS[@]}")"
   if [ -n "$CHOSEN" ]; then
-    echo "Vas a instalar:"
     while IFS= read -r row; do
-      [ -n "$row" ] && printf '   - %s\n' "${row%% — *}"
+      [ -n "$row" ] || continue
+      warden_stack_install "${row%% — *}" || warn "Falló ${row%% — *}, sigo con el resto"
     done <<<"$CHOSEN"
-    warn "La instalación de los stacks se implementa en el paso siguiente."
   else
     log "No elegiste componentes (queda solo base + Docker)."
   fi
