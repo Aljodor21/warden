@@ -8,6 +8,7 @@ warden_doctor() {
   passfile="${RESTIC_PASS_FILE:-/root/.warden-restic-password}"
 
   echo "== warden doctor =="
+  [ "$(id -u)" -ne 0 ] && printf ' \033[2m(sin root: docker/ufw pueden salir ✗ aunque estén bien — probá: sudo warden doctor)\033[0m\n'
 
   _ck() {  # <texto> <comando...>
     local txt="$1"; shift
