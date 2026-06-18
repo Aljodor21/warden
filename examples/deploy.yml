@@ -1,0 +1,24 @@
+# Plantilla de despliegue para un repo de APP gestionada por warden.
+# Copiala a  .github/workflows/deploy.yml  EN EL REPO DE TU APP (no en el de warden).
+# Requiere un self-hosted runner con la etiqueta 'warden' (ver: warden runner).
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, warden]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir y levantar
+        run: |
+          docker compose build
+          docker compose up -d
+
+      # Regenera el ingress de Cloudflare desde el catálogo.
+      # OJO: tu catálogo debe estar completo (cada app con COMP_CF_HOST/PORT).
+      - name: Publicar en Cloudflare
+        run: sudo /usr/local/bin/warden publish

@@ -1,0 +1,5 @@
+# Permite que el usuario del runner llame a 'warden publish' sin contraseña.
+# Instalar:  sudo cp examples/warden-runner.sudoers /etc/sudoers.d/warden-runner
+#            (reemplazá USUARIO por el usuario del runner)
+#            sudo visudo -cf /etc/sudoers.d/warden-runner   # validar
+USUARIO ALL=(root) NOPASSWD: /usr/local/bin/warden publish
