@@ -1,0 +1,14 @@
+# ntfy — notificaciones push (alertas al celular).
+services:
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    restart: unless-stopped
+    command: serve
+    ports:
+      - "${NTFY_PORT:-8080}:80"
+    environment:
+      TZ: "${WARDEN_TIMEZONE:-UTC}"
+    volumes:
+      - "${NTFY_HOME:-/etc/warden/ntfy}/etc:/etc/ntfy"
+      - "${NTFY_HOME:-/etc/warden/ntfy}/cache:/var/cache/ntfy"
