@@ -6,6 +6,7 @@ COMP_PATHS=( )
 COMP_EXCLUDES=( )
 COMP_DB_TYPE=""
 COMP_INSTALL="stacks/excalidraw/docker-compose.yml"
+COMP_CONTAINER="excalidraw"   # contenedor principal (para saber si está corriendo)
 COMP_CF_HOST=""
 COMP_CF_PORT="5000"
 COMP_NOTE="Efímero: no guarda nada. Buen primer stack para probar el instalador."

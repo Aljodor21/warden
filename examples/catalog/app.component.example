@@ -17,6 +17,7 @@ COMP_DB_NAME="miapp"
 COMP_DB_USER="miapp"
 
 COMP_INSTALL="stacks/miapp/docker-compose.yml"
+COMP_CONTAINER="miapp"               # contenedor principal (Homepage muestra la tarjeta si está corriendo)
 COMP_CF_HOST="miapp.midominio.com"   # hostname público (Cloudflare), o vacío
 COMP_CF_PORT="8080"
 COMP_NOTE=""

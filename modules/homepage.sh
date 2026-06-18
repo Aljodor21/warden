@@ -30,6 +30,8 @@ EOF
         if [ -n "${COMP_CF_HOST:-}" ]; then
           href="https://$COMP_CF_HOST"
         elif [ -n "${COMP_CF_PORT:-}" ]; then
+          # app local: mostrar la tarjeta solo si su contenedor está corriendo
+          docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "${COMP_CONTAINER:-$tag}" || exit 0
           href="http://${ip:-localhost}:$COMP_CF_PORT"
         else
           exit 0
