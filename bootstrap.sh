@@ -31,6 +31,8 @@ done
 need_root
 [ "$DISTRO" = unknown ] && die "Distro no soportada (por ahora: Debian/Ubuntu y Arch)."
 
+# Asegurar la carpeta de config del sitio (un clon nuevo no la trae, está en .gitignore).
+mkdir -p "$HERE/site/catalog"
 # Config del sitio (si existe). Plantilla en examples/site.conf.example
 [ -f "$HERE/site/site.conf" ] && { source "$HERE/site/site.conf"; ok "Cargado site/site.conf"; }
 

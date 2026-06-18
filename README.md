@@ -50,6 +50,7 @@ migrar a otro SO, el camino está trazado.
 ```bash
 git clone https://github.com/Aljodor21/warden.git
 cd warden
+mkdir -p site/catalog
 cp examples/site.conf.example site/site.conf      # editá tus datos
 sudo ./bootstrap.sh                               # elegí preset o a la carta
 ```
@@ -108,7 +109,7 @@ site/            TU configuración privada (ignorada por git)
 
 Para usar warden en tu propio server:
 
-1. `cp examples/site.conf.example site/site.conf` y editalo (nombre, LAN, zona horaria).
+1. `mkdir -p site/catalog && cp examples/site.conf.example site/site.conf` y editalo (nombre, LAN, zona horaria).
 2. Por cada app tuya: `cp examples/catalog/app.component.example site/catalog/<app>.component`.
 3. `sudo ./bootstrap.sh`.
 

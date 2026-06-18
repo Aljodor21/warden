@@ -37,6 +37,7 @@ rsync -av --exclude site/ --exclude .git ~/proyectos/warden/ usuario@IP-DE-LA-VM
 
 ```bash
 cd ~/warden
+mkdir -p site/catalog
 cp examples/site.conf.example site/site.conf
 nano site/site.conf      # WARDEN_HOSTNAME, WARDEN_LAN, WARDEN_TIMEZONE
 ```
