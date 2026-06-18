@@ -100,6 +100,11 @@ if ui_confirm "¿Configurar el shell (zsh + oh-my-zsh + powerlevel10k)?"; then
 fi
 
 echo
+if ui_confirm "¿Instalar el saludo (MOTD) de warden al iniciar sesión?"; then
+  warden_motd_install
+fi
+
+echo
 if ui_confirm "¿Aplicar firewall equilibrado (ufw)?"; then
   warden_firewall_install
 fi

@@ -46,6 +46,8 @@ source "$HERE/modules/cloudflare.sh"
 source "$HERE/modules/runner.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/secrets.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/motd.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -181,6 +183,7 @@ case "${1:-menu}" in
   register)    need_root; warden_register ;;
   publish)     need_root; warden_publish ;;
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
+  motd)        need_root; warden_motd_install ;;
   secrets)
     need_root
     case "${2:-}" in
