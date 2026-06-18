@@ -95,4 +95,9 @@ if ui_confirm "¿Instalar ntfy (alertas push al celular, web en :8080)?"; then
 fi
 
 echo
+if ui_confirm "¿Configurar el shell (zsh + oh-my-zsh + powerlevel10k)?"; then
+  warden_dotfiles_install
+fi
+
+echo
 ok "Base lista. Estado:  warden status"
