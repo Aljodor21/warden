@@ -1,0 +1,13 @@
+# Homepage — la cara única del server (Opción A).
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "${HOMEPAGE_PORT:-7575}:3000"
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: "${HOMEPAGE_ALLOWED_HOSTS:-*}"
+    volumes:
+      - "${HOMEPAGE_CONFIG:-/etc/warden/homepage}:/app/config"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
