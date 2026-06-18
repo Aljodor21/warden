@@ -51,10 +51,28 @@ warden_base_install
 warden_docker_install
 
 echo
-log "Componentes en el catálogo (instalación de stacks: próxima capa):"
-catalog_each | while IFS='|' read -r tag nm kind _; do
-  printf '   - %-16s %s\n' "$tag" "$nm"
-done
+# --- Selección de componentes a instalar (a la carta, desde el catálogo) ---
+mapfile -t CAT_LINES < <(catalog_each)
+if [ "${#CAT_LINES[@]}" -eq 0 ]; then
+  warn "El catálogo está vacío (site/catalog o examples/catalog). Nada de apps por ahora."
+else
+  OPTS=()
+  for line in "${CAT_LINES[@]}"; do
+    IFS='|' read -r tag nm _ _ <<<"$line"
+    OPTS+=("$tag — $nm")
+  done
+  log "Elegí qué componentes instalar:"
+  CHOSEN="$(ui_choose_multi 'Componentes a instalar' "${OPTS[@]}")"
+  if [ -n "$CHOSEN" ]; then
+    echo "Vas a instalar:"
+    while IFS= read -r row; do
+      [ -n "$row" ] && printf '   - %s\n' "${row%% — *}"
+    done <<<"$CHOSEN"
+    warn "La instalación de los stacks se implementa en el paso siguiente."
+  else
+    log "No elegiste componentes (queda solo base + Docker)."
+  fi
+fi
 
 echo
-ok "Base lista. Comprobá el estado con:  warden status"
+ok "Base lista. Estado:  warden status"
