@@ -10,7 +10,20 @@ warden_homepage_config() {
   run "mkdir -p '$HOMEPAGE_CONFIG'"
   [ "${WARDEN_DRY_RUN:-0}" = 1 ] && { echo "[dry-run] generaría la config de Homepage en $HOMEPAGE_CONFIG"; return 0; }
 
-  printf 'title: %s\n' "${WARDEN_HOSTNAME:-warden}" > "$HOMEPAGE_CONFIG/settings.yaml"
+  cat > "$HOMEPAGE_CONFIG/settings.yaml" <<EOF
+title: ${WARDEN_HOSTNAME:-warden} · warden
+theme: dark
+color: slate
+headerStyle: clean
+target: _blank
+layout:
+  Dashboard:
+    style: row
+    columns: 4
+  Apps:
+    style: row
+    columns: 4
+EOF
   cat > "$HOMEPAGE_CONFIG/widgets.yaml" <<'EOF'
 - resources:
     cpu: true
@@ -34,16 +47,19 @@ EOF
   systemctl is-active --quiet cockpit.socket 2>/dev/null && dash="${dash}    - Cockpit:
         href: https://${ip:-localhost}:9090
         description: panel del sistema
+        icon: cockpit.png
 "
   grep -qx backrest <<<"$up" && dash="${dash}    - Backrest:
         href: http://${ip:-localhost}:9898
         description: backups
+        icon: restic.png
         server: warden
         container: backrest
 "
   grep -qx ntfy <<<"$up" && dash="${dash}    - ntfy:
         href: http://${ip:-localhost}:8080
         description: alertas
+        icon: ntfy.png
         server: warden
         container: ntfy
 "
@@ -65,7 +81,7 @@ EOF
       else
         exit 0
       fi
-      printf '    - %s:\n        href: %s\n        description: %s\n' "$COMP_NAME" "$href" "$COMP_TAG"
+      printf '    - %s:\n        href: %s\n        description: %s\n        icon: %s.png\n' "$COMP_NAME" "$href" "$COMP_TAG" "${COMP_ICON:-$COMP_TAG}"
       [ -n "${cont:-}" ] && printf '        server: warden\n        container: %s\n' "$cont"
     )"
     [ -n "$entry" ] && apps="${apps}${entry}"$'\n'
