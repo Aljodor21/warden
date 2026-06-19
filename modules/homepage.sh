@@ -55,7 +55,7 @@ EOF
       fi
       printf '    - %s:\n        href: %s\n        description: %s\n' "$COMP_NAME" "$href" "$COMP_TAG"
     )"
-    [ -n "$entry" ] && apps="${apps}${entry}"
+    [ -n "$entry" ] && apps="${apps}${entry}"$'\n'
   done < <(catalog_each)
   [ -n "$apps" ] && { echo "- Apps:" >> "$svc"; printf '%s' "$apps" >> "$svc"; }
 
