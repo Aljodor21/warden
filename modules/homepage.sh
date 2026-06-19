@@ -17,6 +17,10 @@ warden_homepage_config() {
     memory: true
     disk: /
 EOF
+  cat > "$HOMEPAGE_CONFIG/docker.yaml" <<'EOF'
+warden:
+  socket: /var/run/docker.sock
+EOF
 
   svc="$HOMEPAGE_CONFIG/services.yaml"
   up="$(docker ps --format '{{.Names}}' 2>/dev/null)"
@@ -31,10 +35,14 @@ EOF
   grep -qx backrest <<<"$up" && dash="${dash}    - Backrest:
         href: http://${ip:-localhost}:9898
         description: backups
+        server: warden
+        container: backrest
 "
   grep -qx ntfy <<<"$up" && dash="${dash}    - ntfy:
         href: http://${ip:-localhost}:8080
         description: alertas
+        server: warden
+        container: ntfy
 "
   [ -n "$dash" ] && { echo "- Dashboard:" >> "$svc"; printf '%s' "$dash" >> "$svc"; }
 
@@ -48,12 +56,14 @@ EOF
       if [ -n "${COMP_CF_HOST:-}" ]; then
         href="https://$COMP_CF_HOST"
       elif [ -n "${COMP_CF_PORT:-}" ]; then
-        grep -qx "${COMP_CONTAINER:-$tag}" <<<"$up" || exit 0
+        cont="${COMP_CONTAINER:-$tag}"
+        grep -qx "$cont" <<<"$up" || exit 0
         href="http://${ip:-localhost}:$COMP_CF_PORT"
       else
         exit 0
       fi
       printf '    - %s:\n        href: %s\n        description: %s\n' "$COMP_NAME" "$href" "$COMP_TAG"
+      [ -n "${cont:-}" ] && printf '        server: warden\n        container: %s\n' "$cont"
     )"
     [ -n "$entry" ] && apps="${apps}${entry}"$'\n'
   done < <(catalog_each)

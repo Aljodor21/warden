@@ -56,6 +56,11 @@ warden_base_install
 warden_docker_install
 
 echo
+if ui_confirm "¿Instalar Tailscale (VPN, acceso remoto seguro)?"; then
+  warden_tailscale_install
+fi
+
+echo
 # --- Modo de instalación: preset (combo) o a la carta ---
 MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
   'minimal — dashboard + backup (lo básico)' \
