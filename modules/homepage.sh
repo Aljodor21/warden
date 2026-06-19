@@ -24,11 +24,30 @@ layout:
     style: row
     columns: 4
 EOF
-  cat > "$HOMEPAGE_CONFIG/widgets.yaml" <<'EOF'
+  cat > "$HOMEPAGE_CONFIG/widgets.yaml" <<EOF
+- greeting:
+    text_size: xl
+    text: ${WARDEN_HOSTNAME:-warden}
+- datetime:
+    text_size: l
+    format:
+      timeStyle: short
+      hour12: false
 - resources:
+    label: sistema
     cpu: true
     memory: true
     disk: /
+    uptime: true
+- search:
+    provider: duckduckgo
+    target: _blank
+EOF
+  cat > "$HOMEPAGE_CONFIG/custom.css" <<'EOF'
+/* Estilo warden: fondo con gradiente */
+body, #page_container {
+  background: radial-gradient(1200px 700px at 15% -10%, #21304a 0%, #0c1320 55%, #070b12 100%) !important;
+}
 EOF
   cat > "$HOMEPAGE_CONFIG/docker.yaml" <<'EOF'
 warden:
