@@ -5,7 +5,7 @@
 preset_items() {
   case "$1" in
     minimal) echo "mod:cockpit mod:homepage mod:dotfiles mod:motd mod:firewall" ;;
-    media)   echo "mod:cockpit mod:homepage mod:backrest mod:dotfiles mod:motd mod:firewall app:immich" ;;
+    media)   echo "mod:cockpit mod:homepage mod:backrest mod:dotfiles mod:motd mod:firewall app:immich app:nas" ;;
     dev)     echo "mod:cockpit mod:homepage mod:dotfiles mod:motd mod:firewall app:excalidraw" ;;
     *) return 1 ;;
   esac
