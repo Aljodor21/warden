@@ -19,6 +19,7 @@
 #   runner <url> <tok>  [root] Registra un self-hosted runner de GitHub Actions
 #   secrets <accion>    [root] Cifra/restaura secretos con age (init|save|restore)
 #   vpn                 [root] Instala y conecta Tailscale (VPN)
+#   homepage            [root] Regenera la config de Homepage y la recarga
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -53,6 +54,8 @@ source "$HERE/modules/secrets.sh"
 source "$HERE/modules/motd.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/tailscale.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/homepage.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -189,6 +192,7 @@ case "${1:-menu}" in
   publish)     need_root; warden_publish ;;
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
   vpn)         need_root; warden_tailscale_install ;;
+  homepage)    need_root; warden_homepage_config; docker restart homepage >/dev/null 2>&1 || true; ok "Homepage regenerado y recargado" ;;
   motd)        need_root; warden_motd_install ;;
   secrets)
     need_root
