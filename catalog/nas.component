@@ -1,0 +1,14 @@
+# NAS — carpeta compartida (Samba), genérico. Vacía en instalación limpia.
+COMP_NAME="NAS (carpeta compartida)"
+COMP_TAG="nas"
+COMP_KIND="files"
+COMP_PATHS=( "${WARDEN_DATA:-/srv/warden}/nas" )
+COMP_EXCLUDES=()
+COMP_DB_TYPE=""
+COMP_INSTALL="stacks/nas/docker-compose.yml"
+COMP_CONTAINER="nas"
+COMP_SECRETS=( "NAS_PASSWORD" )
+COMP_ICON="samba"
+COMP_CF_HOST=""
+COMP_CF_PORT=""
+COMP_NOTE="Carpeta de red lista desde el día 1 (usuario 'warden', clave generada — ver /etc/warden/secrets/nas.env)."

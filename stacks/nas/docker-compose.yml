@@ -1,0 +1,18 @@
+# NAS — carpeta compartida por red (Samba), genérico.
+# Carpeta vacía en ${WARDEN_DATA:-/srv/warden}/nas — lista para usar desde el día 1.
+name: nas
+
+services:
+  nas:
+    image: dperson/samba:latest
+    container_name: nas
+    restart: unless-stopped
+    ports:
+      - "139:139"
+      - "445:445"
+    environment:
+      USER: "warden;${NAS_PASSWORD:?warden debía generar este secreto automáticamente}"
+      SHARE: "warden;/share;yes;no;no;warden"
+      TZ: "${TZ:-UTC}"
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/nas:/share"
