@@ -15,3 +15,7 @@ WARDEN_PRESET=""
 
 # UUID del disco de backup (opcional; si está vacío, se autodetecta).
 WARDEN_BACKUP_UUID=""
+
+# Dónde viven los datos de las apps genéricas (Immich, NAS…). Cambialo si
+# querés que vivan en otro disco/punto de montaje.
+WARDEN_DATA="/srv/warden"
