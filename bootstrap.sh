@@ -95,6 +95,11 @@ case "$MODE" in
     ;;
 esac
 
+# Regenerar Homepage al final, ya con las apps corriendo (para que no quede vacío).
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx homepage; then
+  warden_homepage_config && log "Homepage actualizado con lo que quedó corriendo"
+fi
+
 echo
 log "Dejando 'warden' disponible en el PATH"
 run "ln -sf '$WARDEN_ROOT/bin/warden' /usr/local/bin/warden"
