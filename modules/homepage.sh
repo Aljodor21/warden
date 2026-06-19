@@ -21,6 +21,9 @@ EOF
 warden:
   socket: /var/run/docker.sock
 EOF
+  # Quitar los bookmarks de ejemplo (Github/Reddit/YouTube) que Homepage trae por defecto.
+  printf -- '- Enlaces:\n    - warden:\n        - abbr: WD\n          href: https://github.com/Aljodor21/warden\n' \
+    > "$HOMEPAGE_CONFIG/bookmarks.yaml"
 
   svc="$HOMEPAGE_CONFIG/services.yaml"
   up="$(docker ps --format '{{.Names}}' 2>/dev/null)"
