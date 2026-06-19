@@ -1,0 +1,41 @@
+# Immich — fotos y vídeos (genérico, autoalojado).
+# Datos en ${WARDEN_DATA:-/srv/warden}/immich — arranca VACÍO en una instalación limpia.
+name: immich
+
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:release
+    container_name: immich-server
+    restart: unless-stopped
+    ports:
+      - "${IMMICH_PORT:-2283}:2283"
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/immich/upload:/usr/src/app/upload"
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - immich-redis
+      - immich-postgres
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    container_name: immich-machine-learning
+    restart: unless-stopped
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/immich/model-cache:/cache"
+
+  immich-redis:
+    image: redis:6.2-alpine
+    container_name: immich-redis
+    restart: unless-stopped
+
+  immich-postgres:
+    image: ghcr.io/immich-app/postgres:14-vectorchord
+    container_name: immich-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${IMMICH_DB_PASSWORD:?warden debía generar este secreto automáticamente}
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/immich/pgdata:/var/lib/postgresql/data"

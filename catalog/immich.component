@@ -1,0 +1,17 @@
+# Immich — fotos y vídeos (genérico). Arranca vacío en instalación limpia.
+COMP_NAME="Immich (fotos)"
+COMP_TAG="immich"
+COMP_KIND="files+db"
+COMP_PATHS=( "${WARDEN_DATA:-/srv/warden}/immich/upload" )
+COMP_EXCLUDES=()
+COMP_DB_TYPE="postgres"
+COMP_DB_CONTAINER="immich-postgres"
+COMP_DB_NAME="immich"
+COMP_DB_USER="postgres"
+COMP_INSTALL="stacks/immich/docker-compose.yml"
+COMP_CONTAINER="immich-server"
+COMP_SECRETS=( "IMMICH_DB_PASSWORD" )
+COMP_ICON="immich"
+COMP_CF_HOST=""
+COMP_CF_PORT="2283"
+COMP_NOTE="Genérico y reutilizable: cualquiera que instale warden obtiene un Immich vacío y funcional. Tus datos reales van en site/."
