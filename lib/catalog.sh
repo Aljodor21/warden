@@ -36,6 +36,17 @@ catalog_each() {
   done
 }
 
+# Limpia todas las variables COMP_* antes de cargar un componente, para que
+# un componente que no define algo (ej. COMP_SECRETS) no herede el valor del
+# componente cargado anteriormente en el mismo shell.
+_catalog_reset() {
+  COMP_NAME=""; COMP_TAG=""; COMP_KIND=""; COMP_INSTALL=""
+  COMP_CONTAINER=""; COMP_ICON=""; COMP_NOTE=""
+  COMP_DB_TYPE=""; COMP_DB_CONTAINER=""; COMP_DB_NAME=""; COMP_DB_USER=""
+  COMP_CF_HOST=""; COMP_CF_PORT=""
+  COMP_PATHS=(); COMP_EXCLUDES=(); COMP_SECRETS=()
+}
+
 # catalog_load <tag>: carga (source) un componente. site/ tiene prioridad.
 catalog_load() {
   local want="$1" d f t dirs=()
@@ -46,7 +57,7 @@ catalog_load() {
     for f in "$d"/*.component; do
       [ -e "$f" ] || continue
       t="$(. "$f"; echo "$COMP_TAG")"
-      [ "$t" = "$want" ] && { source "$f"; return 0; }
+      [ "$t" = "$want" ] && { _catalog_reset; source "$f"; return 0; }
     done
   done
   return 1
