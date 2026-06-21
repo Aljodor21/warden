@@ -11,15 +11,19 @@ warden_homepage_config() {
   [ "${WARDEN_DRY_RUN:-0}" = 1 ] && { echo "[dry-run] generaría la config de Homepage en $HOMEPAGE_CONFIG"; return 0; }
 
   cat > "$HOMEPAGE_CONFIG/settings.yaml" <<EOF
-title: ${WARDEN_HOSTNAME:-warden} · warden
-theme: dark
+title: ${WARDEN_HOSTNAME:-warden}
+theme: light
 color: slate
-headerStyle: clean
+headerStyle: boxed
+cardBlur: md
 target: _blank
 layout:
   Dashboard:
     style: row
     columns: 4
+  Almacenamiento:
+    style: row
+    columns: 3
   Apps:
     style: row
     columns: 4
@@ -43,11 +47,24 @@ EOF
     provider: duckduckgo
     target: _blank
 EOF
+  # Estilo "iCloud + CasaOS": claro, suave, cards redondeadas con sombra,
+  # grupos como secciones bien separadas.
   cat > "$HOMEPAGE_CONFIG/custom.css" <<'EOF'
-/* Estilo warden: fondo con gradiente */
-body, #page_container {
-  background: radial-gradient(1200px 700px at 15% -10%, #21304a 0%, #0c1320 55%, #070b12 100%) !important;
+:root {
+  --color-50: 248 250 252;
 }
+body, #page_container {
+  background: linear-gradient(160deg, #eef2f7 0%, #e4e9f0 45%, #dfe5ed 100%) !important;
+}
+#information-widgets, .services-group, .service-card, #bookmarks {
+  border-radius: 18px !important;
+}
+.service-card, #information-widgets > div {
+  box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 8px 20px rgba(15,23,42,.06) !important;
+  background: rgba(255,255,255,.72) !important;
+  backdrop-filter: blur(10px);
+}
+h2, h3 { font-weight: 600 !important; letter-spacing: -.01em; }
 EOF
   cat > "$HOMEPAGE_CONFIG/docker.yaml" <<'EOF'
 warden:
@@ -84,9 +101,11 @@ EOF
 "
   [ -n "$dash" ] && { echo "- Dashboard:" >> "$svc"; printf '%s' "$dash" >> "$svc"; }
 
-  # --- Grupo Apps: componentes del catálogo corriendo (o públicos por dominio) ---
-  local apps="" tag entry
-  while IFS='|' read -r tag _ _ _; do
+  # --- Apps y Almacenamiento: componentes del catálogo corriendo (o públicos por dominio).
+  # Las que son solo "files" (NAS, carpetas compartidas) van a Almacenamiento,
+  # el resto (con BD o sin datos) van a Apps — como CasaOS separa Files de Apps.
+  local apps="" storage="" tag entry kind
+  while IFS='|' read -r tag _ kind _; do
     [ -n "$tag" ] || continue
     entry="$(
       catalog_load "$tag" || exit 0
@@ -97,14 +116,23 @@ EOF
         cont="${COMP_CONTAINER:-$tag}"
         grep -qx "$cont" <<<"$up" || exit 0
         href="http://${ip:-localhost}:$COMP_CF_PORT"
+      elif [ "${COMP_KIND:-}" = "files" ]; then
+        cont="${COMP_CONTAINER:-$tag}"
+        grep -qx "$cont" <<<"$up" || exit 0
+        href="#"
       else
         exit 0
       fi
       printf '    - %s:\n        href: %s\n        description: %s\n        icon: %s.png\n' "$COMP_NAME" "$href" "$COMP_TAG" "${COMP_ICON:-$COMP_TAG}"
       [ -n "${cont:-}" ] && printf '        server: warden\n        container: %s\n' "$cont"
     )"
-    [ -n "$entry" ] && apps="${apps}${entry}"$'\n'
+    if [ -n "$entry" ]; then
+      if [ "$kind" = "files" ]; then storage="${storage}${entry}"$'\n'
+      else apps="${apps}${entry}"$'\n'
+      fi
+    fi
   done < <(catalog_each)
+  [ -n "$storage" ] && { echo "- Almacenamiento:" >> "$svc"; printf '%s' "$storage" >> "$svc"; }
   [ -n "$apps" ] && { echo "- Apps:" >> "$svc"; printf '%s' "$apps" >> "$svc"; }
 
   # Fallback: si todo quedó vacío, al menos Cockpit.
