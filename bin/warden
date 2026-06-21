@@ -20,6 +20,7 @@
 #   secrets <accion>    [root] Cifra/restaura secretos con age (init|save|restore)
 #   vpn                 [root] Instala y conecta Tailscale (VPN)
 #   homepage            [root] Regenera la config de Homepage y la recarga
+#   nas <accion> ...    [root] Usuarios del NAS (adduser|passwd|deluser|users)
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -39,6 +40,8 @@ source "$HERE/lib/core.sh"
 # shellcheck source=/dev/null
 source "$HERE/lib/ui.sh"
 # shellcheck source=/dev/null
+source "$HERE/modules/stacks.sh"
+# shellcheck source=/dev/null
 source "$HERE/modules/backup.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/register.sh"
@@ -56,6 +59,8 @@ source "$HERE/modules/motd.sh"
 source "$HERE/modules/tailscale.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/homepage.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/nas.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -193,6 +198,16 @@ case "${1:-menu}" in
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
   vpn)         need_root; warden_tailscale_install ;;
   homepage)    need_root; warden_homepage_config; docker restart homepage >/dev/null 2>&1 || true; ok "Homepage regenerado y recargado" ;;
+  nas)
+    need_root
+    case "${2:-}" in
+      adduser) warden_nas_adduser "${3:-}" "${4:-}" ;;
+      passwd)  warden_nas_passwd "${3:-}" "${4:-}" ;;
+      deluser) warden_nas_deluser "${3:-}" ;;
+      users|"") warden_nas_users ;;
+      *) echo "Uso: warden nas {adduser|passwd|deluser|users} [nombre] [clave]"; exit 1 ;;
+    esac
+    ;;
   motd)        need_root; warden_motd_install ;;
   secrets)
     need_root
