@@ -128,9 +128,16 @@ EOF
         exit 0
       fi
       desc="$COMP_TAG"
-      [ "${COMP_KIND:-}" = "files" ] && desc="smb://${ip:-localhost}/warden · usuario: warden"
-      printf '    - %s:\n        href: "%s"\n        description: "%s"\n        icon: %s.png\n' \
-        "$(_yaml_q "$COMP_NAME")" "$(_yaml_q "$href")" "$(_yaml_q "$desc")" "${COMP_ICON:-$COMP_TAG}"
+      if [ "${COMP_KIND:-}" = "files" ]; then
+        pass="$(grep '^NAS_PASSWORD=' /etc/warden/secrets/nas.env 2>/dev/null | cut -d= -f2)"
+        desc="usuario warden · clave ${pass:-ver /etc/warden/secrets/nas.env}"
+      fi
+      # COMP_ICON con prefijo mdi-/si-/sh- es un ícono vectorial de Homepage (no falla nunca).
+      # Sin prefijo, se asume imagen .png del set de íconos.
+      icon="${COMP_ICON:-$COMP_TAG}"
+      case "$icon" in mdi-*|si-*|sh-*) ;; *) icon="${icon}.png" ;; esac
+      printf '    - %s:\n        href: "%s"\n        description: "%s"\n        icon: %s\n' \
+        "$(_yaml_q "$COMP_NAME")" "$(_yaml_q "$href")" "$(_yaml_q "$desc")" "$icon"
       [ -n "${cont:-}" ] && printf '        server: warden\n        container: %s\n' "$cont"
     )"
     if [ -n "$entry" ]; then
