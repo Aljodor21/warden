@@ -9,12 +9,25 @@ services:
     restart: unless-stopped
     ports:
       - "${IMMICH_PORT:-2283}:2283"
+    environment:
+      DB_HOSTNAME: immich-postgres
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD:?warden debía generar este secreto automáticamente}
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: immich-redis
     volumes:
       - "${WARDEN_DATA:-/srv/warden}/immich/upload:/usr/src/app/upload"
       - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:2283/api/server/ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - immich-redis
-      - immich-postgres
+      immich-redis:
+        condition: service_started
+      immich-postgres:
+        condition: service_healthy
 
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:release
@@ -27,6 +40,11 @@ services:
     image: redis:6.2-alpine
     container_name: immich-redis
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
   immich-postgres:
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
@@ -39,3 +57,8 @@ services:
       POSTGRES_INITDB_ARGS: "--data-checksums"
     volumes:
       - "${WARDEN_DATA:-/srv/warden}/immich/pgdata:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d immich"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
