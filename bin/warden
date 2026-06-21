@@ -21,6 +21,7 @@
 #   vpn                 [root] Instala y conecta Tailscale (VPN)
 #   homepage            [root] Regenera la config de Homepage y la recarga
 #   nas <accion> ...    [root] Usuarios del NAS (adduser|passwd|deluser|users)
+#   reset [--full]      [root] Instalación limpia: borra apps/datos de warden
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -61,6 +62,8 @@ source "$HERE/modules/tailscale.sh"
 source "$HERE/modules/homepage.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/nas.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/reset.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -210,6 +213,7 @@ case "${1:-menu}" in
     esac
     ;;
   motd)        need_root; warden_motd_install ;;
+  reset)       need_root; warden_reset "${2:-}" ;;
   secrets)
     need_root
     case "${2:-}" in
