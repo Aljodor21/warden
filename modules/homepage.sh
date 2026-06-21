@@ -4,6 +4,10 @@
 
 HOMEPAGE_CONFIG="${HOMEPAGE_CONFIG:-/etc/warden/homepage}"
 
+# Escapa un valor para usarlo como string YAML entre comillas dobles
+# (evita romper el parser con ':', '#', '·', etc.)
+_yaml_q() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+
 # Genera settings/widgets/services.yaml desde el catálogo y los servicios activos.
 warden_homepage_config() {
   local ip svc up; ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
@@ -81,20 +85,20 @@ EOF
   # --- Grupo Dashboard: los paneles de warden que estén activos ---
   local dash=""
   systemctl is-active --quiet cockpit.socket 2>/dev/null && dash="${dash}    - Cockpit:
-        href: https://${ip:-localhost}:9090
-        description: panel del sistema
+        href: \"$(_yaml_q "https://${ip:-localhost}:9090")\"
+        description: \"panel del sistema\"
         icon: cockpit.png
 "
   grep -qx backrest <<<"$up" && dash="${dash}    - Backrest:
-        href: http://${ip:-localhost}:9898
-        description: backups
+        href: \"$(_yaml_q "http://${ip:-localhost}:9898")\"
+        description: \"backups\"
         icon: restic.png
         server: warden
         container: backrest
 "
   grep -qx ntfy <<<"$up" && dash="${dash}    - ntfy:
-        href: http://${ip:-localhost}:8080
-        description: alertas
+        href: \"$(_yaml_q "http://${ip:-localhost}:8080")\"
+        description: \"alertas\"
         icon: ntfy.png
         server: warden
         container: ntfy
@@ -125,7 +129,8 @@ EOF
       fi
       desc="$COMP_TAG"
       [ "${COMP_KIND:-}" = "files" ] && desc="smb://${ip:-localhost}/warden · usuario: warden"
-      printf '    - %s:\n        href: %s\n        description: %s\n        icon: %s.png\n' "$COMP_NAME" "$href" "$desc" "${COMP_ICON:-$COMP_TAG}"
+      printf '    - %s:\n        href: "%s"\n        description: "%s"\n        icon: %s.png\n' \
+        "$(_yaml_q "$COMP_NAME")" "$(_yaml_q "$href")" "$(_yaml_q "$desc")" "${COMP_ICON:-$COMP_TAG}"
       [ -n "${cont:-}" ] && printf '        server: warden\n        container: %s\n' "$cont"
     )"
     if [ -n "$entry" ]; then
