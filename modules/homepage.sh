@@ -129,8 +129,17 @@ EOF
       fi
       desc="$COMP_TAG"
       if [ "${COMP_KIND:-}" = "files" ]; then
-        pass="$(grep '^NAS_PASSWORD=' /etc/warden/secrets/nas.env 2>/dev/null | cut -d= -f2)"
-        desc="usuario warden · clave ${pass:-ver /etc/warden/secrets/nas.env}"
+        users_file=/etc/warden/nas/users.txt
+        if [ -f "$users_file" ] && [ "$(wc -l < "$users_file")" -le 1 ]; then
+          name="$(cut -d: -f1 "$users_file")"; pass="$(cut -d: -f2 "$users_file")"
+          desc="usuario $name · clave $pass"
+        elif [ -f "$users_file" ]; then
+          names="$(cut -d: -f1 "$users_file" | paste -sd, -)"
+          desc="usuarios: $names · claves: sudo warden nas users -v"
+        else
+          pass="$(grep '^NAS_PASSWORD=' /etc/warden/secrets/nas.env 2>/dev/null | cut -d= -f2)"
+          desc="usuario warden · clave ${pass:-ver /etc/warden/secrets/nas.env}"
+        fi
       fi
       # COMP_ICON con prefijo mdi-/si-/sh- es un ícono vectorial de Homepage (no falla nunca).
       # Sin prefijo, se asume imagen .png del set de íconos.

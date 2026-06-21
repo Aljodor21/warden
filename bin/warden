@@ -205,7 +205,7 @@ case "${1:-menu}" in
       passwd)  warden_nas_passwd "${3:-}" "${4:-}" ;;
       deluser) warden_nas_deluser "${3:-}" ;;
       reload)  warden_nas_reload ;;
-      users|"") warden_nas_users ;;
+      users|"") warden_nas_users "${3:-}" ;;
       *) echo "Uso: warden nas {adduser|passwd|deluser|reload|users} [nombre] [clave]"; exit 1 ;;
     esac
     ;;

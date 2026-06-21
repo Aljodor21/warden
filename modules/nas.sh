@@ -94,5 +94,9 @@ warden_nas_deluser() {
 
 warden_nas_users() {
   _nas_seed
-  cut -d: -f1 "$NAS_USERS_FILE"
+  if [ "${1:-}" = "-v" ] || [ "${1:-}" = "--show" ]; then
+    cat "$NAS_USERS_FILE"   # nombre:clave
+  else
+    cut -d: -f1 "$NAS_USERS_FILE"
+  fi
 }
