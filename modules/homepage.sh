@@ -119,11 +119,13 @@ EOF
       elif [ "${COMP_KIND:-}" = "files" ]; then
         cont="${COMP_CONTAINER:-$tag}"
         grep -qx "$cont" <<<"$up" || exit 0
-        href="#"
+        href="smb://${ip:-localhost}/warden"
       else
         exit 0
       fi
-      printf '    - %s:\n        href: %s\n        description: %s\n        icon: %s.png\n' "$COMP_NAME" "$href" "$COMP_TAG" "${COMP_ICON:-$COMP_TAG}"
+      desc="$COMP_TAG"
+      [ "${COMP_KIND:-}" = "files" ] && desc="smb://${ip:-localhost}/warden · usuario: warden"
+      printf '    - %s:\n        href: %s\n        description: %s\n        icon: %s.png\n' "$COMP_NAME" "$href" "$desc" "${COMP_ICON:-$COMP_TAG}"
       [ -n "${cont:-}" ] && printf '        server: warden\n        container: %s\n' "$cont"
     )"
     if [ -n "$entry" ]; then
