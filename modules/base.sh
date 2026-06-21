@@ -20,5 +20,11 @@ warden_base_install() {
     run "hostnamectl set-hostname '$WARDEN_HOSTNAME'"
   fi
 
+  # avahi (mDNS): permite acceder por nombre (ej. http://wardenprueba.local)
+  # en vez de la IP, que puede cambiar.
+  log "Habilitando acceso por nombre (mDNS/avahi)"
+  ensure_pkg avahi-daemon avahi-daemon
+  run "systemctl enable --now avahi-daemon"
+
   ok "Base lista"
 }

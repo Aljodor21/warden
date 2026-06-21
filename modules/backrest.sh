@@ -8,6 +8,5 @@ warden_backrest_install() {
   export BACKREST_HOME
   log "Levantando Backrest"
   run "_compose -f '$WARDEN_ROOT/stacks/backrest/docker-compose.yml' up -d"
-  local ip; ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
-  ok "Backrest → http://${ip:-<ip>}:${BACKREST_PORT:-9898}"
+  ok "Backrest → http://$(warden_host):${BACKREST_PORT:-9898}"
 }

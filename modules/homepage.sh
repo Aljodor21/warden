@@ -10,12 +10,12 @@ _yaml_q() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 
 # Genera settings/widgets/services.yaml desde el catálogo y los servicios activos.
 warden_homepage_config() {
-  local ip svc up; ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  local host svc up; host="$(warden_host)"
   run "mkdir -p '$HOMEPAGE_CONFIG'"
   [ "${WARDEN_DRY_RUN:-0}" = 1 ] && { echo "[dry-run] generaría la config de Homepage en $HOMEPAGE_CONFIG"; return 0; }
 
   cat > "$HOMEPAGE_CONFIG/settings.yaml" <<EOF
-title: ${WARDEN_HOSTNAME:-warden}
+title: ${WARDEN_HOSTNAME:-$(hostname)}
 theme: light
 color: slate
 headerStyle: boxed
@@ -35,7 +35,7 @@ EOF
   cat > "$HOMEPAGE_CONFIG/widgets.yaml" <<EOF
 - greeting:
     text_size: xl
-    text: ${WARDEN_HOSTNAME:-warden}
+    text: ${WARDEN_HOSTNAME:-$(hostname)}
 - datetime:
     text_size: l
     format:
@@ -85,19 +85,19 @@ EOF
   # --- Grupo Dashboard: los paneles de warden que estén activos ---
   local dash=""
   systemctl is-active --quiet cockpit.socket 2>/dev/null && dash="${dash}    - Cockpit:
-        href: \"$(_yaml_q "https://${ip:-localhost}:9090")\"
+        href: \"$(_yaml_q "https://${host}:9090")\"
         description: \"panel del sistema\"
         icon: cockpit.png
 "
   grep -qx backrest <<<"$up" && dash="${dash}    - Backrest:
-        href: \"$(_yaml_q "http://${ip:-localhost}:9898")\"
+        href: \"$(_yaml_q "http://${host}:9898")\"
         description: \"backups\"
         icon: restic.png
         server: warden
         container: backrest
 "
   grep -qx ntfy <<<"$up" && dash="${dash}    - ntfy:
-        href: \"$(_yaml_q "http://${ip:-localhost}:8080")\"
+        href: \"$(_yaml_q "http://${host}:8080")\"
         description: \"alertas\"
         icon: ntfy.png
         server: warden
@@ -119,11 +119,11 @@ EOF
       elif [ -n "${COMP_CF_PORT:-}" ]; then
         cont="${COMP_CONTAINER:-$tag}"
         grep -qx "$cont" <<<"$up" || exit 0
-        href="http://${ip:-localhost}:$COMP_CF_PORT"
+        href="http://${host}:$COMP_CF_PORT"
       elif [ "${COMP_KIND:-}" = "files" ]; then
         cont="${COMP_CONTAINER:-$tag}"
         grep -qx "$cont" <<<"$up" || exit 0
-        href="smb://${ip:-localhost}/warden"
+        href="smb://${host}/warden"
       else
         exit 0
       fi
@@ -159,7 +159,7 @@ EOF
   [ -n "$apps" ] && { echo "- Apps:" >> "$svc"; printf '%s' "$apps" >> "$svc"; }
 
   # Fallback: si todo quedó vacío, al menos Cockpit.
-  [ -s "$svc" ] || printf -- '- Sistema:\n    - Cockpit:\n        href: https://%s:9090\n' "${ip:-localhost}" > "$svc"
+  [ -s "$svc" ] || printf -- '- Sistema:\n    - Cockpit:\n        href: https://%s:9090\n' "$host" > "$svc"
 }
 
 warden_homepage_install() {
@@ -168,6 +168,5 @@ warden_homepage_install() {
   export HOMEPAGE_CONFIG
   log "Levantando Homepage"
   run "_compose -f '$WARDEN_ROOT/stacks/homepage/docker-compose.yml' up -d"
-  local ip; ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
-  ok "Homepage → http://${ip:-<ip>}:${HOMEPAGE_PORT:-7575}"
+  ok "Homepage → http://$(warden_host):${HOMEPAGE_PORT:-7575}"
 }

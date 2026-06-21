@@ -15,5 +15,5 @@ EOF
   export NTFY_HOME
   log "Levantando ntfy"
   run "_compose -f '$WARDEN_ROOT/stacks/ntfy/docker-compose.yml' up -d"
-  ok "ntfy → http://${ip:-<ip>}:${NTFY_PORT:-8080}  (suscribite a un topic desde la app del celu)"
+  ok "ntfy → http://$(warden_host):${NTFY_PORT:-8080} (o http://${ip:-<ip>}:${NTFY_PORT:-8080} si el celu no resuelve .local)"
 }

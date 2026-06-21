@@ -27,3 +27,7 @@ backup_file() {
   [ -f "$f" ] || return 0
   run "cp -a '$f' '$f.warden.bak.$(date +%Y%m%d-%H%M%S)'"
 }
+
+# Nombre por el que se accede al server en la LAN (mDNS, no la IP que puede
+# cambiar). Requiere avahi-daemon (lo instala modules/base.sh).
+warden_host() { printf '%s.local' "$(hostname)"; }
