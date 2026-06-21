@@ -37,15 +37,15 @@ _nas_apply() {
 
   local valid_csv; valid_csv="$(IFS=,; echo "${valid[*]}")"
 
-  # OJO: no redefinir USER/SHARE acá (ni vaciarlos). El script de la imagen
-  # trata una variable definida-pero-vacía como "hay que procesarla" y
-  # revienta con "$2: unbound variable". Dejamos que el 'warden' del entorno
-  # (definido en el compose base) siga viviendo, y el 'command' solo agrega
-  # usuarios — llamarlo dos veces para 'warden' es inofensivo.
+  # El compose base NO define USER/SHARE (lo reprocesa la imagen DESPUÉS del
+  # command y nos borraba el share). El 'command' es la única fuente de verdad.
+  # '-p' = arregla los permisos del share para el usuario interno de Samba
+  # (sin esto, el host crea la carpeta como root y nadie puede escribir).
   {
     echo "services:"
     echo "  nas:"
     echo "    command:"
+    echo "      - \"-p\""
     local u
     for u in "${users_args[@]}"; do
       echo "      - \"-u\""
