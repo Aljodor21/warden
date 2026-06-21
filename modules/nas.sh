@@ -24,6 +24,9 @@ _nas_seed() {
 }
 
 # Regenera el override (usuarios + share compartido) y aplica con el instalador genérico.
+# Sintaxis verificada contra el README de dperson/samba:
+#   -u "nombre;clave"          (uno por usuario)
+#   -s "nombre;/ruta;...;usuarios_separados_por_COMA"
 _nas_apply() {
   local name pass users_args=() valid=()
   while IFS=: read -r name pass; do
@@ -31,6 +34,8 @@ _nas_apply() {
     users_args+=("$name;$pass")
     valid+=("$name")
   done < "$NAS_USERS_FILE"
+
+  local valid_csv; valid_csv="$(IFS=,; echo "${valid[*]}")"
 
   {
     echo "services:"
@@ -45,12 +50,15 @@ _nas_apply() {
       echo "      - \"$u\""
     done
     echo "      - \"-s\""
-    echo "      - \"warden;/share;yes;no;no;${valid[*]}\""
+    echo "      - \"warden;/share;yes;no;no;${valid_csv}\""
   } > "$NAS_OVERRIDE"
   chmod 600 "$NAS_OVERRIDE"
 
   warden_stack_install nas
 }
+
+# Reaplica el override actual (útil tras un fallo, sin re-agregar usuarios).
+warden_nas_reload() { _nas_seed; _nas_apply; ok "NAS reaplicado"; }
 
 warden_nas_adduser() {
   local name="$1" pass="${2:-$(openssl rand -hex 12)}"

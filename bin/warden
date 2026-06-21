@@ -204,8 +204,9 @@ case "${1:-menu}" in
       adduser) warden_nas_adduser "${3:-}" "${4:-}" ;;
       passwd)  warden_nas_passwd "${3:-}" "${4:-}" ;;
       deluser) warden_nas_deluser "${3:-}" ;;
+      reload)  warden_nas_reload ;;
       users|"") warden_nas_users ;;
-      *) echo "Uso: warden nas {adduser|passwd|deluser|users} [nombre] [clave]"; exit 1 ;;
+      *) echo "Uso: warden nas {adduser|passwd|deluser|reload|users} [nombre] [clave]"; exit 1 ;;
     esac
     ;;
   motd)        need_root; warden_motd_install ;;
