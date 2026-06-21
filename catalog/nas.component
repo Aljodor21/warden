@@ -11,4 +11,4 @@ COMP_SECRETS=( "NAS_PASSWORD" )
 COMP_ICON="mdi-folder-network-outline"
 COMP_CF_HOST=""
 COMP_CF_PORT=""
-COMP_NOTE="Carpeta de red lista desde el día 1 (usuario 'warden', clave generada — ver /etc/warden/secrets/nas.env)."
+COMP_NOTE="Carpeta de red lista desde el día 1 (usuario 'warden', clave generada). Más usuarios: warden nas adduser <nombre>."
