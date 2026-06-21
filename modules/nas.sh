@@ -37,12 +37,14 @@ _nas_apply() {
 
   local valid_csv; valid_csv="$(IFS=,; echo "${valid[*]}")"
 
+  # OJO: no redefinir USER/SHARE acá (ni vaciarlos). El script de la imagen
+  # trata una variable definida-pero-vacía como "hay que procesarla" y
+  # revienta con "$2: unbound variable". Dejamos que el 'warden' del entorno
+  # (definido en el compose base) siga viviendo, y el 'command' solo agrega
+  # usuarios — llamarlo dos veces para 'warden' es inofensivo.
   {
     echo "services:"
     echo "  nas:"
-    echo "    environment:"
-    echo "      USER: \"\""
-    echo "      SHARE: \"\""
     echo "    command:"
     local u
     for u in "${users_args[@]}"; do
