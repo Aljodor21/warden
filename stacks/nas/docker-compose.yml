@@ -10,12 +10,11 @@ services:
     ports:
       - "139:139"
       - "445:445"
-    # USER/SHARE quedan vacíos a propósito: el comando real (con los usuarios)
-    # lo define el override que genera 'warden nas' en /etc/warden/nas/.
+    # SIN USER/SHARE: la imagen reprocesa esas variables de entorno DESPUÉS
+    # del 'command', y eso reescribe (borra) el share definido por nuestros
+    # usuarios. La única fuente de verdad son los flags -u/-s que genera
+    # post-install.sh / 'warden nas' en /etc/warden/nas/docker-compose.override.yml.
     environment:
-      USER: "warden;${NAS_PASSWORD:?warden debía generar este secreto automáticamente}"
-      SHARE: "warden;/share;yes;no;no;warden"
       TZ: "${TZ:-UTC}"
-    # command sobreescrito por el override una vez exista (warden nas adduser/passwd).
     volumes:
       - "${WARDEN_DATA:-/srv/warden}/nas:/share"
