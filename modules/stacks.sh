@@ -66,4 +66,11 @@ warden_stack_install() {
     run "_compose -f '$compose' up -d" || { warn "$COMP_NAME falló al levantar"; return 1; }
   fi
   ok "$COMP_NAME arriba"
+
+  # Mensaje de post-instalación, si el stack define uno (ej. cómo conectarte).
+  local postinstall="$(dirname "$compose")/post-install.sh"
+  if [ -f "$postinstall" ] && [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
+    # shellcheck source=/dev/null
+    bash "$postinstall"
+  fi
 }
