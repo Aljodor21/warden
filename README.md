@@ -15,7 +15,7 @@ migrar a otro SO, el camino está trazado.
 
 **Instalación**
 - Instalador `bootstrap.sh` que **detecta la distro** (apt/pacman) y se adapta.
-- **Presets** (`minimal` / `media` / `dev`) o instalación **a la carta**.
+- **Presets** (`básico` / `completo`) o instalación **a la carta**.
 - Menús de terminal con [`gum`](https://github.com/charmbracelet/gum).
 
 **Backup y restauración**
@@ -63,9 +63,8 @@ Al instalar, `bootstrap.sh` te pregunta el **modo**:
 
 | Preset | Instala |
 |---|---|
-| `minimal` | Cockpit + Homepage + shell (zsh/p10k) + MOTD + firewall |
-| `media` | `minimal` + Backrest + Immich (fotos/medios) |
-| `dev` | `minimal` + Excalidraw |
+| `básico` | Cockpit + Homepage + NAS + shell (zsh/p10k) + MOTD + firewall |
+| `completo` | `básico` + Backrest + ntfy + Immich (fotos) + Excalidraw |
 | `a la carta` | elegís manualmente apps y módulos, uno por uno |
 
 Se definen en [`lib/presets.sh`](lib/presets.sh) — fáciles de editar o de sumar el tuyo.

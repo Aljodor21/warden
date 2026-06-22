@@ -44,7 +44,13 @@ if ! curl -fsS --max-time 5 https://github.com >/dev/null 2>&1; then
   warn "No detecto internet; las instalaciones pueden fallar."
 fi
 
-if ! ui_confirm "¿Instalar la base del sistema + Docker ahora?"; then
+echo "Esto va a instalar:"
+echo "  - Utilidades base (curl, git, jq, ca-certificates)"
+echo "  - Docker (motor de contenedores)"
+echo "  - avahi (acceso por nombre, ej. http://$(hostname).local, en vez de la IP)"
+echo "  - Zona horaria y hostname según site/site.conf"
+echo
+if ! ui_confirm "¿Instalar todo esto ahora?"; then
   die "Cancelado por el usuario."
 fi
 
@@ -56,22 +62,23 @@ warden_base_install
 warden_docker_install
 
 echo
-if ui_confirm "¿Instalar Tailscale (VPN, acceso remoto seguro)?"; then
+echo "Tailscale (VPN) te deja entrar a este server desde afuera de tu red,"
+echo "de forma segura, sin abrir puertos. Si decís que sí, en un momento te"
+echo "va a pedir abrir una URL para asociar este server a tu cuenta."
+if ui_confirm "¿Instalar Tailscale?"; then
   warden_tailscale_install
 fi
 
 echo
 # --- Modo de instalación: preset (combo) o a la carta ---
 MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
-  'minimal — dashboard + backup (lo básico)' \
-  'media — minimal + Immich (fotos/medios)' \
-  'dev — minimal + apps de desarrollo' \
-  'a la carta — elegir manual')"
+  'básico — dashboard (Cockpit + Homepage) + NAS' \
+  'completo — todo lo probado: básico + Backrest + ntfy + Immich + Excalidraw' \
+  'a la carta — elegir manual, uno por uno')"
 
 case "$MODE" in
-  minimal*) warden_preset_install minimal ;;
-  media*)   warden_preset_install media ;;
-  dev*)     warden_preset_install dev ;;
+  básico*|basico*) warden_preset_install basico ;;
+  completo*)        warden_preset_install completo ;;
   *)
     # A la carta: apps del catálogo + módulos, uno por uno.
     mapfile -t CAT_LINES < <(catalog_each)

@@ -45,7 +45,7 @@ nano site/site.conf      # WARDEN_HOSTNAME, WARDEN_LAN, WARDEN_TIMEZONE
 ## 5. Instalar
 
 ```bash
-sudo ./bootstrap.sh      # elegí el preset 'minimal' para la primera prueba
+sudo ./bootstrap.sh      # elegí el preset 'básico' para la primera prueba
 ```
 
 ## 6. Verificar

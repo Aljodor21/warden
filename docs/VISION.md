@@ -15,7 +15,7 @@
 ## La experiencia (lo que vive el usuario)
 1. Instala Debian/Arch → `curl … | bash` o clona y corre `warden`.
 2. **Banner + asistente TUI** (bonito) detecta distro/hardware y pregunta lo esencial.
-3. Elige **preset** (`minimal` / `media` / `dev`) o apps a la carta. Backup opcional.
+3. Elige **preset** (`básico` / `completo`) o apps a la carta. Backup opcional.
 4. warden instala, endurece y configura. Idempotente.
 5. Al hacer SSH: **MOTD dashboard** hermoso (disco, backups, servicios, alertas).
 6. Día a día: `warden` (TUI) + Cockpit + Backrest. Alertas a tu celular (ntfy).

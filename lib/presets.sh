@@ -4,9 +4,12 @@
 
 preset_items() {
   case "$1" in
-    minimal) echo "mod:cockpit mod:homepage mod:dotfiles mod:motd mod:firewall" ;;
-    media)   echo "mod:cockpit mod:homepage mod:backrest mod:dotfiles mod:motd mod:firewall app:immich app:nas" ;;
-    dev)     echo "mod:cockpit mod:homepage mod:dotfiles mod:motd mod:firewall app:excalidraw" ;;
+    # básico: dashboard + NAS — un server liviano con almacenamiento compartido.
+    basico)
+      echo "mod:cockpit mod:homepage app:nas mod:dotfiles mod:motd mod:firewall" ;;
+    # completo: todo lo que está probado hasta ahora (básico + Backrest + ntfy + Immich + Excalidraw).
+    completo)
+      echo "mod:cockpit mod:homepage app:nas mod:backrest mod:ntfy app:immich app:excalidraw mod:dotfiles mod:motd mod:firewall" ;;
     *) return 1 ;;
   esac
 }
