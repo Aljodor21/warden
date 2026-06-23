@@ -38,14 +38,17 @@
     <label>Contenedor principal — el "container_name" de tu docker-compose.yml. Si lo dejás vacío, asumimos que es igual al Tag.</label>
     <input name="container" placeholder="(igual al tag si lo dejás vacío)">
 
+    <label>Subdominio público (opcional)</label>
+    <p class="muted" style="margin-top:-0.5rem">
+      El túnel de Cloudflare NO es obligatorio. Si solo vas a usar esta app dentro de tu red (casa/oficina),
+      dejá esto vacío y listo — la app funciona igual. Solo lo necesitás si querés que se pueda
+      <strong>entrar desde fuera de tu homelab</strong> (internet) con un dominio propio.
+    </p>
     {{if .CloudflareSet}}
-    <label>Subdominio público — opcional, SOLO si querés que cualquiera pueda entrar desde internet con tu dominio</label>
     <input name="cfhost" placeholder="clicks.tudominio.site">
     {{else}}
-    <label>Subdominio público</label>
-    <p class="muted">Todavía no hay un túnel de Cloudflare configurado en este server — la app quedará accesible
-      solo dentro de tu red por ahora. Configurá Cloudflare en la página <a href="/system">Sistema</a> y volvé
-      a editar esta app después si querés exponerla a internet.</p>
+    <p class="muted">Si más adelante SÍ querés exponerla a internet, primero hace falta configurar un túnel
+      de Cloudflare (página <a href="/system">Sistema</a>) — por ahora este campo queda deshabilitado.</p>
     {{end}}
 
     <p><button class="btn" type="submit">Guardar y ver los próximos pasos</button></p>

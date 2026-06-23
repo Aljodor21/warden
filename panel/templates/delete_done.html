@@ -1,0 +1,29 @@
+{{define "delete_done.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — app eliminada</title>{{template "_style"}}</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>'{{.Name}}' eliminada del catálogo</h1>
+    <a class="btn secondary" href="/catalog">&larr; Ir al catálogo</a>
+  </div>
+
+  {{if .HadHost}}
+  <div class="panel">
+    <h2>Túnel de Cloudflare actualizado</h2>
+    {{if .PublishErr}}
+    <div class="err">No pude actualizar el túnel: {{.PublishErr}}</div>
+    {{else}}
+    <p>Se regeneró el túnel SIN esta app — ya no se proxya <strong>{{.Host}}</strong>.</p>
+    {{end}}
+    <p class="muted">Importante: el registro DNS (CNAME) de <strong>{{.Host}}</strong> sigue existiendo en tu
+      cuenta de Cloudflare — 'cloudflared' solo puede CREAR esos registros, no borrarlos por consola. No es un
+      problema (sin el túnel apuntándolo, ese subdominio simplemente no responde), pero si querés liberarlo del
+      todo, borralo a mano en el dashboard de Cloudflare → DNS.</p>
+    {{if .PublishOutput}}<pre style="margin-top:0.8rem">{{.PublishOutput}}</pre>{{end}}
+  </div>
+  {{end}}
+</body>
+</html>
+{{end}}

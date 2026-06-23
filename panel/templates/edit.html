@@ -69,6 +69,13 @@
 
     <p><button class="btn" type="submit">Guardar</button></p>
   </form>
+
+  {{if not .IsNew}}
+  <form method="post" action="/delete/{{.C.Tag}}" style="margin-top:1.5rem"
+        onsubmit="return confirm('¿Eliminar \'{{.C.Name}}\' del catálogo? Esto NO borra el repo de GitHub ni el código — solo deja de respaldarla/publicarla desde warden.')">
+    <button class="iconbtn danger" type="submit">Eliminar aplicación</button>
+  </form>
+  {{end}}
 </body>
 </html>
 {{end}}

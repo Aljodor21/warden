@@ -27,10 +27,11 @@
   <div>
     <div class="label">Túnel de Cloudflare</div>
     <div class="desc">
-      {{if .Sys.CloudflareSet}}Configurado{{if .Sys.CloudflareID}} — ID {{.Sys.CloudflareID}}{{end}}. Esto es lo
-        que necesita 'warden publish' para exponer tus apps con un subdominio propio.
-      {{else}}Sin configurar. Sin esto, ninguna app puede tener subdominio público — al hacer click te va a
-        pedir abrir una URL para autorizar este server con tu cuenta de Cloudflare, y elegir tu dominio.
+      Esto es OPCIONAL — solo hace falta si querés que alguna app sea accesible desde fuera de tu red
+      (internet), con un subdominio propio. Si todo lo que usás queda dentro de tu casa/oficina, no es necesario.
+      {{if .Sys.CloudflareSet}}Configurado{{if .Sys.CloudflareID}} — ID {{.Sys.CloudflareID}}{{end}}.
+      {{else}}Sin configurar todavía. Al hacer click te va a pedir abrir una URL para autorizar este server con
+        tu cuenta de Cloudflare, y elegir tu dominio.
       {{end}}
     </div>
   </div>

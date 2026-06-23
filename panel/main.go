@@ -100,6 +100,8 @@ func main() {
 		log.Printf("AVISO: no pude leer %s — el panel queda SIN contraseña. Solo para pruebas locales.", *passFile)
 	}
 
+	noExtra := func() map[string]any { return map[string]any{} }
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleDashboard)
 	mux.HandleFunc("GET /partials/health", s.handleHealthPartial)
@@ -107,6 +109,7 @@ func main() {
 	mux.HandleFunc("GET /catalog", s.handleList)
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
+	mux.HandleFunc("POST /delete/{tag}", s.requireAdmin("err_inline.html", noExtra, s.handleDeleteApp))
 	mux.HandleFunc("GET /new", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/new/deploy", http.StatusSeeOther)
 	})
@@ -117,7 +120,6 @@ func main() {
 	mux.HandleFunc("POST /new/deploy/check-runner", s.handleCheckRunner)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
-	noExtra := func() map[string]any { return map[string]any{} }
 	mux.HandleFunc("GET /nas", s.handleNAS)
 	mux.HandleFunc("POST /nas/add", s.requireAdmin("nas_fragment.html", withUsers, s.handleNASAdd))
 	mux.HandleFunc("POST /nas/del", s.requireAdmin("nas_fragment.html", withUsers, s.handleNASDel))
@@ -371,6 +373,41 @@ func (s *server) handlePublish(w http.ResponseWriter, r *http.Request) {
 		status = "ERROR: " + err.Error()
 	}
 	render(w, "publish.html", map[string]any{"Output": string(out), "Status": status})
+}
+
+// handleDeleteApp borra una app del catálogo. Solo se puede borrar lo que
+// VOS agregaste en site/catalog — las apps genéricas de warden (Immich,
+// NAS...) viven en el repo compartido, borrarlas localmente no haría nada
+// (reaparecerían en el próximo 'git pull'). Si tenía subdominio, regenera
+// el túnel de Cloudflare automáticamente (ya no la expone) — pero el
+// registro DNS (CNAME) en Cloudflare queda existiendo: 'cloudflared' solo
+// puede CREAR rutas por CLI, no borrarlas; eso requiere el dashboard web.
+func (s *server) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
+	tag := r.PathValue("tag")
+	path := s.siteCatalogDir + "/" + tag + ".component"
+	c, err := parseComponentFile(path)
+	if err != nil {
+		http.Error(w, "Esa app no está en tu site/catalog — no se puede borrar desde aquí (es una receta genérica de warden, compartida).", http.StatusForbidden)
+		return
+	}
+	if err := os.Remove(path); err != nil {
+		http.Error(w, "No pude borrar el archivo: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var publishOut string
+	var publishErr error
+	if c.CFHost != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+		defer cancel()
+		publishOut, publishErr = s.runWarden(ctx, "publish")
+	}
+
+	render(w, "delete_done.html", map[string]any{
+		"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
+		"Name": c.Name, "HadHost": c.CFHost != "", "Host": c.CFHost,
+		"PublishOutput": publishOut, "PublishErr": publishErr,
+	})
 }
 
 func splitLines(s string) []string {
