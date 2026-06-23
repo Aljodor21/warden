@@ -22,7 +22,7 @@
 #   vpn                 [root] Instala y conecta Tailscale (VPN)
 #   homepage            [root] Regenera la config de Homepage y la recarga
 #   nas <accion> ...    [root] Usuarios del NAS (adduser|passwd|deluser|users)
-#   reset [--full]      [root] Instalación limpia: borra apps/datos de warden
+#   reset               [root] Instalación limpia TOTAL: borra todo lo que warden tocó
 #   init-disk <dev>     [root] Prepara un disco NUEVO como destino de backup
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
@@ -212,7 +212,7 @@ case "${1:-menu}" in
     esac
     ;;
   motd)        need_root; warden_motd_install ;;
-  reset)       need_root; warden_reset "${2:-}" ;;
+  reset)       need_root; warden_reset ;;
   init-disk)   need_root; warden_init_disk "${2:-}" ;;
   secrets)
     need_root
