@@ -9,14 +9,14 @@
   <div class="acts">
     <form hx-post="/nas/reveal" hx-target="#reveal-{{.}}" hx-swap="innerHTML" style="display:inline">
       <input type="hidden" name="name" value="{{.}}">
-      <button class="iconbtn" type="submit">Ver clave</button>
+      <button class="iconbtn" type="submit">Ver clave<span class="spinner"></span></button>
     </form>
     {{if ne . "warden"}}
     <form hx-post="/nas/del" hx-target="#nas-list" hx-swap="innerHTML"
           hx-confirm="¿Eliminar al usuario '{{.}}'? No podrá conectarse más al NAS."
           style="display:inline">
       <input type="hidden" name="name" value="{{.}}">
-      <button class="iconbtn danger" type="submit">Eliminar</button>
+      <button class="iconbtn danger" type="submit">Eliminar<span class="spinner"></span></button>
     </form>
     {{end}}
   </div>
@@ -29,6 +29,6 @@
 <form class="inline-form" hx-post="/nas/add" hx-target="#nas-list" hx-swap="innerHTML">
   <input name="name" placeholder="nombre de usuario nuevo" required>
   <input name="pass" placeholder="clave (vacío = generar una segura)">
-  <button class="btn" type="submit">+ Agregar usuario</button>
+  <button class="btn" type="submit">+ Agregar usuario<span class="spinner"></span></button>
 </form>
 {{end}}

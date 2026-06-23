@@ -1,9 +1,13 @@
 {{define "backups_fragment.html"}}
 {{if .Err}}<div class="err">{{.Err}}</div>{{end}}
-{{if .Running}}<div class="ok-msg">Backup iniciado en segundo plano — puede tardar varios minutos. Recargá esta página más tarde para ver el snapshot nuevo.</div>{{end}}
+{{if .Running}}<div class="ok-msg">Backup iniciado en segundo plano — puede tardar varios minutos (depende de cuántos datos haya). Recargá esta página más tarde para ver el snapshot nuevo.</div>{{end}}
 
 <div class="panel">
   <h2>Discos</h2>
+  <p class="muted" style="margin-top:-0.6rem; margin-bottom:0.8rem">
+    SYSTEM = donde vive este server, nunca se toca. BACKUP = tiene la marca de warden, listo para usarse.
+    OTHER = tiene datos pero no es de warden. EMPTY = vacío, se puede preparar con 'warden init-disk'.
+  </p>
   {{range .B.Disks}}
   <div class="statusrow">
     <div>
@@ -19,22 +23,35 @@
 
 <div class="panel" style="margin-top:1rem">
   <h2>Backup automático</h2>
+  <p class="muted" style="margin-top:-0.6rem; margin-bottom:0.8rem">
+    Una vez activado, un servicio del sistema (systemd) corre <strong>'warden backup' solo, cada hora</strong>,
+    sin que tengas que entrar al panel ni acordarte. También corre una verificación de integridad cada noche
+    (que el backup no esté corrupto).
+  </p>
   <div class="statusrow">
     <div>
-      <span class="label">Timer (warden-backup.timer, cada hora)</span>
+      <span class="label">Timer (warden-backup.timer)</span>
       <div class="desc">
-        {{if not .B.TimerInstalled}}No está activado en este server. Corré 'warden register' para activarlo.
+        {{if not .B.TimerInstalled}}No está activado en este server todavía.
         {{else if .B.TimerActive}}Activo. Próxima ejecución: {{.B.TimerNext}}{{if .B.TimerLast}} · última: {{.B.TimerLast}}{{end}}
-        {{else}}Instalado pero NO activo.
+        {{else}}Instalado pero no está corriendo.
         {{end}}
       </div>
     </div>
-    <span class="badge {{if .B.TimerActive}}on{{else}}off{{end}}">{{if .B.TimerActive}}activo{{else}}inactivo{{end}}</span>
+    {{if .B.TimerActive}}
+    <span class="badge on">activo</span>
+    {{else if .B.HasBackupDisk}}
+    <form hx-post="/backups/register-timer" hx-target="#backups-content" hx-swap="innerHTML">
+      <button class="btn" type="submit">Activar<span class="spinner"></span></button>
+    </form>
+    {{else}}
+    <span class="badge off">necesita un disco de backup primero</span>
+    {{end}}
   </div>
 </div>
 
 <div class="panel" style="margin-top:1rem">
-  <h2>Backup ({{.B.BackupMount}}{{if .B.RepoSize}} · {{.B.RepoSize}}{{end}})</h2>
+  <h2>Backup ({{.B.BackupMount}}{{if .B.RepoSize}} · {{.B.RepoSize}} usados{{end}})</h2>
   {{if .B.SnapshotsErr}}
   <p class="muted">{{.B.SnapshotsErr}}</p>
   {{else if not .B.Snapshots}}
@@ -57,9 +74,13 @@
     {{end}}
   </div>
   {{end}}
-  <form style="margin-top:1rem" hx-post="/backups/now" hx-target="#backups-content" hx-swap="innerHTML">
+  <p class="muted" style="margin-top:1rem">
+    Esto guarda solo lo que CAMBIÓ desde el último backup (deduplicado) — por eso un backup
+    manual extra no pesa casi nada si nada cambió.
+  </p>
+  <form hx-post="/backups/now" hx-target="#backups-content" hx-swap="innerHTML">
     <button class="btn" type="submit" {{if .Running}}disabled{{end}}>
-      {{if .Running}}Backup en progreso…{{else}}Hacer backup ahora{{end}}
+      {{if .Running}}Backup en progreso…{{else}}Hacer backup ahora{{end}}<span class="spinner"></span>
     </button>
   </form>
 </div>

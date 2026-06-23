@@ -105,6 +105,16 @@
   .badge { font-size:0.78rem; padding:0.2rem 0.6rem; border-radius:6px; }
   .badge.on { background:#0f3a24; color:#86efac; }
   .badge.off { background:#3a1f1f; color:#fca5a5; }
+
+  /* --- spinner genérico: poné <span class="spinner"></span> dentro de
+     cualquier botón/form con hx-post — htmx le agrega 'htmx-request' al
+     elemento mientras espera la respuesta, así que se muestra solo. --- */
+  .spinner { display:none; width:13px; height:13px; margin-left:0.5rem;
+             border:2px solid rgba(255,255,255,0.35); border-top-color:#fff;
+             border-radius:50%; vertical-align:-2px;
+             animation: warden-spin 0.6s linear infinite; }
+  .htmx-request .spinner, .htmx-request.spinner { display:inline-block; }
+  @keyframes warden-spin { to { transform: rotate(360deg); } }
 </style>
 {{end}}
 

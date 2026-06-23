@@ -46,6 +46,7 @@ type BackupsView struct {
 	TimerActive    bool
 	TimerNext      string // próxima ejecución, legible
 	TimerLast      string // última ejecución que el timer disparó, legible
+	HasBackupDisk  bool   // ya hay un disco con el marcador de warden — activar el timer no preguntará nada
 }
 
 // systemDiskName replica bin/warden:system_disk() — el disco que contiene '/'.
@@ -213,6 +214,12 @@ func humanAgo(t time.Time) string {
 func (s *server) gatherBackupsView() BackupsView {
 	v := BackupsView{Disks: listDisks(), BackupMount: backupMount()}
 	v.TimerInstalled, v.TimerActive, v.TimerNext, v.TimerLast = timerInfo()
+	for _, d := range v.Disks {
+		if d.Role == "BACKUP" {
+			v.HasBackupDisk = true
+			break
+		}
+	}
 
 	repo := v.BackupMount + "/restic-repo"
 	passfile := resticPassFile()
@@ -296,4 +303,18 @@ func (s *server) handleBackupNow(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView(), "Running": true})
+}
+
+// Activar el timer es rápido y seguro de ejecutar sin TTY SOLO si ya hay un
+// disco de backup detectado (si no, 'warden register' pregunta cuál usar —
+// el botón ni aparece en ese caso, ver gatherBackupsView/HasBackupDisk).
+func (s *server) handleRegisterTimer(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+	out, err := s.runWarden(ctx, "register")
+	data := map[string]any{"B": s.gatherBackupsView()}
+	if err != nil {
+		data["Err"] = "Falló: " + out
+	}
+	render(w, "backups_fragment.html", data)
 }

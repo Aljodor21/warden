@@ -124,6 +124,7 @@ func main() {
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
+	mux.HandleFunc("POST /backups/register-timer", s.requireAdmin("backups_fragment.html", withBackups, s.handleRegisterTimer))
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	srv := &http.Server{

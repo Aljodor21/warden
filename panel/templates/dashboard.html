@@ -11,8 +11,8 @@
 </head>
 <body>
   {{template "nav" .}}
+  <p class="muted" style="margin-top:-1rem; margin-bottom:1rem">Esta página se actualiza sola cada 3 segundos — no hace falta recargarla.</p>
 
-  <!-- HTMX trae el estado del sistema y lo refresca solo cada 3s -->
   <div hx-get="/partials/health" hx-trigger="load, every 3s" hx-swap="innerHTML">
     <p class="muted">Cargando estado del sistema…</p>
   </div>
