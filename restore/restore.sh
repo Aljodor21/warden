@@ -107,8 +107,15 @@ while IFS= read -r tag; do
   [ -n "$tag" ] || continue
   case "$tag" in
     immich|nas)
+      # 'warden backup' guarda TODAS las rutas de archivos juntas bajo el tag
+      # 'files' (un solo snapshot) — así que para restaurar un componente
+      # puntual filtramos por su ruta real dentro de ese snapshot, no por tag.
+      catalog_load "$tag" || die "No conozco el componente '$tag' en el catálogo"
       log "Restaurando '$tag' bajo $STAGE …"
-      run "restic restore latest --tag '$tag' --target /restore"
+      for p in "${COMP_PATHS[@]:-}"; do
+        [ -n "$p" ] || continue
+        run "restic restore latest --tag files --include '$p' --target /restore"
+      done
       ok "'$tag' restaurado en $STAGE (movelo a su ubicación final)"
       ;;
     db)
