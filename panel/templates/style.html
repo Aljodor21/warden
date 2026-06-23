@@ -1,4 +1,5 @@
 {{define "_style"}}
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root { color-scheme: dark; }
   body { font-family: -apple-system, system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
@@ -17,7 +18,8 @@
          border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-family: inherit; }
   textarea { font-family: monospace; min-height: 4rem; }
   pre { background: #0f172a; padding: 1rem; border-radius: 10px; overflow-x: auto; }
-  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
+          flex-wrap: wrap; gap: 0.8rem; }
 
   /* --- navegación --- */
   .nav { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -109,8 +111,9 @@
 
   /* --- página Sistema --- */
   .statusrow { display:flex; align-items:center; gap:0.6rem; padding:0.7rem 0;
-               border-bottom:1px solid #0f172a; }
+               border-bottom:1px solid #0f172a; flex-wrap: wrap; }
   .statusrow:last-child { border-bottom:none; }
+  .statusrow > div:first-child { flex: 1; min-width: 200px; }
   .statusrow .label { font-weight:600; }
   .statusrow .desc { opacity:0.55; font-size:0.82rem; margin-top:0.15rem; }
   .statusrow .acts { margin-left:auto; }
@@ -127,6 +130,21 @@
              animation: warden-spin 0.6s linear infinite; }
   .htmx-request .spinner, .htmx-request.spinner { display:inline-block; }
   @keyframes warden-spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    body { padding: 1rem; }
+    h1 { font-size: 1.3rem; }
+    .nav { gap: 0.4rem; margin-bottom: 1rem; }
+    .nav a { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+    .panel, .card { padding: 1rem; }
+    .statusrow .acts { margin-left: 0; width: 100%; }
+    .statusrow .acts form, .statusrow .acts .btn { width: 100%; }
+    .inline-form { flex-direction: column; }
+    .inline-form input { width: 100%; min-width: 0; }
+    input, textarea, select { max-width: 100%; }
+    .techrow { gap: 1.1rem; justify-content: space-between; }
+    .techitem { width: 64px; }
+  }
 </style>
 {{end}}
 
