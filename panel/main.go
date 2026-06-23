@@ -104,8 +104,11 @@ func main() {
 	mux.HandleFunc("GET /catalog", s.handleList)
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
-	mux.HandleFunc("GET /new", s.handleEditForm)
-	mux.HandleFunc("POST /new", s.handleEditSave)
+	mux.HandleFunc("GET /new", s.handleNewChoice)
+	mux.HandleFunc("GET /new/install", s.handleEditForm)
+	mux.HandleFunc("POST /new/install", s.handleEditSave)
+	mux.HandleFunc("GET /new/deploy", s.handleNewDeployForm)
+	mux.HandleFunc("POST /new/deploy", s.handleNewDeploySave)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	noExtra := func() map[string]any { return map[string]any{} }
@@ -220,6 +223,53 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 	render(w, "list.html", map[string]any{
 		"Installed": installed, "Deployed": deployed,
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
+	})
+}
+
+// El formulario de "nueva app" original mezclaba dos casos de uso muy
+// distintos (instalar una app genérica de warden vs conectar un repo
+// propio para CI/CD) en un solo formulario de 16 campos — confuso, sin
+// contexto de dónde sacar cada dato. Se separa en dos caminos: uno corto
+// y explicado para CI/CD (el caso más común), uno completo para el resto.
+func (s *server) handleNewChoice(w http.ResponseWriter, r *http.Request) {
+	render(w, "new_choice.html", map[string]any{"Page": "catalog", "AdminUnlocked": s.isAdmin(r)})
+}
+
+func (s *server) handleNewDeployForm(w http.ResponseWriter, r *http.Request) {
+	render(w, "new_deploy.html", map[string]any{"Page": "catalog", "AdminUnlocked": s.isAdmin(r)})
+}
+
+func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	tag := strings.TrimSpace(r.FormValue("tag"))
+	install := strings.TrimSpace(r.FormValue("install"))
+	if tag == "" || strings.ContainsAny(tag, "/. \t") {
+		http.Error(w, "el tag es obligatorio y no puede tener espacios, puntos ni barras", http.StatusBadRequest)
+		return
+	}
+	container := strings.TrimSpace(r.FormValue("container"))
+	if container == "" {
+		container = tag
+	}
+	c := &Component{
+		Tag:       tag,
+		Name:      r.FormValue("name"),
+		Kind:      "none", // el código vive en su repo; si tiene datos propios, se edita después con más opciones
+		Install:   install,
+		Container: container,
+		CFHost:    r.FormValue("cfhost"),
+		CFPort:    r.FormValue("cfport"),
+		Note:      "Desplegada vía CI/CD — agregada desde el panel.",
+	}
+	if err := writeComponentFile(s.siteCatalogDir+"/"+tag+".component", c); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	render(w, "new_deploy_done.html", map[string]any{
+		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "Name": c.Name, "Install": c.Install,
 	})
 }
 

@@ -1,0 +1,28 @@
+{{define "new_choice.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — nueva app</title>{{template "_style"}}</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>¿Qué querés agregar?</h1>
+    <a class="btn secondary" href="/catalog">&larr; Volver</a>
+  </div>
+
+  <div class="grid">
+    <a href="/new/deploy" class="panel" style="text-decoration:none; color:inherit; display:block">
+      <h2>Tengo un proyecto propio en GitHub</h2>
+      <p>Tu app vive en su propio repo (Node, .NET, lo que sea). El runner de CI/CD la construye y la levanta
+        cada vez que hacés push — warden solo la publica y la respalda.</p>
+      <p class="muted">Lo más común. Formulario corto, con ayuda paso a paso.</p>
+    </a>
+    <a href="/new/install" class="panel" style="text-decoration:none; color:inherit; display:block">
+      <h2>Describir una app que ya instalé a mano</h2>
+      <p>Para casos avanzados: una app con su propio docker-compose dentro de warden, con base de datos
+        propia que querés que warden respalde.</p>
+      <p class="muted">Formulario completo, más campos.</p>
+    </a>
+  </div>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,55 @@
+{{define "new_deploy_done.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — próximos pasos</title>{{template "_style"}}</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>'{{.Name}}' guardada en el catálogo</h1>
+    <a class="btn secondary" href="/catalog">&larr; Ir al catálogo</a>
+  </div>
+
+  <p class="muted">Esto solo describió tu app — todavía faltan 3 pasos en GitHub para que el despliegue
+    automático funcione de verdad. Hacelos en orden.</p>
+
+  <div class="panel">
+    <h2>1. Agregar el workflow al repo de tu app</h2>
+    <p>En GitHub, abrí tu repo (<code>{{.Install}}</code>) → botón "Add file" → "Create new file" →
+      nombre del archivo: <code>.github/workflows/deploy.yml</code> → pegá esto → "Commit new file":</p>
+    <pre>name: deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, warden]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir y levantar
+        run: |
+          docker compose build
+          docker compose up -d
+
+      - name: Publicar en Cloudflare
+        run: sudo /usr/local/bin/warden publish</pre>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <h2>2. Registrar el runner (una sola vez por repo)</h2>
+    <p>En GitHub: tu repo → Settings → Actions → Runners → "New self-hosted runner" → Linux.
+      Te va a mostrar un token (después de <code>--token</code>) — copialo.</p>
+    <p>Por consola, en este server:</p>
+    <pre>sudo warden runner {{.Install}} TU_TOKEN_AQUI</pre>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <h2>3. Hacer push</h2>
+    <p>Cualquier <code>git push</code> a la rama <code>main</code> de ese repo va a disparar el despliegue
+      solo, de ahora en adelante. La app va a aparecer en el Dashboard y el Catálogo cuando termine.</p>
+  </div>
+</body>
+</html>
+{{end}}
