@@ -57,6 +57,14 @@ warden_publish() {
   run "systemctl restart cloudflared"
   ok "Publicado desde el catálogo y cloudflared recargado."
 
+  # Cada deploy puede agregar una app nueva al catálogo (site/catalog) — que
+  # aparezca SOLA en el Homepage, sin tener que regenerarlo a mano.
+  if command -v warden_homepage_config >/dev/null 2>&1 && docker ps --format '{{.Names}}' | grep -qx homepage; then
+    warden_homepage_config
+    run "docker restart homepage >/dev/null 2>&1 || true"
+    ok "Homepage actualizado con la app recién publicada."
+  fi
+
   # Las credenciales del túnel acaban de tocarse — actualizamos solos el
   # respaldo cifrado, si ya existe la llave (si no, es un paso manual de
   # una sola vez: 'warden secrets init'). No rompe nada si falta.
