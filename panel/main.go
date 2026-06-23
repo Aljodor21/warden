@@ -75,6 +75,9 @@ type server struct {
 
 	// Estado de 'warden runner' en segundo plano (descarga + registro).
 	runnerReg bgProcess
+
+	// Estado de 'warden restore' en segundo plano.
+	restoreProc bgProcess
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
@@ -124,6 +127,8 @@ func main() {
 	mux.HandleFunc("POST /new/deploy/check-runner", s.handleCheckRunner)
 	mux.HandleFunc("POST /runner/register", s.requireAdmin("runner_register_log.html", noExtra, s.handleRunnerRegisterStart))
 	mux.HandleFunc("GET /runner/register-log", s.handleRunnerRegisterPoll)
+	mux.HandleFunc("POST /backups/restore", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreStart))
+	mux.HandleFunc("GET /backups/restore-log", s.handleRestorePoll)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	mux.HandleFunc("GET /nas", s.handleNAS)

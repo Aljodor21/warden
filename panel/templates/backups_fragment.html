@@ -84,4 +84,20 @@
     </button>
   </form>
 </div>
+
+{{if .B.HasBackupDisk}}
+<div class="panel" style="margin-top:1rem">
+  <h2>Restaurar</h2>
+  <p class="muted">Mira QUÉ hay realmente en el backup (no una lista fija): si encuentra datos de una
+    app que no está instalada, la instala sola con su receta del catálogo antes de restaurarle los
+    datos — sin preguntar, si hay un backup de algo es porque hay que restaurarlo. Las apps de CI/CD
+    (su propio repo) no se pueden instalar solas, quedan avisadas para hacerlo después. Al terminar,
+    deja este mismo disco anotado para que el backup automático siga usándolo.</p>
+  <form hx-post="/backups/restore" hx-target="#restore-result" hx-swap="innerHTML"
+        onsubmit="return confirm('¿Restaurar ahora? Puede instalar apps que falten y detener brevemente las afectadas mientras carga sus datos.')">
+    <button class="btn" type="submit">Restaurar ahora<span class="spinner"></span></button>
+  </form>
+  <div id="restore-result" style="margin-top:0.8rem"></div>
+</div>
+{{end}}
 {{end}}

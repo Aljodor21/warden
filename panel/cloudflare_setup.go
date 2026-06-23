@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -11,7 +12,8 @@ import (
 // bgProcess es un proceso en segundo plano cuya salida se puede mostrar EN
 // VIVO con polling (HTMX hx-trigger="every 2s") — el patrón se reutiliza
 // para cualquier comando lento del panel (cloudflare-init, registrar un
-// runner...) sin bloquear el WriteTimeout del servidor HTTP.
+// runner, restaurar un backup...) sin bloquear el WriteTimeout del servidor
+// HTTP.
 type bgProcess struct {
 	mu      sync.Mutex
 	running bool
@@ -19,10 +21,18 @@ type bgProcess struct {
 	done    bool
 }
 
+// ansiRe quita los códigos de color de lib/ui.sh (log/warn/ok/die) — sin
+// esto, el navegador los muestra como caracteres de control basura dentro
+// del <pre>, en vez de interpretarlos como color (eso solo pasa en una
+// terminal real).
+var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
 func (b *bgProcess) Write(p []byte) (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.log.Write(p)
+	clean := ansiRe.ReplaceAll(p, nil)
+	b.log.Write(clean)
+	return len(p), nil
 }
 
 func (b *bgProcess) snapshot() (string, bool, bool) {

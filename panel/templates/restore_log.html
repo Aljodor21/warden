@@ -1,0 +1,13 @@
+{{define "restore_log.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+<div id="restore-box" {{if .Running}}hx-get="/backups/restore-log" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if .Running}}
+  <p class="muted">Restaurando — instala lo que falte, restaura archivos y BD, y deja el disco
+    registrado para el backup automático. Puede tardar varios minutos.</p>
+  {{else if .Done}}
+  <div class="ok-msg">Terminó. Revisá el detalle abajo — cualquier app de CI/CD o dato sin receta
+    conocida queda avisado, no se inventa nada.</div>
+  {{end}}
+  {{if .Log}}<pre style="max-height:320px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+</div>
+{{end}}
