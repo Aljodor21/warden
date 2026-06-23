@@ -7,13 +7,14 @@
 # Borra: contenedores/datos/config de warden, la llave age, el túnel de
 # Cloudflare (de tu cuenta, no solo local), la conexión de Tailscale, las
 # apps desplegadas vía CI/CD (su contenedor, usando el repo que el runner
-# ya tenía clonado) + el runner mismo, y resetea el firewall (ufw) a
-# desactivado/sin reglas. NO queda nada de lo que warden configuró.
+# ya tenía clonado) + el runner mismo, el firewall (ufw vuelve a
+# desactivado), Y los paquetes que warden instaló (Docker, Cockpit, avahi,
+# zsh, age, cloudflared, tailscale, el compilador de Go) — el sistema
+# queda como antes de correr bootstrap.sh por primera vez, no solo sin la
+# configuración de warden.
 #
-# NO toca nunca: el disco de backup externo, ni los paquetes del sistema
-# (Docker, avahi, zsh, cloudflared, tailscale — los binarios se quedan
-# instalados, solo se borra SU CONFIGURACIÓN/ESTADO), ni tu site/, ni el
-# repo de GitHub de tus apps de CI/CD (solo lo que vive en este server).
+# NO toca nunca: el disco de backup externo, tu site/, ni el repo de
+# GitHub de tus apps de CI/CD (solo lo que vive en este server).
 
 _reset_down() {  # <archivo compose> [override] [envfile]
   local compose="$1" override="${2:-}" envfile="${3:-}"
@@ -34,7 +35,8 @@ warden_reset() {
   echo "  - La conexión de Tailscale (este server se desconecta de tu tailnet)"
   echo "  - Las apps desplegadas vía CI/CD (sus contenedores en este server) y el runner registrado"
   echo "  - El firewall (ufw vuelve a desactivado, sin reglas)"
-  echo "No toca: el disco de backup externo, los paquetes del sistema, ni el repo de GitHub de tus apps."
+  echo "  - Los paquetes que warden instaló (Docker, Cockpit, avahi, zsh, age, cloudflared, tailscale, Go)"
+  echo "No toca: el disco de backup externo, tu site/, ni el repo de GitHub de tus apps."
   echo
 
   if [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
@@ -101,6 +103,21 @@ warden_reset() {
     log "Reseteando firewall (ufw queda desactivado, sin reglas)"
     run "ufw --force reset >/dev/null 2>&1 || true"
   fi
+
+  log "Desinstalando los paquetes que warden instaló (Docker, Cockpit, cloudflared, tailscale, etc.) — el sistema queda como antes de instalar warden, no solo sin su configuración"
+  case "${DISTRO:-unknown}" in
+    debian)
+      run "apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin cockpit cockpit-bridge avahi-daemon ufw zsh age cloudflared tailscale golang-go 2>/dev/null || true"
+      run "apt-get autoremove -y 2>/dev/null || true"
+      run "rm -rf /var/lib/docker /var/lib/containerd"
+      run "rm -f /etc/apt/sources.list.d/tailscale.list"
+      ;;
+    arch)
+      run "pacman -Rns --noconfirm docker docker-compose cockpit avahi ufw zsh age cloudflared tailscale go 2>/dev/null || true"
+      run "rm -rf /var/lib/docker"
+      ;;
+    *) warn "Distro no reconocida — los paquetes quedan instalados, desinstalalos a mano si querés" ;;
+  esac
 
   if [ -f /etc/systemd/system/warden-panel.service ]; then
     log "Borrando el panel web"
