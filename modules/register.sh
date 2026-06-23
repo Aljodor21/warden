@@ -16,7 +16,7 @@ warden_timer_install() {
 # te deja elegir uno y lo prepara (formatea+monta+marca) sin pasos manuales.
 _register_autoprep() {
   local mp="$1"
-  local sysd; sysd="$(lsblk -no PKNAME "$(findmnt -no SOURCE /)" 2>/dev/null | head -n1)"
+  local sysd; sysd="$(system_disk)"
   local opts=() name size model
   while read -r name size model; do
     [ "${name##*/}" = "$sysd" ] && continue

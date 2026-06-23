@@ -20,7 +20,7 @@ warden_init_disk() {
   [ -n "$dev" ] || die "Uso: warden init-disk /dev/vdb"
   [ -b "$dev" ] || die "$dev no es un disco válido (mirá 'lsblk')"
 
-  local sysd; sysd="$(lsblk -no PKNAME "$(findmnt -no SOURCE /)" 2>/dev/null | head -n1)"
+  local sysd; sysd="$(system_disk)"
   [ "${dev##*/}" != "$sysd" ] || die "$dev es el disco del sistema — no lo toco."
 
   echo "Esto va a BORRAR todo en $dev, formatearlo ext4 y montarlo en $mount."
