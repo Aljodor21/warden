@@ -32,17 +32,31 @@
   .panel { background: #1e293b; border-radius: 16px; padding: 1.25rem 1.4rem; }
   .panel h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
               opacity: 0.55; margin: 0 0 1rem; font-weight: 600; }
-  .panel h2 svg { width:16px; height:16px; vertical-align:-3px; margin-right:0.4rem; opacity:0.7; }
   .metric { font-size: 2.2rem; font-weight: 700; line-height: 1; }
   .metric small { font-size: 0.9rem; font-weight: 400; opacity: 0.6; }
   .muted { opacity: 0.55; font-size: 0.85rem; }
   .row { display: flex; justify-content: space-between; align-items: baseline; margin: 0.5rem 0 0.3rem; }
-  .bar { background: #0f172a; border-radius: 8px; height: 12px; overflow: hidden; }
-  .bar > span { display: block; height: 100%; border-radius: 8px; width: 0;
-                transition: width 0.5s ease, background 0.3s; background: #22c55e; }
-  .bar > span.lvl-ok { background: linear-gradient(90deg,#16a34a,#22c55e); }
-  .bar > span.lvl-warn { background: linear-gradient(90deg,#ea580c,#f97316); }
-  .bar > span.lvl-crit { background: linear-gradient(90deg,#dc2626,#ef4444); }
+  .bar { background: #0f172a; border-radius: 6px; height: 8px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; width: 0; transition: width 0.5s ease, background 0.3s; }
+  .bar > span.lvl-ok { background: #38bdf8; }
+  .bar > span.lvl-warn { background: #f59e0b; }
+  .bar > span.lvl-crit { background: #ef4444; }
+
+  /* --- apps (avatares tipográficos, no íconos genéricos) --- */
+  .appgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.6rem; }
+  .appcard { display: flex; align-items: center; gap: 0.6rem; background: #0f172a;
+             border-radius: 10px; padding: 0.7rem 0.8rem; text-decoration: none; color: inherit; }
+  .appcard:hover { background: #16213a; }
+  .appcard-nolink { cursor: default; }
+  .appcard-nolink:hover { background: #0f172a; }
+  .avatar { width: 32px; height: 32px; border-radius: 8px; background: #f97316; color: #0f172a;
+            display: flex; align-items: center; justify-content: center; font-weight: 700;
+            font-size: 0.95rem; flex-shrink: 0; }
+  .appname { font-size: 0.92rem; font-weight: 500; flex: 1;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  details.panel summary { cursor: pointer; font-size: 0.8rem; text-transform: uppercase;
+                           letter-spacing: 0.05em; opacity: 0.55; font-weight: 600; }
+  details.panel[open] summary { margin-bottom: 0.3rem; }
   .dash-head { display:flex; align-items:center; gap:0.8rem; margin-bottom:1.2rem; }
   .dash-head .metric { font-size:1.6rem; }
   .net { display:flex; gap:2rem; }

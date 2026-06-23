@@ -167,7 +167,7 @@ func (s *server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 func (s *server) handleHealthPartial(w http.ResponseWriter, r *http.Request) {
 	h := gatherHealth()
 	down, up := s.netRates(h)
-	render(w, "health_fragment.html", buildHealthView(h, down, up))
+	render(w, "health_fragment.html", s.buildHealthView(h, down, up))
 }
 
 func (s *server) handleList(w http.ResponseWriter, r *http.Request) {

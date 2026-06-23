@@ -214,18 +214,21 @@ type Gauge struct {
 }
 
 type HealthView struct {
-	Hostname   string
-	OS         string
-	Uptime     string
-	Cores      int
-	CPU        Gauge
-	RAM        Gauge
-	Disks      []Gauge
-	DownRate   string
-	UpRate     string
-	Containers []Container
-	UpCount    int
-	TotalCount int
+	Hostname    string
+	OS          string
+	Uptime      string
+	Cores       int
+	CPU         Gauge
+	RAM         Gauge
+	Disks       []Gauge
+	DownRate    string
+	UpRate      string
+	Apps        []AppCard   // apps reales del catálogo, agrupadas, clickeables
+	Others      []Container // contenedores sueltos, sin app asociada
+	UpCount     int
+	TotalCount  int
+	OthersUp    int
+	OthersTotal int
 }
 
 func level(pct int) string {
@@ -275,12 +278,24 @@ func humanUptime(s int64) string {
 	}
 }
 
-func buildHealthView(h Health, downBps, upBps float64) HealthView {
+func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 	v := HealthView{
 		Hostname: h.Hostname, OS: h.OS, Cores: h.Cores,
 		Uptime:   humanUptime(h.UptimeSecs),
 		DownRate: humanRate(downBps), UpRate: humanRate(upBps),
-		Containers: h.Containers,
+	}
+	v.Apps, v.Others = s.buildAppView(h.Containers)
+	for _, a := range v.Apps {
+		v.TotalCount++
+		if a.Up {
+			v.UpCount++
+		}
+	}
+	for _, o := range v.Others {
+		v.OthersTotal++
+		if o.Up {
+			v.OthersUp++
+		}
 	}
 
 	// CPU: carga de 1 min relativa a la cantidad de núcleos.
@@ -309,11 +324,5 @@ func buildHealthView(h Health, downBps, upBps float64) HealthView {
 		})
 	}
 
-	v.TotalCount = len(h.Containers)
-	for _, c := range h.Containers {
-		if c.Up {
-			v.UpCount++
-		}
-	}
 	return v
 }
