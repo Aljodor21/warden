@@ -1,0 +1,17 @@
+# Docmost — wiki / documentación colaborativa (genérico). Arranca vacío en instalación limpia.
+COMP_NAME="Docmost (wiki/docs)"
+COMP_TAG="docmost"
+COMP_KIND="files+db"
+COMP_PATHS=( "${WARDEN_DATA:-/srv/warden}/docmost/storage" )
+COMP_EXCLUDES=()
+COMP_DB_TYPE="postgres"
+COMP_DB_CONTAINER="docmost-postgres"
+COMP_DB_NAME="docmost"
+COMP_DB_USER="docmost"
+COMP_INSTALL="stacks/docmost/docker-compose.yml"
+COMP_CONTAINER="docmost"
+COMP_SECRETS=( "DOCMOST_DB_PASSWORD" "DOCMOST_APP_SECRET" )
+COMP_ICON="docmost"
+COMP_CF_HOST=""
+COMP_CF_PORT="3000"
+COMP_NOTE="Genérico y reutilizable: cualquiera que instale warden obtiene un Docmost vacío y funcional. Tus datos reales van en site/."

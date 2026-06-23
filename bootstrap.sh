@@ -73,7 +73,7 @@ echo
 # --- Modo de instalación: preset (combo) o a la carta ---
 MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
   'básico — dashboard (Cockpit + Homepage) + NAS' \
-  'completo — todo lo probado: básico + Backrest + ntfy + Immich + Excalidraw' \
+  'completo — básico + Backrest + ntfy + Immich + Docmost + Excalidraw' \
   'a la carta — elegir manual, uno por uno')"
 
 case "$MODE" in

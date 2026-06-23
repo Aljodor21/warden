@@ -7,9 +7,9 @@ preset_items() {
     # básico: dashboard + NAS — un server liviano con almacenamiento compartido.
     basico)
       echo "mod:cockpit mod:homepage app:nas mod:dotfiles mod:motd mod:firewall" ;;
-    # completo: todo lo que está probado hasta ahora (básico + Backrest + ntfy + Immich + Excalidraw).
+    # completo: básico + apps (Backrest, ntfy, Immich, Docmost, Excalidraw).
     completo)
-      echo "mod:cockpit mod:homepage app:nas mod:backrest mod:ntfy app:immich app:excalidraw mod:dotfiles mod:motd mod:firewall" ;;
+      echo "mod:cockpit mod:homepage app:nas mod:backrest mod:ntfy app:immich app:docmost app:excalidraw mod:dotfiles mod:motd mod:firewall" ;;
     *) return 1 ;;
   esac
 }

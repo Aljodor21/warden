@@ -1,0 +1,52 @@
+# Docmost — wiki / documentación colaborativa (genérico, autoalojado).
+# Datos en ${WARDEN_DATA:-/srv/warden}/docmost — arranca VACÍO en una instalación limpia.
+# Versiones e imágenes según el compose oficial de docmost.
+name: docmost
+
+services:
+  docmost:
+    image: docmost/docmost:latest
+    container_name: docmost
+    restart: unless-stopped
+    ports:
+      - "${DOCMOST_PORT:-3000}:3000"
+    environment:
+      APP_URL: "${DOCMOST_APP_URL:-http://localhost:3000}"
+      APP_SECRET: ${DOCMOST_APP_SECRET:?warden debía generar este secreto automáticamente}
+      DATABASE_URL: "postgresql://docmost:${DOCMOST_DB_PASSWORD}@docmost-postgres:5432/docmost"
+      REDIS_URL: "redis://docmost-redis:6379"
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/docmost/storage:/app/data/storage"
+    depends_on:
+      docmost-postgres:
+        condition: service_healthy
+      docmost-redis:
+        condition: service_healthy
+
+  docmost-postgres:
+    image: postgres:18
+    container_name: docmost-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: docmost
+      POSTGRES_DB: docmost
+      POSTGRES_PASSWORD: ${DOCMOST_DB_PASSWORD:?warden debía generar este secreto automáticamente}
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/docmost/pgdata:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docmost -d docmost"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  docmost-redis:
+    image: redis:8
+    container_name: docmost-redis
+    restart: unless-stopped
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/docmost/redis:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5

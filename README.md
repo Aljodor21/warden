@@ -64,7 +64,7 @@ Al instalar, `bootstrap.sh` te pregunta el **modo**:
 | Preset | Instala |
 |---|---|
 | `básico` | Cockpit + Homepage + NAS + shell (zsh/p10k) + MOTD + firewall |
-| `completo` | `básico` + Backrest + ntfy + Immich (fotos) + Excalidraw |
+| `completo` | `básico` + Backrest + ntfy + Immich (fotos) + Docmost (wiki) + Excalidraw |
 | `a la carta` | elegís manualmente apps y módulos, uno por uno |
 
 Se definen en [`lib/presets.sh`](lib/presets.sh) — fáciles de editar o de sumar el tuyo.
