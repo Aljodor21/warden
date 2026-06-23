@@ -67,7 +67,7 @@ warden_restore_dbs() {
 }
 
 # --- 1. Encontrar el disco de backup ---
-sysdisk="/dev/$(lsblk -no PKNAME "$(findmnt -no SOURCE /)" | head -n1)"
+sysdisk="/dev/$(system_disk)"
 bmount=""
 while read -r mp; do
   [ -n "$mp" ] && [ -f "$mp/$MARKER" ] && { bmount="$mp"; break; }
