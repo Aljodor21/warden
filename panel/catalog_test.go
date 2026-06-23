@@ -77,6 +77,22 @@ COMP_NAME="Click Counter"
 	}
 }
 
+// TestInlineCommentDoesNotBreakParsing reproduce el bug real reportado por
+// Al: excalidraw.component tiene `COMP_CONTAINER="excalidraw"   # comentario`
+// (un comentario después del valor, válido en bash) — el parser exigía que
+// la línea terminara justo en la comilla de cierre, así que el campo
+// quedaba vacío en silencio y el punto de estado salía siempre gris,
+// aunque el contenedor estuviera corriendo de verdad.
+func TestInlineCommentDoesNotBreakParsing(t *testing.T) {
+	c, err := parseComponentFile("../catalog/excalidraw.component")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Container != "excalidraw" {
+		t.Errorf("COMP_CONTAINER con comentario inline no se parseó: got %q, want %q", c.Container, "excalidraw")
+	}
+}
+
 // TestMergedCatalogSiteOverridesRepo: si el mismo tag existe en las dos
 // carpetas, site/catalog debe ganar (igual que en bash).
 func TestMergedCatalogSiteOverridesRepo(t *testing.T) {

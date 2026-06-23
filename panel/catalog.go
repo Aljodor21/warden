@@ -32,7 +32,10 @@ type Component struct {
 	Note        string
 }
 
-var scalarRe = regexp.MustCompile(`^(COMP_[A-Z_]+)="(.*)"$`)
+// Permite un comentario inline después del valor (válido en bash, ej.
+// COMP_CONTAINER="excalidraw"   # contenedor principal) — sin esto, esas
+// líneas no calzaban y el campo quedaba vacío en silencio.
+var scalarRe = regexp.MustCompile(`^(COMP_[A-Z_]+)="(.*)"\s*(#.*)?$`)
 var arrayStartRe = regexp.MustCompile(`^(COMP_[A-Z_]+)=\((.*)$`)
 var quotedItemRe = regexp.MustCompile(`"((?:[^"\\]|\\.)*)"`)
 
