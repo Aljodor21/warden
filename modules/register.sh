@@ -12,12 +12,36 @@ warden_timer_install() {
   ok "Timers activos: backup cada hora + verify nocturno"
 }
 
+# Si no hay disco de backup listo, lo detecta entre los discos disponibles,
+# te deja elegir uno y lo prepara (formatea+monta+marca) sin pasos manuales.
+_register_autoprep() {
+  local mp="$1"
+  local sysd; sysd="$(lsblk -no PKNAME "$(findmnt -no SOURCE /)" 2>/dev/null | head -n1)"
+  local opts=() name size model
+  while read -r name size model; do
+    [ "${name##*/}" = "$sysd" ] && continue
+    opts+=("${name} (${size} ${model:-?})")
+  done < <(lsblk -dpno NAME,SIZE,MODEL | awk '$1!=""')
+
+  [ "${#opts[@]}" -gt 0 ] || die "No veo ningún disco disponible además del del sistema. Conectá uno y reintentá."
+
+  log "No hay disco de backup preparado todavía. Discos disponibles:"
+  local chosen; chosen="$(ui_menu "¿Cuál disco querés usar para el backup?" "${opts[@]}")"
+  [ -n "$chosen" ] || die "Cancelado."
+  local dev="${chosen%% *}"
+
+  warden_init_disk "$dev"
+}
+
 # Fija el disco de backup en fstab (montaje por UUID) y activa la automatización.
 warden_register() {
   local mp="${WARDEN_BACKUP_MOUNT:-/mnt/warden-backup}" marker=".warden-backup.id" src uuid
   src="$(findmnt -no SOURCE --target "$mp" 2>/dev/null)"
-  { [ -n "$src" ] && [ -f "$mp/$marker" ]; } || \
-    die "No hay disco de backup montado en $mp. Si es un disco NUEVO: warden init-disk /dev/XXX"
+  if ! { [ -n "$src" ] && [ -f "$mp/$marker" ]; }; then
+    _register_autoprep "$mp"
+    src="$(findmnt -no SOURCE --target "$mp" 2>/dev/null)"
+  fi
+  { [ -n "$src" ] && [ -f "$mp/$marker" ]; } || die "El disco no quedó listo en $mp."
   uuid="$(blkid -s UUID -o value "$src")"
   [ -n "$uuid" ] || die "No pude leer el UUID de $src"
 

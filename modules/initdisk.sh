@@ -50,5 +50,5 @@ warden_init_disk() {
     warn "Guardá esa clave fuera de este server (warden secrets save) — sin ella no se puede restaurar."
   fi
 
-  ok "Disco listo en $mount. Seguí con: warden register"
+  ok "Disco listo en $mount."
 }
