@@ -1,7 +1,10 @@
 {{define "delete_need_token.html"}}
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><title>warden — eliminar '{{.Name}}'</title>{{template "_style"}}</head>
+<head>
+  <meta charset="utf-8"><title>warden — eliminar '{{.Name}}'</title>{{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+</head>
 <body>
   {{template "nav" .}}
   <div class="top">

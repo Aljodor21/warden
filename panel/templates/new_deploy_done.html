@@ -1,7 +1,10 @@
 {{define "new_deploy_done.html"}}
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><title>warden — próximos pasos</title>{{template "_style"}}</head>
+<head>
+  <meta charset="utf-8"><title>warden — próximos pasos</title>{{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+</head>
 <body>
   {{template "nav" .}}
   <div class="top">
