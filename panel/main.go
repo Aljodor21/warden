@@ -110,6 +110,7 @@ func main() {
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
 	mux.HandleFunc("POST /delete/{tag}", s.requireAdmin("err_inline.html", noExtra, s.handleDeleteApp))
+	mux.HandleFunc("POST /delete/{tag}/with-token", s.requireAdmin("err_inline.html", noExtra, s.handleDeleteAppWithToken))
 	mux.HandleFunc("GET /new", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/new/deploy", http.StatusSeeOther)
 	})
@@ -376,13 +377,15 @@ func (s *server) handlePublish(w http.ResponseWriter, r *http.Request) {
 	render(w, "publish.html", map[string]any{"Output": string(out), "Status": status})
 }
 
-// handleDeleteApp borra una app del catálogo. Solo se puede borrar lo que
-// VOS agregaste en site/catalog — las apps genéricas de warden (Immich,
-// NAS...) viven en el repo compartido, borrarlas localmente no haría nada
-// (reaparecerían en el próximo 'git pull'). Si tenía subdominio, regenera
-// el túnel de Cloudflare automáticamente (ya no la expone) — pero el
-// registro DNS (CNAME) en Cloudflare queda existiendo: 'cloudflared' solo
-// puede CREAR rutas por CLI, no borrarlas; eso requiere el dashboard web.
+// handleDeleteApp decide QUÉ hacer al pedir borrar una app. Solo se puede
+// borrar lo que VOS agregaste en site/catalog — las apps genéricas de
+// warden (Immich, NAS...) viven en el repo compartido, borrarlas
+// localmente no haría nada (reaparecerían en el próximo 'git pull').
+//
+// Si la app tiene subdominio y NO hay token de Cloudflare guardado, no
+// asume nada: se DETIENE acá y pide el token (con el link para generarlo),
+// dejando la opción de seguir sin él si no se quiere hacer ahora — recién
+// con eso resuelto sigue a finishDeleteApp.
 func (s *server) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	tag := r.PathValue("tag")
 	path := s.siteCatalogDir + "/" + tag + ".component"
@@ -391,6 +394,45 @@ func (s *server) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Esa app no está en tu site/catalog — no se puede borrar desde aquí (es una receta genérica de warden, compartida).", http.StatusForbidden)
 		return
 	}
+
+	skipToken := r.FormValue("skip_token") == "1"
+	if c.CFHost != "" && !cloudflareTokenExists() && !skipToken {
+		render(w, "delete_need_token.html", map[string]any{
+			"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
+			"Tag": tag, "Name": c.Name, "Host": c.CFHost,
+		})
+		return
+	}
+
+	s.finishDeleteApp(w, r, tag, path, c)
+}
+
+// handleDeleteAppWithToken: viene de la pantalla de "pedí el token" —
+// guarda el token (queda disponible para futuras veces, no es de un solo
+// uso) y CONTINÚA el borrado ya con todo resuelto.
+func (s *server) handleDeleteAppWithToken(w http.ResponseWriter, r *http.Request) {
+	tag := r.PathValue("tag")
+	token := strings.TrimSpace(r.FormValue("token"))
+	if token == "" {
+		http.Error(w, "El token no puede estar vacío.", http.StatusBadRequest)
+		return
+	}
+	if err := saveCloudflareToken(token); err != nil {
+		http.Error(w, "No pude guardar el token: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	path := s.siteCatalogDir + "/" + tag + ".component"
+	c, err := parseComponentFile(path)
+	if err != nil {
+		http.Error(w, "Esa app ya no está en el catálogo.", http.StatusNotFound)
+		return
+	}
+	s.finishDeleteApp(w, r, tag, path, c)
+}
+
+// finishDeleteApp hace el trabajo real: borra el archivo, regenera el
+// túnel si hacía falta, y borra el registro DNS si hay token disponible.
+func (s *server) finishDeleteApp(w http.ResponseWriter, r *http.Request, tag, path string, c *Component) {
 	if err := os.Remove(path); err != nil {
 		http.Error(w, "No pude borrar el archivo: "+err.Error(), http.StatusInternalServerError)
 		return

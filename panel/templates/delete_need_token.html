@@ -1,0 +1,33 @@
+{{define "delete_need_token.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — eliminar '{{.Name}}'</title>{{template "_style"}}</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>Eliminar '{{.Name}}'</h1>
+    <a class="btn secondary" href="/catalog">&larr; Cancelar</a>
+  </div>
+
+  <div class="panel">
+    <p>Esta app tiene el subdominio <strong>{{.Host}}</strong>. Para borrar también su registro DNS en
+      Cloudflare (y que no quede dando vueltas), pegá un API Token:</p>
+    <p class="muted">Generalo en
+      <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare → Mi perfil → API Tokens</a>
+      → "Create Custom Token" → permiso <strong>Zone · DNS · Edit</strong> para tu dominio. Queda guardado para
+      la próxima vez también.</p>
+
+    <form method="post" action="/delete/{{.Tag}}/with-token">
+      <input type="password" name="token" placeholder="Pegá el token aquí" required>
+      <p><button class="btn" type="submit">Guardar token y eliminar todo</button></p>
+    </form>
+
+    <p class="muted" style="margin-top:1.2rem">¿No querés hacerlo ahora?</p>
+    <form method="post" action="/delete/{{.Tag}}">
+      <input type="hidden" name="skip_token" value="1">
+      <button class="iconbtn danger" type="submit">Eliminar igual (el registro DNS queda en Cloudflare)</button>
+    </form>
+  </div>
+</body>
+</html>
+{{end}}
