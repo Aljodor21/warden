@@ -16,13 +16,16 @@ warden_backup() {
   [ -f "$passfile" ] || die "Falta la contraseña restic ($passfile)"
   mkdir -p "$dumps"
 
-  # --- Recorrer el catálogo: juntar rutas y dumpear BD ---
-  local file_paths=() tag p pass
+  # --- Recorrer el catálogo: juntar rutas (+exclusiones) y dumpear BD ---
+  local file_paths=() exclude_args=() tag p pass
   while IFS='|' read -r tag _ _ _; do
     [ -n "$tag" ] || continue
     catalog_load "$tag" || continue
     for p in "${COMP_PATHS[@]:-}"; do
       [ -n "$p" ] && [ -e "$p" ] && file_paths+=("$p")
+    done
+    for p in "${COMP_EXCLUDES[@]:-}"; do
+      [ -n "$p" ] && exclude_args+=(--exclude "$p")
     done
     if [ "${COMP_DB_TYPE:-}" = postgres ] && [ -n "${COMP_DB_CONTAINER:-}" ] \
        && docker ps --format '{{.Names}}' | grep -qx "$COMP_DB_CONTAINER"; then
@@ -49,11 +52,11 @@ warden_backup() {
   fi
 
   if [ "${#file_paths[@]}" -gt 0 ]; then
-    log "Backup de archivos (${#file_paths[@]} rutas)"
+    log "Backup de archivos (${#file_paths[@]} rutas${exclude_args:+, ${#exclude_args[@]} exclusiones})"
     if [ "$dry" = 1 ]; then
-      printf '   [dry-run] restic backup --tag files'; printf ' %q' "${file_paths[@]}"; echo
+      printf '   [dry-run] restic backup --tag files'; printf ' %q' "${exclude_args[@]}" "${file_paths[@]}"; echo
     else
-      "${base[@]}" "${vargs[@]}" restic/restic -r /repo backup --tag files "${file_paths[@]}"
+      "${base[@]}" "${vargs[@]}" restic/restic -r /repo backup --tag files "${exclude_args[@]}" "${file_paths[@]}"
     fi
   fi
 
