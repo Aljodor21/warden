@@ -295,6 +295,7 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 	}
 	render(w, "new_deploy_done.html", map[string]any{
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "Name": c.Name, "Install": c.Install,
+		"Tag": c.Tag, "Container": c.Container, "Port": c.CFPort,
 	})
 }
 
