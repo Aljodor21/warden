@@ -134,6 +134,7 @@ func main() {
 	mux.HandleFunc("POST /system/secrets-save", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsSave))
 	mux.HandleFunc("POST /system/cloudflare-init", s.requireAdmin("cloudflare_log.html", noExtra, s.handleCloudflareInitStart))
 	mux.HandleFunc("GET /system/cloudflare-log", s.handleCloudflareInitPoll)
+	mux.HandleFunc("POST /system/cloudflare-token", s.requireAdmin("system_fragment.html", withSys, s.handleSaveCloudflareToken))
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
@@ -397,16 +398,22 @@ func (s *server) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 
 	var publishOut string
 	var publishErr error
+	var dnsMsg string
+	var dnsErr error
 	if c.CFHost != "" {
 		ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
 		defer cancel()
 		publishOut, publishErr = s.runWarden(ctx, "publish")
+		if cloudflareTokenExists() {
+			dnsMsg, dnsErr = deleteDNSRecord(c.CFHost)
+		}
 	}
 
 	render(w, "delete_done.html", map[string]any{
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
 		"Name": c.Name, "HadHost": c.CFHost != "", "Host": c.CFHost,
 		"PublishOutput": publishOut, "PublishErr": publishErr,
+		"DNSAttempted": cloudflareTokenExists(), "DNSMsg": dnsMsg, "DNSErr": dnsErr,
 	})
 }
 

@@ -47,6 +47,30 @@
 
 <div class="statusrow">
   <div>
+    <div class="label">Borrar subdominios automáticamente</div>
+    <div class="desc">
+      También opcional. Sin esto, al eliminar una app con subdominio el registro DNS queda en tu cuenta de
+      Cloudflare (inofensivo, solo deja de responder) y hay que borrarlo a mano si querés. Con un API Token
+      guardado acá, el botón "Eliminar aplicación" lo borra todo solo, sin que tengas que volver a Cloudflare.
+      {{if .Sys.CloudflareTokenSet}}Token guardado.
+      {{else}}Generalo en
+        <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare → Mi perfil → API Tokens</a>
+        → "Create Custom Token" → permiso <strong>Zone · DNS · Edit</strong> para tu dominio.
+      {{end}}
+    </div>
+  </div>
+  {{if .Sys.CloudflareTokenSet}}
+  <span class="badge on">listo</span>
+  {{else}}
+  <form class="acts" hx-post="/system/cloudflare-token" hx-target="#system-status" hx-swap="innerHTML" style="display:flex; gap:0.4rem">
+    <input type="password" name="token" placeholder="Pegá el token aquí" style="max-width:220px">
+    <button class="btn" type="submit">Guardar<span class="spinner"></span></button>
+  </form>
+  {{end}}
+</div>
+
+<div class="statusrow">
+  <div>
     <div class="label">Llave de cifrado (age)</div>
     <div class="desc">
       {{if .Sys.AgeKeyExists}}Generada — copiala FUERA de este server (USB, gestor de contraseñas). Sin ella,

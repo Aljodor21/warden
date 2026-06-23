@@ -16,11 +16,12 @@ type SystemView struct {
 	TailscaleConnected bool
 	TailscaleIP        string
 
-	AgeKeyExists  bool
-	SecretsExist  bool // hay al menos un *.tar.age guardado
-	SecretsCount  int
-	CloudflareSet bool   // /etc/cloudflared/config.yml existe (hay túnel)
-	CloudflareID  string // ID del túnel configurado, si hay uno
+	AgeKeyExists       bool
+	SecretsExist       bool // hay al menos un *.tar.age guardado
+	SecretsCount       int
+	CloudflareSet      bool   // /etc/cloudflared/config.yml existe (hay túnel)
+	CloudflareID       string // ID del túnel configurado, si hay uno
+	CloudflareTokenSet bool   // hay un API Token guardado (para borrar registros DNS)
 }
 
 func (s *server) gatherSystemView() SystemView {
@@ -43,6 +44,7 @@ func (s *server) gatherSystemView() SystemView {
 	}
 	v.CloudflareSet = cloudflareConfigured()
 	v.CloudflareID = cloudflareTunnelID()
+	v.CloudflareTokenSet = cloudflareTokenExists()
 	if entries, err := os.ReadDir(s.siteSecretsDir()); err == nil {
 		for _, e := range entries {
 			if strings.HasSuffix(e.Name(), ".tar.age") {

@@ -17,10 +17,18 @@
     {{else}}
     <p>Se regeneró el túnel SIN esta app — ya no se proxya <strong>{{.Host}}</strong>.</p>
     {{end}}
-    <p class="muted">Importante: el registro DNS (CNAME) de <strong>{{.Host}}</strong> sigue existiendo en tu
-      cuenta de Cloudflare — 'cloudflared' solo puede CREAR esos registros, no borrarlos por consola. No es un
-      problema (sin el túnel apuntándolo, ese subdominio simplemente no responde), pero si querés liberarlo del
-      todo, borralo a mano en el dashboard de Cloudflare → DNS.</p>
+    {{if .DNSAttempted}}
+      {{if .DNSErr}}
+      <div class="err">No pude borrar el registro DNS: {{.DNSErr}}</div>
+      {{else}}
+      <div class="ok-msg">{{.DNSMsg}}</div>
+      {{end}}
+    {{else}}
+    <p class="muted">El registro DNS (CNAME) de <strong>{{.Host}}</strong> sigue existiendo en tu cuenta de
+      Cloudflare (no guardaste un API Token en Sistema para borrarlo automáticamente). No es un problema —
+      sin el túnel apuntándolo, ese subdominio simplemente no responde — pero podés configurarlo en
+      <a href="/system">Sistema</a> para que esto se borre solo la próxima vez.</p>
+    {{end}}
     {{if .PublishOutput}}<pre style="margin-top:0.8rem">{{.PublishOutput}}</pre>{{end}}
   </div>
   {{end}}
