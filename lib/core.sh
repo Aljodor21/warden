@@ -32,18 +32,13 @@ backup_file() {
 # cambiar). Requiere avahi-daemon (lo instala modules/base.sh).
 warden_host() { printf '%s.local' "$(hostname)"; }
 
-# Disco físico que contiene la raíz '/' (p.ej. "vda"), subiendo por TODA la
-# cadena de padres — no un solo nivel. Necesario porque con LVM (común en
-# instalaciones de Ubuntu Server) la raíz vive sobre una capa extra
-# (partición -> volumen lógico), y mirar un solo PKNAME da la partición, no
-# el disco. Sin esto, el disco del sistema podía no reconocerse como tal.
+# Disco físico que contiene la raíz '/' (p.ej. "vda"). Usa lsblk en modo
+# "inverso" (-s), que lista TODA la cadena de dependencias hasta el disco
+# físico de una sola vez. Necesario porque con LVM (común en Ubuntu Server)
+# la raíz vive sobre capas extra (partición -> volumen lógico) y el campo
+# PKNAME de lsblk no resuelve bien el salto a través de /dev/mapper.
 system_disk() {
-  local cur pk
-  cur="$(findmnt -no SOURCE / 2>/dev/null)"
-  while [ -n "$cur" ]; do
-    pk="$(lsblk -no PKNAME "$cur" 2>/dev/null | head -n1)"
-    [ -n "$pk" ] || break
-    cur="/dev/$pk"
-  done
-  echo "${cur##*/}"
+  local src
+  src="$(findmnt -no SOURCE / 2>/dev/null)"
+  lsblk -snpo NAME "$src" 2>/dev/null | tail -n1 | xargs -r basename
 }
