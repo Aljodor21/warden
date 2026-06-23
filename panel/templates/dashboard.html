@@ -1,0 +1,21 @@
+{{define "dashboard.html"}}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>warden — dashboard</title>
+  {{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+  <script defer src="/static/alpine.min.js"></script>
+</head>
+<body>
+  {{template "nav" .}}
+
+  <!-- HTMX trae el estado del sistema y lo refresca solo cada 3s -->
+  <div hx-get="/partials/health" hx-trigger="load, every 3s" hx-swap="innerHTML">
+    <p class="muted">Cargando estado del sistema…</p>
+  </div>
+</body>
+</html>
+{{end}}

@@ -1,12 +1,12 @@
-// warden-panel — panel web mínimo para gestionar site/catalog/*.component
-// sin consola. Cero dependencias externas (solo librería estándar de Go),
-// un solo binario, pensado para correr en máquinas con poca RAM.
+// warden-panel — panel web mínimo para gestionar warden sin consola.
+// Stack: Go + html/template + HTMX + Alpine + CSS nativo (todo embebido en el
+// binario; cero Node, cero build, cero dependencia de internet en runtime).
 //
 // Seguridad:
-//   - HTTP Basic Auth contra un hash SHA-256 guardado en disco (no texto plano).
-//   - Pensado para escuchar SOLO en LAN/Tailscale (lo impone el firewall, no esta app).
-//   - Timeouts explícitos en el servidor (Go no los pone por defecto).
-//   - html/template escapa todo por defecto — sin riesgo de XSS por datos del catálogo.
+//   - HTTP Basic Auth contra un hash SHA-256 en disco (no texto plano).
+//   - Pensado para escuchar SOLO en LAN/Tailscale (lo impone el firewall).
+//   - Timeouts explícitos (Go no los pone por defecto).
+//   - html/template escapa todo por defecto.
 package main
 
 import (
@@ -22,22 +22,32 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
 //go:embed templates/*.html
 var templatesFS embed.FS
 
+//go:embed static/*
+var staticFS embed.FS
+
 var tmpl = template.Must(template.ParseFS(templatesFS, "templates/*.html"))
 
 type server struct {
 	catalogDir   string
 	wardenBin    string
-	passwordHash string // sha256 hex, vacío = sin auth (solo para pruebas locales)
+	passwordHash string // sha256 hex, vacío = sin auth (solo pruebas locales)
+
+	// Para calcular la tasa de red entre refrescos del dashboard.
+	mu          sync.Mutex
+	lastRx      int64
+	lastTx      int64
+	lastNetTime time.Time
 }
 
 func main() {
-	addr := flag.String("addr", "127.0.0.1:7890", "dirección donde escuchar")
+	addr := flag.String("addr", "0.0.0.0:7890", "dirección donde escuchar")
 	catalogDir := flag.String("catalog", "/home/alejo/proyectos/warden/site/catalog", "carpeta de site/catalog")
 	wardenBin := flag.String("warden", "/usr/local/bin/warden", "ruta del binario warden")
 	passFile := flag.String("passfile", "/etc/warden/panel.passwd", "archivo con el hash sha256 de la clave")
@@ -51,12 +61,16 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", s.handleList)
+	mux.HandleFunc("GET /{$}", s.handleDashboard)
+	mux.HandleFunc("GET /partials/health", s.handleHealthPartial)
+	mux.HandleFunc("GET /api/health", s.handleHealth)
+	mux.HandleFunc("GET /catalog", s.handleList)
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
 	mux.HandleFunc("GET /new", s.handleEditForm)
 	mux.HandleFunc("POST /new", s.handleEditSave)
 	mux.HandleFunc("POST /publish", s.handlePublish)
+	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	srv := &http.Server{
 		Addr:         *addr,
@@ -91,6 +105,43 @@ func checkPassword(given, wantHashHex string) bool {
 	return subtle.ConstantTimeCompare([]byte(gotHex), []byte(wantHashHex)) == 1
 }
 
+// netRates calcula bytes/seg comparando con la muestra anterior.
+func (s *server) netRates(h Health) (down, up float64) {
+	var rx, tx int64
+	for _, n := range h.Nets {
+		rx += n.Rx
+		tx += n.Tx
+	}
+	now := time.Now()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.lastNetTime.IsZero() {
+		dt := now.Sub(s.lastNetTime).Seconds()
+		if dt > 0 {
+			down = float64(rx-s.lastRx) / dt
+			up = float64(tx-s.lastTx) / dt
+			if down < 0 {
+				down = 0
+			}
+			if up < 0 {
+				up = 0
+			}
+		}
+	}
+	s.lastRx, s.lastTx, s.lastNetTime = rx, tx, now
+	return
+}
+
+func (s *server) handleDashboard(w http.ResponseWriter, r *http.Request) {
+	render(w, "dashboard.html", map[string]any{"Page": "dashboard"})
+}
+
+func (s *server) handleHealthPartial(w http.ResponseWriter, r *http.Request) {
+	h := gatherHealth()
+	down, up := s.netRates(h)
+	render(w, "health_fragment.html", buildHealthView(h, down, up))
+}
+
 func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 	comps, err := listComponents(s.catalogDir)
 	if err != nil {
@@ -106,7 +157,7 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 	for _, c := range comps {
 		rows = append(rows, row{c, c.Container != "" && running[c.Container]})
 	}
-	render(w, "list.html", map[string]any{"Rows": rows})
+	render(w, "list.html", map[string]any{"Rows": rows, "Page": "catalog"})
 }
 
 func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +212,7 @@ func (s *server) handleEditSave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/catalog", http.StatusSeeOther)
 }
 
 func (s *server) handlePublish(w http.ResponseWriter, r *http.Request) {

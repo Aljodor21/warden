@@ -18,5 +18,48 @@
   textarea { font-family: monospace; min-height: 4rem; }
   pre { background: #0f172a; padding: 1rem; border-radius: 10px; overflow-x: auto; }
   .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+
+  /* --- navegación --- */
+  .nav { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .nav .brand { font-weight: 700; margin-right: 0.8rem; font-size: 1.1rem; color: #f97316; }
+  .nav a { padding: 0.4rem 0.9rem; border-radius: 9px; background: #1e293b; text-decoration: none;
+           color: #e2e8f0; font-size: 0.9rem; }
+  .nav a.active { background: #f97316; color: #fff; }
+  .nav .spacer { flex: 1; }
+
+  /* --- dashboard --- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+  .panel { background: #1e293b; border-radius: 16px; padding: 1.25rem 1.4rem; }
+  .panel h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+              opacity: 0.55; margin: 0 0 1rem; font-weight: 600; }
+  .metric { font-size: 2.2rem; font-weight: 700; line-height: 1; }
+  .metric small { font-size: 0.9rem; font-weight: 400; opacity: 0.6; }
+  .muted { opacity: 0.55; font-size: 0.85rem; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; margin: 0.5rem 0 0.3rem; }
+  .bar { background: #0f172a; border-radius: 8px; height: 12px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; border-radius: 8px; width: 0;
+                transition: width 0.5s ease, background 0.3s; background: #22c55e; }
+  .bar > span.lvl-ok { background: linear-gradient(90deg,#16a34a,#22c55e); }
+  .bar > span.lvl-warn { background: linear-gradient(90deg,#ea580c,#f97316); }
+  .bar > span.lvl-crit { background: linear-gradient(90deg,#dc2626,#ef4444); }
+  .dash-head { display:flex; align-items:center; gap:0.8rem; margin-bottom:1.2rem; }
+  .dash-head .metric { font-size:1.6rem; }
+  .net { display:flex; gap:2rem; }
+  .net .v { font-size:1.6rem; font-weight:700; }
+  .panel h2 svg { width:16px; height:16px; vertical-align:-3px; margin-right:0.4rem; opacity:0.7; }
+  .clist { display: flex; flex-direction: column; gap: 0.4rem; max-height: 280px; overflow-y: auto; }
+  .citem { display: flex; align-items: center; font-size: 0.9rem; }
+  .citem .st { margin-left: auto; opacity: 0.5; font-size: 0.78rem; }
+  .toolbtn { display: inline-block; margin: 0.25rem 0.4rem 0 0; padding: 0.55rem 1rem;
+             border-radius: 10px; background: #334155; color: #e2e8f0; text-decoration: none; font-size: 0.9rem; }
 </style>
+{{end}}
+
+{{define "nav"}}
+<div class="nav">
+  <span class="brand">⬡ warden</span>
+  <a href="/" class="{{if eq .Page "dashboard"}}active{{end}}">Dashboard</a>
+  <a href="/catalog" class="{{if eq .Page "catalog"}}active{{end}}">Catálogo</a>
+  <span class="spacer"></span>
+</div>
 {{end}}
