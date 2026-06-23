@@ -1,0 +1,20 @@
+{{define "system.html"}}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>warden — sistema</title>
+  {{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+  <script defer src="/static/alpine.min.js"></script>
+</head>
+<body>
+  {{template "nav" .}}
+  <div class="panel">
+    <h2>VPN y credenciales</h2>
+    <div id="system-status">{{template "system_fragment.html" (dict "Sys" .Sys)}}</div>
+  </div>
+</body>
+</html>
+{{end}}

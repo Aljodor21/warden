@@ -53,6 +53,7 @@ var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
 }).ParseFS(templatesFS, "templates/*.html"))
 
 type server struct {
+	root           string // WARDEN_ROOT
 	repoCatalogDir string // <root>/catalog — recetas genéricas (solo lectura)
 	siteCatalogDir string // <root>/site/catalog — tuyo, gana en empates, ÚNICO destino de escritura
 	wardenBin      string
@@ -80,6 +81,7 @@ func main() {
 	flag.Parse()
 
 	s := &server{
+		root:           *root,
 		repoCatalogDir: *root + "/catalog",
 		siteCatalogDir: *root + "/site/catalog",
 		wardenBin:      *wardenBin,
@@ -110,6 +112,11 @@ func main() {
 	mux.HandleFunc("POST /admin/unlock", s.handleAdminUnlock)
 	mux.HandleFunc("POST /admin/lock", s.handleAdminLock)
 	mux.HandleFunc("GET /admin/status", s.handleAdminStatus)
+	withSys := func() map[string]any { return map[string]any{"Sys": s.gatherSystemView()} }
+	mux.HandleFunc("GET /system", s.handleSystem)
+	mux.HandleFunc("POST /system/vpn", s.requireAdmin("system_fragment.html", withSys, s.handleVPNInstall))
+	mux.HandleFunc("POST /system/secrets-init", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsInit))
+	mux.HandleFunc("POST /system/secrets-save", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsSave))
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	srv := &http.Server{

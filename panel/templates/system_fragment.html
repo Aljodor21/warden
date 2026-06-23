@@ -1,0 +1,61 @@
+{{define "system_fragment.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+{{if .Output}}<div class="ok-msg" style="white-space:pre-wrap">{{.Output}}</div>{{end}}
+
+<div class="statusrow">
+  <div>
+    <div class="label">VPN (Tailscale)</div>
+    <div class="desc">
+      {{if .Sys.TailscaleConnected}}Conectada — IP {{.Sys.TailscaleIP}}. Acceso remoto seguro, sin abrir puertos.
+      {{else if .Sys.TailscaleInstalled}}Instalada pero sin conectar. Necesita iniciar sesión.
+      {{else}}No instalada. Te deja entrar a este server desde afuera de tu red, de forma segura.
+      {{end}}
+    </div>
+  </div>
+  {{if .Sys.TailscaleConnected}}
+  <span class="badge on">conectada</span>
+  {{else}}
+  <form class="acts" hx-post="/system/vpn" hx-target="#system-status" hx-swap="innerHTML">
+    <button class="btn" type="submit">{{if .Sys.TailscaleInstalled}}Conectar{{else}}Instalar{{end}}</button>
+  </form>
+  {{end}}
+</div>
+
+<div class="statusrow">
+  <div>
+    <div class="label">Llave de cifrado (age)</div>
+    <div class="desc">
+      {{if .Sys.AgeKeyExists}}Generada — asegurate de tenerla copiada FUERA de este server.
+      {{else}}Sin generar todavía. Necesaria antes de poder respaldar credenciales cifradas.
+      {{end}}
+    </div>
+  </div>
+  {{if .Sys.AgeKeyExists}}
+  <span class="badge on">lista</span>
+  {{else}}
+  <form class="acts" hx-post="/system/secrets-init" hx-target="#system-status" hx-swap="innerHTML">
+    <button class="btn" type="submit">Generar</button>
+  </form>
+  {{end}}
+</div>
+
+<div class="statusrow">
+  <div>
+    <div class="label">Respaldo cifrado de credenciales</div>
+    <div class="desc">
+      {{if .Sys.SecretsExist}}{{.Sys.SecretsCount}} archivo(s) cifrado(s) guardados en site/secrets.
+      {{else}}Sin respaldo todavía{{if not .Sys.CloudflareSet}} (no hay túnel de Cloudflare configurado aún){{end}}.
+      {{end}}
+    </div>
+  </div>
+  {{if .Sys.AgeKeyExists}}
+  <form class="acts" hx-post="/system/secrets-save" hx-target="#system-status" hx-swap="innerHTML">
+    <button class="btn {{if .Sys.SecretsExist}}secondary{{end}}" type="submit">
+      {{if .Sys.SecretsExist}}Actualizar respaldo{{else}}Crear respaldo{{end}}
+    </button>
+  </form>
+  {{else}}
+  <span class="badge off">generá la llave primero</span>
+  {{end}}
+</div>
+{{end}}

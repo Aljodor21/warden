@@ -94,6 +94,17 @@
   .adminbtn.unlocked { background:#16a34a; }
   .adminerr { color:#fca5a5; font-size:0.8rem; margin-left:0.5rem; }
   [x-cloak] { display: none !important; }
+
+  /* --- página Sistema --- */
+  .statusrow { display:flex; align-items:center; gap:0.6rem; padding:0.7rem 0;
+               border-bottom:1px solid #0f172a; }
+  .statusrow:last-child { border-bottom:none; }
+  .statusrow .label { font-weight:600; }
+  .statusrow .desc { opacity:0.55; font-size:0.82rem; margin-top:0.15rem; }
+  .statusrow .acts { margin-left:auto; }
+  .badge { font-size:0.78rem; padding:0.2rem 0.6rem; border-radius:6px; }
+  .badge.on { background:#0f3a24; color:#86efac; }
+  .badge.off { background:#3a1f1f; color:#fca5a5; }
 </style>
 {{end}}
 
@@ -103,6 +114,7 @@
   <a href="/" class="{{if eq .Page "dashboard"}}active{{end}}">Dashboard</a>
   <a href="/catalog" class="{{if eq .Page "catalog"}}active{{end}}">Catálogo</a>
   <a href="/nas" class="{{if eq .Page "nas"}}active{{end}}">NAS</a>
+  <a href="/system" class="{{if eq .Page "system"}}active{{end}}">Sistema</a>
   <span class="spacer"></span>
   <span id="admin-status">{{template "admin_status.html" (dict "Unlocked" .AdminUnlocked)}}</span>
 </div>
