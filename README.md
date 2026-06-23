@@ -26,9 +26,10 @@ migrar a otro SO, el camino está trazado.
 - **Restauración** (disaster recovery) desde el disco, por componente.
 
 **Dashboard (un solo frente)**
-- [Homepage](https://gethomepage.dev) como cara única, **generada desde el catálogo**.
-- [Cockpit](https://cockpit-project.org) (sistema), [Backrest](https://github.com/garethgeorge/backrest)
-  (UI de backups) y [ntfy](https://ntfy.sh) (alertas push).
+- **warden-panel**: panel propio (Go, sin dependencias) con salud del sistema en vivo
+  (CPU/RAM/discos/red/contenedores) y gestión del catálogo desde el navegador — sin consola.
+- [Cockpit](https://cockpit-project.org) (sistema a fondo), [Backrest](https://github.com/garethgeorge/backrest)
+  (UI de backups) y [ntfy](https://ntfy.sh) (alertas push) — herramientas pro, enlazadas, no reinventadas.
 
 **CI/CD**
 - Self-hosted runner de GitHub Actions (funciona tras CGNAT).
@@ -63,7 +64,7 @@ Al instalar, `bootstrap.sh` te pregunta el **modo**:
 
 | Preset | Instala |
 |---|---|
-| `básico` | Cockpit + Homepage + NAS + shell (zsh/p10k) + MOTD + firewall |
+| `básico` | Cockpit + warden-panel + NAS + shell (zsh/p10k) + MOTD + firewall |
 | `completo` | `básico` + Backrest + ntfy + Immich (fotos) + Docmost (wiki) + Excalidraw |
 | `a la carta` | elegís manualmente apps y módulos, uno por uno |
 

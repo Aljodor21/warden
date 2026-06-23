@@ -55,7 +55,7 @@ warden doctor
 ```
 
 Y abrí en tu navegador (IP de la VM):
-- Homepage → `http://IP:7575`
+- Panel warden → `http://IP:7890`
 - Cockpit  → `https://IP:9090`
 
 ## 7. (Opcional) Probar la restauración
@@ -72,7 +72,6 @@ Luego: `sudo warden restore`.
 |---|---|
 | "Distro no soportada" | La VM debe ser Debian/Ubuntu o Arch |
 | gum no instala | Sigue en modo texto plano (funciona igual) |
-| Homepage no carga | `HOMEPAGE_ALLOWED_HOSTS` (probá `*`) |
 | docker sin permisos | Cerrá sesión y volvé a entrar (grupo docker) |
 | Ver qué haría sin tocar nada | `WARDEN_DRY_RUN=1 sudo ./bootstrap.sh` |
 

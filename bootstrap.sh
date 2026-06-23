@@ -114,7 +114,7 @@ fi
 echo
 # --- Modo de instalación: preset (combo) o a la carta ---
 MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
-  'básico — dashboard (Cockpit + Homepage) + NAS' \
+  'básico — dashboard (Cockpit + panel propio) + NAS' \
   'completo — básico + Backrest + ntfy + Immich + Docmost + Excalidraw' \
   'a la carta — elegir manual, uno por uno')"
 
@@ -137,7 +137,7 @@ case "$MODE" in
     fi
     for q in \
       "Cockpit (panel del sistema, :9090):warden_cockpit_install" \
-      "Homepage (tablero principal):warden_homepage_install" \
+      "Panel propio de warden (dashboard, :7890):warden_panel_install" \
       "Backrest (UI de backups, :9898):warden_backrest_install" \
       "ntfy (alertas, :8080):warden_ntfy_install" \
       "shell (zsh + oh-my-zsh + p10k):warden_dotfiles_install" \
@@ -148,11 +148,6 @@ case "$MODE" in
     done
     ;;
 esac
-
-# Regenerar Homepage al final, ya con las apps corriendo (para que no quede vacío).
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx homepage; then
-  warden_homepage_config && log "Homepage actualizado con lo que quedó corriendo"
-fi
 
 echo
 log "Dejando 'warden' disponible en el PATH"
