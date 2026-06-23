@@ -1,0 +1,30 @@
+{{define "list.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — catálogo</title>{{template "_style"}}</head>
+<body>
+  <div class="top">
+    <h1>Catálogo de warden</h1>
+    <div>
+      <a class="btn secondary" href="/new">+ Nueva app</a>
+      <form method="post" action="/publish" style="display:inline">
+        <button class="btn" type="submit">Publicar (Cloudflare + Homepage)</button>
+      </form>
+    </div>
+  </div>
+
+  {{range .Rows}}
+  <div class="card">
+    <div>
+      <span class="dot {{if .Running}}on{{else}}off{{end}}"></span>
+      <strong>{{.Name}}</strong> <span style="opacity:0.5">({{.Tag}})</span>
+      {{if .CFHost}}<div style="margin-top:0.3rem"><a href="https://{{.CFHost}}" target="_blank">https://{{.CFHost}}</a></div>{{end}}
+    </div>
+    <a class="btn secondary" href="/edit/{{.Tag}}">Editar</a>
+  </div>
+  {{else}}
+  <p style="opacity:0.6">No hay apps en el catálogo todavía.</p>
+  {{end}}
+</body>
+</html>
+{{end}}

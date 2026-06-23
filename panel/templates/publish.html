@@ -1,0 +1,14 @@
+{{define "publish.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — publish</title>{{template "_style"}}</head>
+<body>
+  <div class="top">
+    <h1>Resultado de 'warden publish'</h1>
+    <a class="btn secondary" href="/">&larr; Volver</a>
+  </div>
+  <p><strong>{{.Status}}</strong></p>
+  <pre>{{.Output}}</pre>
+</body>
+</html>
+{{end}}

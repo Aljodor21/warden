@@ -1,0 +1,72 @@
+{{define "edit.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — {{if .IsNew}}nueva app{{else}}editar{{end}}</title>{{template "_style"}}</head>
+<body>
+  <div class="top">
+    <h1>{{if .IsNew}}Nueva app{{else}}Editar: {{.C.Name}}{{end}}</h1>
+    <a class="btn secondary" href="/">&larr; Volver</a>
+  </div>
+
+  <form method="post" action="{{if .IsNew}}/new{{else}}/edit/{{.C.Tag}}{{end}}">
+    {{if .IsNew}}
+    <label>Tag (identificador único, sin espacios)</label>
+    <input name="tag" value="{{.C.Tag}}" required>
+    {{end}}
+
+    <label>Nombre</label>
+    <input name="name" value="{{.C.Name}}" required>
+
+    <label>Descripción corta (comentario)</label>
+    <input name="comment" value="{{.C.Comment}}">
+
+    <label>Tipo (kind: files / db / files+db / none)</label>
+    <input name="kind" value="{{.C.Kind}}">
+
+    <label>Rutas a respaldar (una por línea)</label>
+    <textarea name="paths">{{range .C.Paths}}{{.}}
+{{end}}</textarea>
+
+    <label>Exclusiones (una por línea)</label>
+    <textarea name="excludes">{{range .C.Excludes}}{{.}}
+{{end}}</textarea>
+
+    <label>Tipo de base de datos (postgres / vacío)</label>
+    <input name="dbtype" value="{{.C.DBType}}">
+
+    <label>Contenedor de la BD</label>
+    <input name="dbcontainer" value="{{.C.DBContainer}}">
+
+    <label>Nombre de la BD</label>
+    <input name="dbname" value="{{.C.DBName}}">
+
+    <label>Usuario de la BD</label>
+    <input name="dbuser" value="{{.C.DBUser}}">
+
+    <label>Cómo se instala (ruta a docker-compose.yml o URL del repo)</label>
+    <input name="install" value="{{.C.Install}}">
+
+    <label>Contenedor principal de la app</label>
+    <input name="container" value="{{.C.Container}}">
+
+    <label>Secretos que warden debe generar (uno por línea)</label>
+    <textarea name="secrets">{{range .C.Secrets}}{{.}}
+{{end}}</textarea>
+
+    <label>Ícono</label>
+    <input name="icon" value="{{.C.Icon}}">
+
+    <label>Subdominio público (Cloudflare)</label>
+    <input name="cfhost" value="{{.C.CFHost}}" placeholder="app.tudominio.site">
+
+    <label>Puerto</label>
+    <input name="cfport" value="{{.C.CFPort}}">
+
+    <label>Nota</label>
+    <textarea name="note">{{.C.Note}}</textarea>
+
+    <p><button class="btn" type="submit">Guardar</button></p>
+  </form>
+</body>
+</html>
+{{end}}

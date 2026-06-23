@@ -104,6 +104,14 @@ if ui_confirm "¿Configurar Cloudflare Tunnel?"; then
 fi
 
 echo
+echo "El panel web te deja ver y editar el catálogo (qué apps, sus rutas, su"
+echo "subdominio) desde el navegador, en vez de editar archivos por consola."
+echo "Queda protegido con clave, solo accesible desde tu LAN/Tailscale."
+if ui_confirm "¿Instalar el panel web?"; then
+  warden_panel_install
+fi
+
+echo
 # --- Modo de instalación: preset (combo) o a la carta ---
 MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
   'básico — dashboard (Cockpit + Homepage) + NAS' \

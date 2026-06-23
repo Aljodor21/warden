@@ -1,0 +1,200 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+)
+
+// Component refleja un archivo site/catalog/<tag>.component.
+// Solo conocemos los campos del formato de warden — nada mágico.
+type Component struct {
+	Tag         string // nombre de archivo sin .component (clave real)
+	Comment     string // primera línea "# ..." si existía
+	Name        string
+	Kind        string
+	Paths       []string
+	Excludes    []string
+	DBType      string
+	DBContainer string
+	DBName      string
+	DBUser      string
+	Install     string
+	Container   string
+	Secrets     []string
+	Icon        string
+	CFHost      string
+	CFPort      string
+	Note        string
+}
+
+var scalarRe = regexp.MustCompile(`^(COMP_[A-Z_]+)="(.*)"$`)
+var arrayStartRe = regexp.MustCompile(`^(COMP_[A-Z_]+)=\((.*)$`)
+var quotedItemRe = regexp.MustCompile(`"((?:[^"\\]|\\.)*)"`)
+
+// parseComponentFile lee un .component y devuelve su Component.
+func parseComponentFile(path string) (*Component, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	c := &Component{}
+	scalars := map[string]*string{
+		"COMP_NAME":         &c.Name,
+		"COMP_KIND":         &c.Kind,
+		"COMP_DB_TYPE":      &c.DBType,
+		"COMP_DB_CONTAINER": &c.DBContainer,
+		"COMP_DB_NAME":      &c.DBName,
+		"COMP_DB_USER":      &c.DBUser,
+		"COMP_INSTALL":      &c.Install,
+		"COMP_CONTAINER":    &c.Container,
+		"COMP_ICON":         &c.Icon,
+		"COMP_CF_HOST":      &c.CFHost,
+		"COMP_CF_PORT":      &c.CFPort,
+		"COMP_NOTE":         &c.Note,
+	}
+	arrays := map[string]*[]string{
+		"COMP_PATHS":    &c.Paths,
+		"COMP_EXCLUDES": &c.Excludes,
+		"COMP_SECRETS":  &c.Secrets,
+	}
+
+	sc := bufio.NewScanner(f)
+	firstLine := true
+	var inArrayKey string
+	var inArrayBuf strings.Builder
+
+	for sc.Scan() {
+		line := sc.Text()
+
+		if firstLine {
+			firstLine = false
+			t := strings.TrimSpace(line)
+			if strings.HasPrefix(t, "#") {
+				c.Comment = strings.TrimSpace(strings.TrimPrefix(t, "#"))
+				continue
+			}
+		}
+
+		if inArrayKey != "" {
+			inArrayBuf.WriteString(" ")
+			inArrayBuf.WriteString(line)
+			if strings.Contains(line, ")") {
+				items := extractQuoted(inArrayBuf.String())
+				if dst, ok := arrays[inArrayKey]; ok {
+					*dst = items
+				}
+				inArrayKey = ""
+				inArrayBuf.Reset()
+			}
+			continue
+		}
+
+		if m := arrayStartRe.FindStringSubmatch(line); m != nil {
+			key, rest := m[1], m[2]
+			if strings.Contains(rest, ")") {
+				items := extractQuoted(rest)
+				if dst, ok := arrays[key]; ok {
+					*dst = items
+				}
+			} else {
+				inArrayKey = key
+				inArrayBuf.WriteString(rest)
+			}
+			continue
+		}
+
+		if m := scalarRe.FindStringSubmatch(line); m != nil {
+			key, val := m[1], unescape(m[2])
+			if dst, ok := scalars[key]; ok {
+				*dst = val
+			}
+			continue
+		}
+	}
+	return c, sc.Err()
+}
+
+func extractQuoted(s string) []string {
+	var out []string
+	for _, m := range quotedItemRe.FindAllStringSubmatch(s, -1) {
+		out = append(out, unescape(m[1]))
+	}
+	return out
+}
+
+func unescape(s string) string {
+	return strings.ReplaceAll(s, `\"`, `"`)
+}
+
+func escape(s string) string {
+	return strings.ReplaceAll(s, `"`, `\"`)
+}
+
+// writeComponentFile regenera el archivo .component de forma determinista.
+func writeComponentFile(path string, c *Component) error {
+	var b strings.Builder
+	if c.Comment != "" {
+		fmt.Fprintf(&b, "# %s\n", c.Comment)
+	}
+	fmt.Fprintf(&b, "COMP_NAME=\"%s\"\n", escape(c.Name))
+	fmt.Fprintf(&b, "COMP_TAG=\"%s\"\n", escape(c.Tag))
+	fmt.Fprintf(&b, "COMP_KIND=\"%s\"\n", escape(c.Kind))
+	writeArray(&b, "COMP_PATHS", c.Paths)
+	writeArray(&b, "COMP_EXCLUDES", c.Excludes)
+	fmt.Fprintf(&b, "COMP_DB_TYPE=\"%s\"\n", escape(c.DBType))
+	fmt.Fprintf(&b, "COMP_DB_CONTAINER=\"%s\"\n", escape(c.DBContainer))
+	fmt.Fprintf(&b, "COMP_DB_NAME=\"%s\"\n", escape(c.DBName))
+	fmt.Fprintf(&b, "COMP_DB_USER=\"%s\"\n", escape(c.DBUser))
+	fmt.Fprintf(&b, "COMP_INSTALL=\"%s\"\n", escape(c.Install))
+	fmt.Fprintf(&b, "COMP_CONTAINER=\"%s\"\n", escape(c.Container))
+	writeArray(&b, "COMP_SECRETS", c.Secrets)
+	fmt.Fprintf(&b, "COMP_ICON=\"%s\"\n", escape(c.Icon))
+	fmt.Fprintf(&b, "COMP_CF_HOST=\"%s\"\n", escape(c.CFHost))
+	fmt.Fprintf(&b, "COMP_CF_PORT=\"%s\"\n", escape(c.CFPort))
+	fmt.Fprintf(&b, "COMP_NOTE=\"%s\"\n", escape(c.Note))
+	return os.WriteFile(path, []byte(b.String()), 0644)
+}
+
+func writeArray(b *strings.Builder, key string, items []string) {
+	if len(items) == 0 {
+		fmt.Fprintf(b, "%s=()\n", key)
+		return
+	}
+	fmt.Fprintf(b, "%s=(\n", key)
+	for _, it := range items {
+		fmt.Fprintf(b, "  \"%s\"\n", escape(it))
+	}
+	fmt.Fprintf(b, ")\n")
+}
+
+// listComponents lee todos los .component de un directorio, ordenados por tag.
+func listComponents(dir string) ([]*Component, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var out []*Component
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".component") {
+			continue
+		}
+		tag := strings.TrimSuffix(e.Name(), ".component")
+		c, err := parseComponentFile(dir + "/" + e.Name())
+		if err != nil {
+			continue
+		}
+		c.Tag = tag
+		out = append(out, c)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Tag < out[j].Tag })
+	return out, nil
+}

@@ -1,0 +1,22 @@
+{{define "_style"}}
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
+         margin: 0; padding: 2rem; }
+  a { color: #38bdf8; }
+  h1 { font-weight: 600; }
+  .card { background: #1e293b; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 0.8rem;
+          display: flex; align-items: center; justify-content: space-between; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 0.6rem; }
+  .dot.on { background: #22c55e; } .dot.off { background: #64748b; }
+  .btn { background: #f97316; color: white; border: none; border-radius: 10px; padding: 0.5rem 1rem;
+         cursor: pointer; text-decoration: none; display: inline-block; font-size: 0.9rem; }
+  .btn.secondary { background: #334155; }
+  label { display: block; margin-top: 1rem; font-size: 0.85rem; opacity: 0.8; }
+  input, textarea, select { width: 100%; max-width: 520px; padding: 0.5rem; border-radius: 8px;
+         border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-family: inherit; }
+  textarea { font-family: monospace; min-height: 4rem; }
+  pre { background: #0f172a; padding: 1rem; border-radius: 10px; overflow-x: auto; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+</style>
+{{end}}

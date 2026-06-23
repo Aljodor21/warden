@@ -22,7 +22,7 @@ warden_firewall_install() {
     run "ufw allow from '$lan' to any port 22 proto tcp comment 'SSH LAN'"
     # Paneles de warden accesibles solo desde la LAN.
     local p
-    for p in 9090 7575 9898 8080; do
+    for p in 9090 7575 9898 8080 7890; do
       run "ufw allow from '$lan' to any port $p proto tcp comment 'warden panel'"
     done
     if command -v smbd >/dev/null 2>&1; then

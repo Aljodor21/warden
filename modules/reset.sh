@@ -88,5 +88,12 @@ warden_reset() {
     run "ufw --force reset >/dev/null 2>&1 || true"
   fi
 
+  if [ -f /etc/systemd/system/warden-panel.service ]; then
+    log "Borrando el panel web"
+    run "systemctl disable --now warden-panel 2>/dev/null || true"
+    run "rm -f /etc/systemd/system/warden-panel.service /usr/local/bin/warden-panel"
+    run "systemctl daemon-reload"
+  fi
+
   ok "Reset completo — el sistema queda como antes de instalar warden. Corré 'sudo ./bootstrap.sh' para reinstalar desde cero."
 }
