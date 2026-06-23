@@ -1,0 +1,49 @@
+{{define "about.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — acerca de</title>{{template "_style"}}</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>Acerca de warden</h1>
+  </div>
+
+  <div class="panel">
+    <h2>Qué es</h2>
+    <p>Base opinionada y reutilizable para montar y mantener tu propio servidor casero (homelab):
+      instalación desde cero, backup y restauración, dashboard, y CI/CD para tus propios proyectos —
+      en Debian/Ubuntu o Arch. Todo tiene dos caminos equivalentes: la <strong>consola</strong>
+      (<code>warden ...</code>) o este <strong>panel web</strong>, ninguno es "el oficial".</p>
+    <p class="muted">Los datos se respaldan cifrados, versionados y deduplicados con restic a un
+      disco; la configuración vive como código y es reproducible — si toca recuperarte o migrar a
+      otro sistema operativo, el camino ya está trazado.</p>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <h2>Repositorio y licencia</h2>
+    <p><a href="https://github.com/Aljodor21/warden" target="_blank">github.com/Aljodor21/warden</a></p>
+    <p class="muted">Publicado bajo licencia <strong>MIT</strong> — uso, copia y modificación libres,
+      sin garantía. Ver el archivo
+      <a href="https://github.com/Aljodor21/warden/blob/main/LICENSE" target="_blank">LICENSE</a>
+      en el repo.</p>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <h2>Tecnologías usadas</h2>
+    <div class="appgrid">
+      {{range .Tech}}
+      <a href="{{.URL}}" target="_blank" class="appcard" title="{{.Why}}">
+        {{if .Logo}}
+        <span class="techlogo"><img src="/static/logos/{{.Logo}}" alt="{{.Name}}" width="22" height="22"></span>
+        {{else}}
+        <span class="avatar">{{slice .Name 0 1}}</span>
+        {{end}}
+        <span class="appname">{{.Name}}</span>
+      </a>
+      {{end}}
+    </div>
+    <p class="muted" style="margin-top:0.8rem">Pasá el cursor sobre cada una para ver para qué se usa exactamente.</p>
+  </div>
+</body>
+</html>
+{{end}}

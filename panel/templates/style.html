@@ -52,6 +52,8 @@
   .avatar { width: 32px; height: 32px; border-radius: 8px; background: #f97316; color: #0f172a;
             display: flex; align-items: center; justify-content: center; font-weight: 700;
             font-size: 0.95rem; flex-shrink: 0; }
+  .techlogo { width: 32px; height: 32px; border-radius: 8px; background: #e2e8f0;
+              display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .appname { font-size: 0.92rem; font-weight: 500; flex: 1;
              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   details.panel summary { cursor: pointer; font-size: 0.8rem; text-transform: uppercase;
@@ -126,6 +128,7 @@
   <a href="/nas" class="{{if eq .Page "nas"}}active{{end}}">NAS</a>
   <a href="/system" class="{{if eq .Page "system"}}active{{end}}">Sistema</a>
   <a href="/backups" class="{{if eq .Page "backups"}}active{{end}}">Backups</a>
+  <a href="/about" class="{{if eq .Page "about"}}active{{end}}">Acerca de</a>
   <span class="spacer"></span>
   <span id="admin-status">{{template "admin_status.html" (dict "Unlocked" .AdminUnlocked)}}</span>
 </div>
