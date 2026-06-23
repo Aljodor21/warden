@@ -1,11 +1,28 @@
 #!/usr/bin/env bash
 #
 # restore.sh — restaura un backup de warden desde un disco, SOLO.
+#
 #   1) Detecta el disco de backup (cualquiera con el marcador, no el del SO).
-#   2) Lista los snapshots y te deja elegir qué restaurar (immich/nas/db).
-#   3) Restaura los archivos DIRECTO en su ubicación real (no a mano), y
-#      carga los dumps de BD en su contenedor — deteniendo y volviendo a
-#      prender las apps afectadas solo, sin pasos manuales.
+#   2) Mira QUÉ hay realmente en el backup (rutas de archivos + nombres de
+#      BD), cruzándolo con el catálogo — no una lista fija de apps.
+#   3) Para cada app que tiene datos en el backup pero no está instalada
+#      todavía, la instala SOLA con su receta del catálogo (sin preguntar
+#      "¿querés instalar X?" — si hay un backup de X, se restaura X).
+#      Las apps de CI/CD (su propio repo, sin receta de compose local) no
+#      se pueden instalar solas — se avisa y se sigue con el resto.
+#   4) Si hay datos de algo que no tiene receta en NINGÚN catálogo (ni
+#      genérico ni site/), se avisa y se deja quieto — no se inventa nada.
+#   5) Restaura los archivos DIRECTO en su ubicación real, y carga los
+#      dumps de BD en su contenedor — deteniendo y volviendo a prender las
+#      apps afectadas solo.
+#   6) Al terminar, registra el disco como el destino permanente de los
+#      backups automáticos (mismo disco, no uno nuevo — solo falta dejarlo
+#      anotado para que el timer siga usándolo).
+#
+#   Modo automático (para el panel, sin preguntar nada):
+#     WARDEN_RESTORE_AUTO=1 ./restore.sh
+#   Modo interactivo (consola): ./restore.sh
+#
 #   restic corre en Docker (cero instalación).
 #
 set -euo pipefail
@@ -20,40 +37,40 @@ source "$WARDEN_ROOT/lib/distro.sh"
 source "$WARDEN_ROOT/lib/ui.sh"
 # shellcheck source=/dev/null
 source "$WARDEN_ROOT/lib/catalog.sh"
+# shellcheck source=/dev/null
+source "$WARDEN_ROOT/modules/stacks.sh"
+# shellcheck source=/dev/null
+source "$WARDEN_ROOT/modules/register.sh"
 
 need_root
 has docker || die "Falta docker"
+has jq || ensure_pkg jq jq
 
 MARKER=".warden-backup.id"
 MOUNT="${WARDEN_BACKUP_MOUNT:-/mnt/warden-backup}"
 RESTIC_PASS_FILE="${RESTIC_PASS_FILE:-/root/.warden-restic-password}"
 STAGE="${WARDEN_RESTORE_DIR:-/var/tmp/warden-restore}"   # solo para dumps de BD
+AUTO="${WARDEN_RESTORE_AUTO:-0}"                          # 1 = sin preguntar (panel)
 
-# Restaura ARCHIVOS directo en su ruta real (las rutas guardadas ya son
-# absolutas y reales, por eso el target es la raíz del host).
-restic_files() {
+# --- restic en Docker ---
+restic_files() {  # restaura archivos DIRECTO en su ruta real del host
   docker run --rm -e RESTIC_PASSWORD_FILE=/pass \
     -v "$RESTIC_PASS_FILE":/pass:ro -v "$REPO":/repo -v /:/restore \
     restic/restic -r /repo "$@"
 }
-
-# Restaura dumps de BD a una carpeta temporal (van a /dumps en el snapshot,
-# no a una ruta real del host) para luego cargarlos con psql.
-restic_dumps() {
+restic_dumps() {  # dumps a una carpeta de staging (no son rutas reales del host)
   docker run --rm -e RESTIC_PASSWORD_FILE=/pass \
     -v "$RESTIC_PASS_FILE":/pass:ro -v "$REPO":/repo -v "$STAGE":/restore \
     restic/restic -r /repo "$@"
 }
-
-# Solo lectura (listar snapshots) — no necesita ningún target de escritura.
-restic_ro() {
+restic_ro() {  # solo lectura, sin target de escritura
   docker run --rm -e RESTIC_PASSWORD_FILE=/pass \
     -v "$RESTIC_PASS_FILE":/pass:ro -v "$REPO":/repo \
     restic/restic -r /repo "$@"
 }
 
 TO_ENSURE_RUNNING=()
-_stop_container() {  # detiene si está corriendo; SIEMPRE queda anotado para garantizar que vuelva a prender
+_stop_container() {
   local c="$1"
   [ -n "$c" ] || return 0
   printf '%s\n' "${TO_ENSURE_RUNNING[@]:-}" | grep -qx "$c" || TO_ENSURE_RUNNING+=("$c")
@@ -61,9 +78,6 @@ _stop_container() {  # detiene si está corriendo; SIEMPRE queda anotado para ga
   log "Deteniendo $c"
   run "docker stop '$c'"
 }
-# Garantiza que cada app afectada quede prendida al final, la hayamos
-# parado nosotros o ya estuviera caída de antes (ej. se crasheó sola por
-# los archivos que faltaban). 'docker start' en uno ya prendido no hace nada.
 _ensure_running() {
   local c
   for c in "${TO_ENSURE_RUNNING[@]:-}"; do
@@ -74,29 +88,10 @@ _ensure_running() {
 }
 trap _ensure_running EXIT
 
-# Carga los dumps restaurados ($STAGE/dumps/*.sql) en su contenedor,
-# deteniendo antes la app que los usa (no la BD) y prendiéndola al final.
-warden_restore_dbs() {
-  local sql db found t pass
-  for sql in "$STAGE"/dumps/*.sql; do
-    [ -e "$sql" ] || continue
-    db="$(basename "$sql" .sql)"
-    found=""
-    while IFS='|' read -r t _ _ _; do
-      ( catalog_load "$t" >/dev/null 2>&1 && [ "${COMP_DB_NAME:-}" = "$db" ] ) && { found="$t"; break; }
-    done < <(catalog_each)
-    if [ -z "$found" ]; then
-      warn "No sé a qué contenedor va $db.sql; queda en $STAGE/dumps"; continue
-    fi
-    catalog_load "$found"
-    if ! docker ps --format '{{.Names}}' | grep -qx "${COMP_DB_CONTAINER:-}"; then
-      warn "$COMP_DB_CONTAINER no está corriendo; instalá $COMP_NAME primero. Salto $db."; continue
-    fi
-    [ -n "${COMP_CONTAINER:-}" ] && _stop_container "$COMP_CONTAINER"
-    pass="$(docker exec "$COMP_DB_CONTAINER" printenv POSTGRES_PASSWORD 2>/dev/null || true)"
-    run "docker exec -i -e PGPASSWORD='$pass' '$COMP_DB_CONTAINER' psql -U '$COMP_DB_USER' -d '$db' < '$sql'"
-    ok "BD '$db' cargada"
-  done
+# is_deployed_install <COMP_INSTALL> — true si apunta a un repo (CI/CD), no
+# a un docker-compose.yml local (mismo criterio que stacks.sh/panel).
+is_deployed_install() {
+  case "$1" in http*://*|git@*) return 0 ;; *) return 1 ;; esac
 }
 
 # --- 1. Encontrar el disco de backup ---
@@ -107,6 +102,9 @@ while read -r mp; do
 done < <(lsblk -rno MOUNTPOINT)
 
 if [ -z "$bmount" ]; then
+  if [ "$AUTO" = 1 ] || [ ! -t 0 ]; then
+    die "No hay disco de backup montado. Conectalo (se monta solo si tiene el marcador) y reintentá."
+  fi
   log "No hay disco de backup montado. Discos disponibles (el del sistema es $sysdisk):"
   lsblk -pno NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT | grep -v "^$sysdisk"
   dev="$(ui_input 'Partición del disco de backup (ej: /dev/sdb1)' '')"
@@ -121,55 +119,145 @@ ok "Backup encontrado en $bmount"
 
 # --- 2. Contraseña del repositorio ---
 if [ ! -f "$RESTIC_PASS_FILE" ]; then
+  [ "$AUTO" = 1 ] && die "Falta la contraseña restic en $RESTIC_PASS_FILE."
   warn "No está $RESTIC_PASS_FILE."
   p="$(ui_input 'Contraseña del repositorio restic' '')"
   RESTIC_PASS_FILE="$(mktemp)"; printf '%s' "$p" > "$RESTIC_PASS_FILE"
 fi
 
-# --- 3. Mostrar snapshots ---
 log "Snapshots en el disco:"
 restic_ro snapshots
 
-# --- 4. Elegir, confirmar UNA vez, y restaurar todo solo ---
-choices="$(ui_choose_multi 'Qué restaurar' immich nas db)"
-[ -n "$choices" ] || { log "No elegiste nada."; exit 0; }
+# --- 3. Qué hay REALMENTE en el backup (no una lista fija) ---
+mapfile -t filePaths < <(restic_ro snapshots --tag files --json --latest 1 2>/dev/null \
+  | jq -r '.[0].paths[]? // empty' 2>/dev/null || true)
+mapfile -t dbFiles < <(restic_ro ls latest --tag db 2>/dev/null | grep '\.sql$' || true)
+dbNames=(); for f in "${dbFiles[@]:-}"; do [ -n "$f" ] && dbNames+=("$(basename "$f" .sql)"); done
 
-affected=()
-while IFS= read -r tag; do
-  case "$tag" in
-    immich|nas)
-      catalog_load "$tag" 2>/dev/null && [ -n "${COMP_CONTAINER:-}" ] && affected+=("$COMP_CONTAINER")
-      ;;
-  esac
-done <<<"$choices"
+if [ "${#filePaths[@]}" -eq 0 ] && [ "${#dbNames[@]}" -eq 0 ]; then
+  ok "No hay nada para restaurar en este disco."
+  exit 0
+fi
 
-echo "Vas a restaurar: $(echo "$choices" | tr '\n' ' ')"
+# Mapeo: ruta real -> tag, y nombre de BD -> tag, recorriendo TODO el
+# catálogo (genérico + site) — así reconoce cualquier app, no solo
+# immich/nas hardcodeados como antes.
+declare -A PATH_TO_TAG DBNAME_TO_TAG
+while IFS='|' read -r t _ _ _; do
+  [ -n "$t" ] || continue
+  catalog_load "$t" 2>/dev/null || continue
+  for p in "${COMP_PATHS[@]:-}"; do [ -n "$p" ] && PATH_TO_TAG["$p"]="$t"; done
+  [ -n "${COMP_DB_NAME:-}" ] && DBNAME_TO_TAG["${COMP_DB_NAME}"]="$t"
+done < <(catalog_each)
+
+neededTags=(); unknownPaths=()
+for p in "${filePaths[@]:-}"; do
+  t="${PATH_TO_TAG[$p]:-}"
+  if [ -n "$t" ]; then neededTags+=("$t"); else unknownPaths+=("$p"); fi
+done
+
+neededDBTags=(); unknownDBs=()
+for db in "${dbNames[@]:-}"; do
+  t="${DBNAME_TO_TAG[$db]:-}"
+  if [ -n "$t" ]; then neededDBTags+=("$t"); else unknownDBs+=("$db"); fi
+done
+
+for p in "${unknownPaths[@]:-}"; do
+  warn "Hay datos respaldados en '$p' pero ningún componente del catálogo los reclama (¿falta tu site/catalog?) — no se restauran."
+done
+for db in "${unknownDBs[@]:-}"; do
+  warn "Hay un dump de BD '$db' pero ningún componente lo reclama — no se restaura."
+done
+
+# Unión de tags a procesar (archivos + BD), sin duplicados.
+declare -A seen
+allTags=()
+for t in "${neededTags[@]:-}" "${neededDBTags[@]:-}"; do
+  [ -n "${seen[$t]:-}" ] && continue
+  seen[$t]=1
+  allTags+=("$t")
+done
+
+if [ "${#allTags[@]}" -eq 0 ]; then
+  ok "Nada que restaurar (todo lo del backup es de rutas/BD sin receta conocida)."
+  exit 0
+fi
+
+# --- 4. Por cada app con datos en el backup: instalarla si falta, o avisar
+#        si es de CI/CD (no se puede instalar sola) ---
+toRestore=(); affected=()
+for t in "${allTags[@]}"; do
+  catalog_load "$t" || { warn "'$t' no está en el catálogo, lo salto."; continue; }
+  name="${COMP_NAME:-$t}"
+  container="${COMP_CONTAINER:-}"
+
+  running=0
+  [ -n "$container" ] && docker ps --format '{{.Names}}' | grep -qx "$container" && running=1
+
+  if [ "$running" -eq 0 ]; then
+    if [ -n "${COMP_INSTALL:-}" ] && is_deployed_install "$COMP_INSTALL"; then
+      warn "'$name' tiene datos en el backup pero vive en su propio repo (CI/CD) — no se puede instalar sola. Registrá su runner y hacé un deploy, después volvé a restaurar. Salto por ahora."
+      continue
+    fi
+    log "'$name' no está instalada — instalándola con su receta del catálogo…"
+    warden_stack_install "$t" || { warn "No pude instalar '$name', salto su restauración."; continue; }
+    catalog_load "$t"  # warden_stack_install puede haber tocado variables globales
+    container="${COMP_CONTAINER:-}"
+    if [ -n "$container" ] && ! docker ps --format '{{.Names}}' | grep -qx "$container"; then
+      warn "'$name' no quedó corriendo después de instalarla, salto su restauración."
+      continue
+    fi
+  fi
+
+  toRestore+=("$t")
+  [ -n "$container" ] && affected+=("$container")
+done
+
+if [ "${#toRestore[@]}" -eq 0 ]; then
+  ok "No quedó nada instalable para restaurar."
+  exit 0
+fi
+
+echo "Se va a restaurar: ${toRestore[*]}"
 [ "${#affected[@]}" -gt 0 ] && echo "Esto detiene brevemente (y vuelve a prender al final): ${affected[*]}"
-ui_confirm "¿Restaurar ahora?" || { log "Cancelado."; exit 0; }
+if [ "$AUTO" != 1 ]; then
+  ui_confirm "¿Restaurar ahora?" || { log "Cancelado."; exit 0; }
+fi
 
-while IFS= read -r tag; do
-  [ -n "$tag" ] || continue
-  case "$tag" in
-    immich|nas)
-      # Las rutas guardadas en el backup son absolutas y reales: restauramos
-      # directo a su lugar, filtrando dentro del snapshot combinado por ruta
-      # (warden backup guarda todos los archivos juntos bajo el tag 'files').
-      catalog_load "$tag" || die "No conozco el componente '$tag' en el catálogo"
-      [ -n "${COMP_CONTAINER:-}" ] && _stop_container "$COMP_CONTAINER"
-      log "Restaurando '$tag' en su ubicación real…"
-      for p in "${COMP_PATHS[@]:-}"; do
-        [ -n "$p" ] || continue
-        run "restic_files restore latest --tag files --include '$p' --target /restore"
-      done
-      ok "'$tag' restaurado"
-      ;;
-    db)
-      log "Restaurando dumps de BD…"
-      run "mkdir -p '$STAGE'"
-      run "restic_dumps restore latest --tag db --target /restore"
-      warden_restore_dbs
-      ;;
-  esac
-done <<<"$choices"
+# --- 5. Restaurar de verdad ---
+for t in "${toRestore[@]}"; do
+  catalog_load "$t" || continue
+  [ -n "${COMP_CONTAINER:-}" ] && _stop_container "$COMP_CONTAINER"
+
+  if [ "${#COMP_PATHS[@]}" -gt 0 ]; then
+    log "Restaurando archivos de '${COMP_NAME:-$t}' en su ubicación real…"
+    for p in "${COMP_PATHS[@]:-}"; do
+      [ -n "$p" ] || continue
+      run "restic_files restore latest --tag files --include '$p' --target /restore"
+    done
+  fi
+
+  if [ -n "${COMP_DB_NAME:-}" ] && printf '%s\n' "${dbNames[@]:-}" | grep -qx "$COMP_DB_NAME"; then
+    log "Restaurando dump de BD '${COMP_DB_NAME}'…"
+    run "mkdir -p '$STAGE'"
+    [ -f "$STAGE/dumps/${COMP_DB_NAME}.sql" ] || run "restic_dumps restore latest --tag db --include /dumps/${COMP_DB_NAME}.sql --target /restore"
+    if docker ps --format '{{.Names}}' | grep -qx "${COMP_DB_CONTAINER:-}"; then
+      pass="$(docker exec "$COMP_DB_CONTAINER" printenv POSTGRES_PASSWORD 2>/dev/null || true)"
+      run "docker exec -i -e PGPASSWORD='$pass' '$COMP_DB_CONTAINER' psql -U '$COMP_DB_USER' -d '$COMP_DB_NAME' < '$STAGE/dumps/${COMP_DB_NAME}.sql'"
+      ok "BD '${COMP_DB_NAME}' cargada"
+    else
+      warn "${COMP_DB_CONTAINER:-(sin contenedor)} no está corriendo; dump queda en $STAGE/dumps sin cargar."
+    fi
+  fi
+  ok "'${COMP_NAME:-$t}' restaurada"
+done
+
+# --- 6. Dejar este disco como el destino permanente de los backups
+#        automáticos (mismo disco, no uno nuevo — solo falta registrarlo) ---
+if [ "$bmount" = "$MOUNT" ]; then
+  warden_register || warn "No pude registrar el disco automáticamente — corré 'warden register' a mano."
+else
+  warn "El disco está montado en $bmount (no en $MOUNT) — para activar el backup automático, corré 'warden register' a mano."
+fi
 
 ok "Restauración terminada."
