@@ -8,61 +8,63 @@
     <a class="btn secondary" href="/">&larr; Volver</a>
   </div>
 
+  <p style="opacity:0.7">Los campos marcados con <span style="color:#f97316">*</span> son esenciales — sin ellos la app no queda bien descrita. El resto es opcional, según el tipo de app.</p>
+
   <form method="post" action="{{if .IsNew}}/new{{else}}/edit/{{.C.Tag}}{{end}}">
     {{if .IsNew}}
-    <label>Tag (identificador único, sin espacios)</label>
+    <label>Tag <span style="color:#f97316">*</span> — identificador único, sin espacios ni mayúsculas (ej: <code>click-counter</code>)</label>
     <input name="tag" value="{{.C.Tag}}" required>
     {{end}}
 
-    <label>Nombre</label>
+    <label>Nombre <span style="color:#f97316">*</span> — cómo se ve en Homepage y en esta lista</label>
     <input name="name" value="{{.C.Name}}" required>
 
-    <label>Descripción corta (comentario)</label>
+    <label>Descripción corta (comentario) — opcional, solo para que vos recuerdes qué es</label>
     <input name="comment" value="{{.C.Comment}}">
 
-    <label>Tipo (kind: files / db / files+db / none)</label>
-    <input name="kind" value="{{.C.Kind}}">
+    <label>Tipo <span style="color:#f97316">*</span> — qué hay que respaldar: <code>files</code> (solo archivos), <code>db</code> (solo base de datos), <code>files+db</code> (ambos), <code>none</code> (nada que respaldar, ej. una app sin datos propios)</label>
+    <input name="kind" value="{{.C.Kind}}" required>
 
-    <label>Rutas a respaldar (una por línea)</label>
+    <label>Rutas a respaldar (una por línea) — opcional, solo si "Tipo" incluye <code>files</code>. Son carpetas reales del server con los datos de la app.</label>
     <textarea name="paths">{{range .C.Paths}}{{.}}
 {{end}}</textarea>
 
-    <label>Exclusiones (una por línea)</label>
+    <label>Exclusiones (una por línea) — opcional, subcarpetas DENTRO de las rutas de arriba que NO querés respaldar (papelera, caché)</label>
     <textarea name="excludes">{{range .C.Excludes}}{{.}}
 {{end}}</textarea>
 
-    <label>Tipo de base de datos (postgres / vacío)</label>
+    <label>Tipo de base de datos — opcional, solo si "Tipo" incluye <code>db</code>. Hoy solo soporta <code>postgres</code> (déjalo vacío si no aplica)</label>
     <input name="dbtype" value="{{.C.DBType}}">
 
-    <label>Contenedor de la BD</label>
+    <label>Contenedor de la BD — opcional, el nombre real del contenedor Docker de la base de datos (<code>docker ps</code> para verlo)</label>
     <input name="dbcontainer" value="{{.C.DBContainer}}">
 
-    <label>Nombre de la BD</label>
+    <label>Nombre de la BD — opcional, el nombre de la base de datos dentro de ese Postgres</label>
     <input name="dbname" value="{{.C.DBName}}">
 
-    <label>Usuario de la BD</label>
+    <label>Usuario de la BD — opcional, el usuario de Postgres que tiene acceso a esa BD</label>
     <input name="dbuser" value="{{.C.DBUser}}">
 
-    <label>Cómo se instala (ruta a docker-compose.yml o URL del repo)</label>
+    <label>Cómo se instala <span style="color:#f97316">*</span> — ruta a un docker-compose.yml DENTRO de warden, o la URL del repo de GitHub si es tu propia app (CI/CD la instala, no warden)</label>
     <input name="install" value="{{.C.Install}}">
 
-    <label>Contenedor principal de la app</label>
+    <label>Contenedor principal de la app — opcional pero recomendado: el nombre real del contenedor que corre la app (para mostrar su estado y poder pararla/prenderla en restauraciones)</label>
     <input name="container" value="{{.C.Container}}">
 
-    <label>Secretos que warden debe generar (uno por línea)</label>
+    <label>Secretos que warden debe generar (uno por línea) — opcional, nombres de variables de entorno que necesitan una clave aleatoria (ej: <code>APP_SECRET</code>)</label>
     <textarea name="secrets">{{range .C.Secrets}}{{.}}
 {{end}}</textarea>
 
-    <label>Ícono</label>
+    <label>Ícono — opcional, nombre de ícono para Homepage (ej: <code>immich</code>, o vacío para el genérico de Docker)</label>
     <input name="icon" value="{{.C.Icon}}">
 
-    <label>Subdominio público (Cloudflare)</label>
+    <label>Subdominio público (Cloudflare) — opcional, SOLO si querés que esta app sea accesible desde internet con tu dominio</label>
     <input name="cfhost" value="{{.C.CFHost}}" placeholder="app.tudominio.site">
 
-    <label>Puerto</label>
+    <label>Puerto — esencial SI llenaste el subdominio de arriba (el puerto donde escucha la app en este server)</label>
     <input name="cfport" value="{{.C.CFPort}}">
 
-    <label>Nota</label>
+    <label>Nota — opcional, cualquier detalle que quieras recordar sobre esta app</label>
     <textarea name="note">{{.C.Note}}</textarea>
 
     <p><button class="btn" type="submit">Guardar</button></p>
