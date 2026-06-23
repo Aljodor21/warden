@@ -104,7 +104,9 @@ func main() {
 	mux.HandleFunc("GET /catalog", s.handleList)
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
-	mux.HandleFunc("GET /new", s.handleNewChoice)
+	mux.HandleFunc("GET /new", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/new/deploy", http.StatusSeeOther)
+	})
 	mux.HandleFunc("GET /new/install", s.handleEditForm)
 	mux.HandleFunc("POST /new/install", s.handleEditSave)
 	mux.HandleFunc("GET /new/deploy", s.handleNewDeployForm)
@@ -230,11 +232,10 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 // El formulario de "nueva app" original mezclaba dos casos de uso muy
 // distintos (instalar una app genérica de warden vs conectar un repo
 // propio para CI/CD) en un solo formulario de 16 campos — confuso, sin
-// contexto de dónde sacar cada dato. Se separa en dos caminos: uno corto
-// y explicado para CI/CD (el caso más común), uno completo para el resto.
-func (s *server) handleNewChoice(w http.ResponseWriter, r *http.Request) {
-	render(w, "new_choice.html", map[string]any{"Page": "catalog", "AdminUnlocked": s.isAdmin(r)})
-}
+// contexto de dónde sacar cada dato. Por pedido de Al, "+ Nueva app" va
+// SIEMPRE directo al formulario de CI/CD (es el único caso real que usa):
+// /new/install queda vivo en el código para editar a mano si hiciera
+// falta, pero no se ofrece en la navegación normal.
 
 func (s *server) handleNewDeployForm(w http.ResponseWriter, r *http.Request) {
 	render(w, "new_deploy.html", map[string]any{
