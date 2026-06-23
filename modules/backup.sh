@@ -17,7 +17,7 @@ warden_backup() {
   mkdir -p "$dumps"
 
   # --- Recorrer el catálogo: juntar rutas (+exclusiones) y dumpear BD ---
-  local file_paths=() exclude_args=() tag p pass
+  local file_paths=() exclude_args=() exclude_count=0 tag p pass
   while IFS='|' read -r tag _ _ _; do
     [ -n "$tag" ] || continue
     catalog_load "$tag" || continue
@@ -25,7 +25,7 @@ warden_backup() {
       [ -n "$p" ] && [ -e "$p" ] && file_paths+=("$p")
     done
     for p in "${COMP_EXCLUDES[@]:-}"; do
-      [ -n "$p" ] && exclude_args+=(--exclude "$p")
+      [ -n "$p" ] && { exclude_args+=(--exclude "$p"); exclude_count=$((exclude_count+1)); }
     done
     if [ "${COMP_DB_TYPE:-}" = postgres ] && [ -n "${COMP_DB_CONTAINER:-}" ] \
        && docker ps --format '{{.Names}}' | grep -qx "$COMP_DB_CONTAINER"; then
@@ -52,7 +52,7 @@ warden_backup() {
   fi
 
   if [ "${#file_paths[@]}" -gt 0 ]; then
-    log "Backup de archivos (${#file_paths[@]} rutas${exclude_args:+, ${#exclude_args[@]} exclusiones})"
+    log "Backup de archivos (${#file_paths[@]} rutas${exclude_count:+, $exclude_count exclusiones})"
     if [ "$dry" = 1 ]; then
       printf '   [dry-run] restic backup --tag files'; printf ' %q' "${exclude_args[@]}" "${file_paths[@]}"; echo
     else
