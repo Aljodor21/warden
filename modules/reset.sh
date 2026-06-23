@@ -24,6 +24,7 @@ warden_reset() {
   echo "  - Todos los contenedores/datos de apps instaladas por warden (catálogo + dashboard)"
   echo "  - ${WARDEN_DATA:-/srv/warden} (datos de Immich/NAS/etc.)"
   echo "  - /etc/warden (config, usuarios del NAS, secretos generados)"
+  echo "  - Imágenes de Docker que queden sin usar (docker image prune)"
   [ "$full" = "--full" ] && echo "  - /etc/warden/age.key (¡tu llave de cifrado! sin ella no se descifran backups viejos)"
   echo "No toca: el disco de backup externo, ni los paquetes del sistema."
   echo
@@ -48,6 +49,9 @@ warden_reset() {
         _reset_down "$WARDEN_ROOT/$COMP_INSTALL" "/etc/warden/$tag/docker-compose.override.yml" ;;
     esac
   done < <(catalog_each)
+
+  log "Limpiando imágenes de Docker sin usar (libera espacio en disco)"
+  run "docker image prune -af"
 
   log "Desactivando timers"
   run "systemctl disable --now warden-backup.timer warden-verify.timer 2>/dev/null || true"
