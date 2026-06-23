@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -21,18 +22,30 @@ type DiskRow struct {
 }
 
 type Snapshot struct {
-	ID    string   `json:"short_id"`
-	Time  string   `json:"time"`
-	Tags  []string `json:"tags"`
-	Paths []string `json:"paths"`
+	ID       string   `json:"short_id"`
+	Time     string   `json:"time"`
+	Tags     []string `json:"tags"`
+	Paths    []string `json:"paths"`
+	WhenAgo  string   // calculado: "hace 2 horas"
+	WhenFull string   // calculado: fecha+hora legible
 }
 
 type BackupsView struct {
-	Disks        []DiskRow
-	BackupMount  string // "" si no hay ninguno montado
-	Snapshots    []Snapshot
-	LastBackup   string // fecha legible del snapshot más reciente, o ""
-	SnapshotsErr string
+	Disks          []DiskRow
+	BackupMount    string // "" si no hay ninguno montado
+	Snapshots      []Snapshot
+	FilesCount     int
+	DBCount        int
+	LastBackup     string // "hace 2 horas"
+	LastBackupFull string // "23 Jun 2026, 13:45"
+	AgeLevel       string // ok | warn | crit — semáforo de antigüedad
+	RepoSize       string // tamaño total del repositorio restic
+	SnapshotsErr   string
+
+	TimerInstalled bool
+	TimerActive    bool
+	TimerNext      string // próxima ejecución, legible
+	TimerLast      string // última ejecución que el timer disparó, legible
 }
 
 // systemDiskName replica bin/warden:system_disk() — el disco que contiene '/'.
@@ -133,14 +146,80 @@ func resticPassFile() string {
 	return "/root/.warden-restic-password"
 }
 
+// timerInfo lee el estado real de warden-backup.timer — no asume nada: si
+// el timer no existe (porque este server nunca corrió 'warden register'),
+// se reporta tal cual, sin fingir un estado.
+func timerInfo() (installed, active bool, next, last string) {
+	out, err := exec.Command("systemctl", "show", "warden-backup.timer",
+		"--property=LoadState,ActiveState,NextElapseUSecRealtime,LastTriggerUSec").Output()
+	if err != nil {
+		return false, false, "", ""
+	}
+	props := map[string]string{}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		kv := strings.SplitN(line, "=", 2)
+		if len(kv) == 2 {
+			props[kv[0]] = kv[1]
+		}
+	}
+	installed = props["LoadState"] == "loaded"
+	active = props["ActiveState"] == "active"
+	next = props["NextElapseUSecRealtime"]
+	last = props["LastTriggerUSec"]
+	if last == "n/a" {
+		last = ""
+	}
+	return
+}
+
+func repoSizeHuman(repo string) string {
+	out, err := exec.Command("du", "-sh", repo).Output()
+	if err != nil {
+		return ""
+	}
+	f := strings.Fields(string(out))
+	if len(f) == 0 {
+		return ""
+	}
+	return f[0]
+}
+
+func ageLevel(t time.Time) string {
+	age := time.Since(t)
+	switch {
+	case age > 72*time.Hour:
+		return "crit"
+	case age > 24*time.Hour:
+		return "warn"
+	default:
+		return "ok"
+	}
+}
+
+func humanAgo(t time.Time) string {
+	d := time.Since(t)
+	switch {
+	case d < time.Minute:
+		return "hace instantes"
+	case d < time.Hour:
+		return fmt.Sprintf("hace %d min", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("hace %d h", int(d.Hours()))
+	default:
+		return fmt.Sprintf("hace %d días", int(d.Hours()/24))
+	}
+}
+
 func (s *server) gatherBackupsView() BackupsView {
 	v := BackupsView{Disks: listDisks(), BackupMount: backupMount()}
+	v.TimerInstalled, v.TimerActive, v.TimerNext, v.TimerLast = timerInfo()
 
 	repo := v.BackupMount + "/restic-repo"
 	passfile := resticPassFile()
 	if _, err := os.Stat(repo); err != nil {
 		return v
 	}
+	v.RepoSize = repoSizeHuman(repo)
 	if _, err := os.Stat(passfile); err != nil {
 		v.SnapshotsErr = "Falta la contraseña restic (" + passfile + ")"
 		return v
@@ -158,10 +237,30 @@ func (s *server) gatherBackupsView() BackupsView {
 		return v
 	}
 	var snaps []Snapshot
-	if err := json.Unmarshal(out, &snaps); err == nil {
-		v.Snapshots = snaps
-		if len(snaps) > 0 {
-			v.LastBackup = snaps[len(snaps)-1].Time
+	if err := json.Unmarshal(out, &snaps); err != nil {
+		return v
+	}
+	for i, sn := range snaps {
+		t, perr := time.Parse(time.RFC3339Nano, sn.Time)
+		if perr == nil {
+			snaps[i].WhenAgo = humanAgo(t)
+			snaps[i].WhenFull = t.Local().Format("02 Jan 2006, 15:04")
+		}
+		for _, tag := range sn.Tags {
+			if tag == "files" {
+				v.FilesCount++
+			} else if tag == "db" {
+				v.DBCount++
+			}
+		}
+	}
+	v.Snapshots = snaps
+	if len(snaps) > 0 {
+		last := snaps[len(snaps)-1]
+		v.LastBackup = last.WhenAgo
+		v.LastBackupFull = last.WhenFull
+		if t, perr := time.Parse(time.RFC3339Nano, last.Time); perr == nil {
+			v.AgeLevel = ageLevel(t)
 		}
 	}
 	return v

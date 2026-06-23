@@ -18,17 +18,42 @@
 </div>
 
 <div class="panel" style="margin-top:1rem">
-  <h2>Backup ({{.B.BackupMount}})</h2>
+  <h2>Backup automático</h2>
+  <div class="statusrow">
+    <div>
+      <span class="label">Timer (warden-backup.timer, cada hora)</span>
+      <div class="desc">
+        {{if not .B.TimerInstalled}}No está activado en este server. Corré 'warden register' para activarlo.
+        {{else if .B.TimerActive}}Activo. Próxima ejecución: {{.B.TimerNext}}{{if .B.TimerLast}} · última: {{.B.TimerLast}}{{end}}
+        {{else}}Instalado pero NO activo.
+        {{end}}
+      </div>
+    </div>
+    <span class="badge {{if .B.TimerActive}}on{{else}}off{{end}}">{{if .B.TimerActive}}activo{{else}}inactivo{{end}}</span>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:1rem">
+  <h2>Backup ({{.B.BackupMount}}{{if .B.RepoSize}} · {{.B.RepoSize}}{{end}})</h2>
   {{if .B.SnapshotsErr}}
   <p class="muted">{{.B.SnapshotsErr}}</p>
   {{else if not .B.Snapshots}}
   <p class="muted">No hay ningún backup todavía en este disco.</p>
   {{else}}
-  <div class="row"><span class="muted">Último backup</span><span>{{.B.LastBackup}}</span></div>
-  <div class="row"><span class="muted">Snapshots guardados</span><span>{{len .B.Snapshots}}</span></div>
+  <div class="statusrow">
+    <div>
+      <span class="label">Último backup</span>
+      <div class="desc">{{.B.LastBackup}} ({{.B.LastBackupFull}})</div>
+    </div>
+    <span class="badge {{if eq .B.AgeLevel "ok"}}on{{else if eq .B.AgeLevel "crit"}}off{{end}}">
+      {{if eq .B.AgeLevel "ok"}}reciente{{else if eq .B.AgeLevel "warn"}}atrasado{{else}}¡muy atrasado!{{end}}
+    </span>
+  </div>
+  <div class="row"><span class="muted">Snapshots de archivos</span><span>{{.B.FilesCount}}</span></div>
+  <div class="row"><span class="muted">Snapshots de bases de datos</span><span>{{.B.DBCount}}</span></div>
   <div class="clist" style="margin-top:0.6rem">
     {{range .B.Snapshots}}
-    <div class="citem">{{.ID}} <span class="st">{{.Time}} · {{range .Tags}}{{.}} {{end}}</span></div>
+    <div class="citem">{{.ID}} <span class="st">{{.WhenFull}} ({{.WhenAgo}}) · {{range .Tags}}{{.}} {{end}}</span></div>
     {{end}}
   </div>
   {{end}}
