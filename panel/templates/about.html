@@ -30,15 +30,15 @@
 
   <div class="panel" style="margin-top:1rem">
     <h2>Tecnologías usadas</h2>
-    <div class="appgrid">
+    <div class="techrow">
       {{range .Tech}}
-      <a href="{{.URL}}" target="_blank" class="appcard" title="{{.Why}}">
+      <a href="{{.URL}}" target="_blank" class="techitem" title="{{.Why}}">
         {{if .Logo}}
-        <span class="techlogo"><img src="/static/logos/{{.Logo}}" alt="{{.Name}}" width="22" height="22"></span>
+        <img src="/static/logos/{{.Logo}}" alt="{{.Name}}" width="30" height="30">
         {{else}}
-        <span class="avatar">{{slice .Name 0 1}}</span>
+        <span class="techinitial">{{slice .Name 0 1}}</span>
         {{end}}
-        <span class="appname">{{.Name}}</span>
+        <span class="techname">{{.Name}}</span>
       </a>
       {{end}}
     </div>
