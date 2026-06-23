@@ -1,0 +1,17 @@
+{{define "backups.html"}}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>warden — backups</title>
+  {{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+  <script defer src="/static/alpine.min.js"></script>
+</head>
+<body>
+  {{template "nav" .}}
+  <div id="backups-content">{{template "backups_fragment.html" (dict "B" .B)}}</div>
+</body>
+</html>
+{{end}}

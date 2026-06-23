@@ -1,0 +1,41 @@
+{{define "backups_fragment.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+{{if .Running}}<div class="ok-msg">Backup iniciado en segundo plano — puede tardar varios minutos. Recargá esta página más tarde para ver el snapshot nuevo.</div>{{end}}
+
+<div class="panel">
+  <h2>Discos</h2>
+  {{range .B.Disks}}
+  <div class="statusrow">
+    <div>
+      <span class="label">{{.Name}} — {{.Size}}{{if .Model}} ({{.Model}}){{end}}</span>
+      <div class="desc">{{.Detail}}</div>
+    </div>
+    <span class="badge {{if eq .Role "BACKUP"}}on{{else if eq .Role "SYSTEM"}}off{{end}}">{{.Role}}</span>
+  </div>
+  {{else}}
+  <p class="muted">No se detectaron discos.</p>
+  {{end}}
+</div>
+
+<div class="panel" style="margin-top:1rem">
+  <h2>Backup ({{.B.BackupMount}})</h2>
+  {{if .B.SnapshotsErr}}
+  <p class="muted">{{.B.SnapshotsErr}}</p>
+  {{else if not .B.Snapshots}}
+  <p class="muted">No hay ningún backup todavía en este disco.</p>
+  {{else}}
+  <div class="row"><span class="muted">Último backup</span><span>{{.B.LastBackup}}</span></div>
+  <div class="row"><span class="muted">Snapshots guardados</span><span>{{len .B.Snapshots}}</span></div>
+  <div class="clist" style="margin-top:0.6rem">
+    {{range .B.Snapshots}}
+    <div class="citem">{{.ID}} <span class="st">{{.Time}} · {{range .Tags}}{{.}} {{end}}</span></div>
+    {{end}}
+  </div>
+  {{end}}
+  <form style="margin-top:1rem" hx-post="/backups/now" hx-target="#backups-content" hx-swap="innerHTML">
+    <button class="btn" type="submit" {{if .Running}}disabled{{end}}>
+      {{if .Running}}Backup en progreso…{{else}}Hacer backup ahora{{end}}
+    </button>
+  </form>
+</div>
+{{end}}

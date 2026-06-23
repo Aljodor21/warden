@@ -65,6 +65,10 @@ type server struct {
 	lastRx      int64
 	lastTx      int64
 	lastNetTime time.Time
+
+	// Estado del backup en segundo plano (puede tardar minutos).
+	bmu           sync.Mutex
+	backupRunning bool
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
@@ -117,6 +121,9 @@ func main() {
 	mux.HandleFunc("POST /system/vpn", s.requireAdmin("system_fragment.html", withSys, s.handleVPNInstall))
 	mux.HandleFunc("POST /system/secrets-init", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsInit))
 	mux.HandleFunc("POST /system/secrets-save", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsSave))
+	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
+	mux.HandleFunc("GET /backups", s.handleBackupsPage)
+	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	srv := &http.Server{
