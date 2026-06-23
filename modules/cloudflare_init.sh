@@ -56,7 +56,24 @@ warden_cloudflare_init() {
   fi
 
   if [ -f "$CF_CONFIG" ]; then
-    ok "Ya existe $CF_CONFIG, no lo piso (corré 'warden publish' para agregar apps)"
+    local cur_tid; cur_tid="$(awk '/^tunnel:/{print $2; exit}' "$CF_CONFIG")"
+    if [ "$cur_tid" = "$tid" ]; then
+      ok "$CF_CONFIG ya usa este túnel, no lo toco (corré 'warden publish' para agregar apps)"
+    else
+      warn "Este server ya estaba usando OTRO túnel ($cur_tid)."
+      if ui_confirm "¿Cambiar este server para que use el túnel '$name' ($tid) en vez del anterior?"; then
+        backup_file "$CF_CONFIG"
+        {
+          echo "tunnel: $tid"
+          echo "credentials-file: /etc/cloudflared/${tid}.json"
+          echo "ingress:"
+          echo "  - service: http_status:404"
+        } > "$CF_CONFIG"
+        ok "Cambiado a '$name' ($tid). Corré 'warden publish' para agregar tus apps ahí."
+      else
+        ok "Sigo usando el túnel anterior ($cur_tid). El nuevo ('$name') quedó creado en Cloudflare por si lo necesitás después."
+      fi
+    fi
   else
     log "Dejando la config inicial en $CF_CONFIG"
     {
