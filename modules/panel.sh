@@ -59,7 +59,10 @@ warden_panel_install() {
   run "install -m 644 /tmp/warden-panel.service '$PANEL_SERVICE'"
   run "rm -f /tmp/warden-panel.service"
   run "systemctl daemon-reload"
-  run "systemctl enable --now warden-panel"
+  run "systemctl enable warden-panel"
+  # 'restart' (no 'start') — si ya estaba corriendo, esto FUERZA a que cargue
+  # el binario recién compilado. 'enable --now'/'start' es no-op si ya corría.
+  run "systemctl restart warden-panel"
 
   # No depender de que se reaplique TODO modules/firewall.sh — si ufw está
   # activo, asegurar la regla de este puerto puntual, ahora mismo.
