@@ -60,7 +60,7 @@
 </div>
 
 {{if .Others}}
-<details class="panel" style="margin-top:1rem">
+<details id="others-details" class="panel" style="margin-top:1rem" hx-preserve="true">
   <summary>Otros procesos en este server ({{.OthersUp}}/{{.OthersTotal}} activos) — sin app asociada en el catálogo</summary>
   <div class="clist" style="margin-top:0.8rem">
     {{range .Others}}
