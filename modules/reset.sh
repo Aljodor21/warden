@@ -8,14 +8,13 @@
 # NO toca: el disco de backup externo, paquetes del sistema (Docker, avahi,
 # zsh...), ni tu site/. Esto es "limpiar la capa de warden", no reinstalar el SO.
 
-_reset_down() {  # <archivo compose> [override]
-  local compose="$1" override="${2:-}"
+_reset_down() {  # <archivo compose> [override] [envfile]
+  local compose="$1" override="${2:-}" envfile="${3:-}"
   [ -f "$compose" ] || return 0
-  if [ -n "$override" ] && [ -f "$override" ]; then
-    _compose -f "$compose" -f "$override" down -v --remove-orphans || warn "No bajó completo: $compose (revisalo a mano con docker ps -a)"
-  else
-    _compose -f "$compose" down -v --remove-orphans || warn "No bajó completo: $compose (revisalo a mano con docker ps -a)"
-  fi
+  local args=(-f "$compose")
+  [ -n "$override" ] && [ -f "$override" ] && args+=(-f "$override")
+  [ -n "$envfile" ] && [ -f "$envfile" ] && args+=(--env-file "$envfile")
+  _compose "${args[@]}" down -v --remove-orphans || warn "No bajó completo: $compose (revisalo a mano con docker ps -a)"
 }
 
 warden_reset() {
@@ -46,7 +45,7 @@ warden_reset() {
     catalog_load "$tag" || continue
     case "${COMP_INSTALL:-}" in
       */docker-compose.yml)
-        _reset_down "$WARDEN_ROOT/$COMP_INSTALL" "/etc/warden/$tag/docker-compose.override.yml" ;;
+        _reset_down "$WARDEN_ROOT/$COMP_INSTALL" "/etc/warden/$tag/docker-compose.override.yml" "/etc/warden/secrets/$tag.env" ;;
     esac
   done < <(catalog_each)
 
