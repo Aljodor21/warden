@@ -56,4 +56,13 @@ warden_publish() {
 
   run "systemctl restart cloudflared"
   ok "Publicado desde el catálogo y cloudflared recargado."
+
+  # Las credenciales del túnel acaban de tocarse — actualizamos solos el
+  # respaldo cifrado, si ya existe la llave (si no, es un paso manual de
+  # una sola vez: 'warden secrets init'). No rompe nada si falta.
+  if has age && [ -f "${AGE_KEY:-/etc/warden/age.key}" ] && command -v warden_secrets_save >/dev/null 2>&1; then
+    warden_secrets_save
+  else
+    warn "No actualicé el respaldo cifrado de Cloudflared (falta 'warden secrets init'). Es manual, una sola vez."
+  fi
 }
