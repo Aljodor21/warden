@@ -109,6 +109,7 @@ func main() {
 	mux.HandleFunc("POST /new/install", s.handleEditSave)
 	mux.HandleFunc("GET /new/deploy", s.handleNewDeployForm)
 	mux.HandleFunc("POST /new/deploy", s.handleNewDeploySave)
+	mux.HandleFunc("POST /new/deploy/check-runner", s.handleCheckRunner)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	noExtra := func() map[string]any { return map[string]any{} }
@@ -236,7 +237,9 @@ func (s *server) handleNewChoice(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleNewDeployForm(w http.ResponseWriter, r *http.Request) {
-	render(w, "new_deploy.html", map[string]any{"Page": "catalog", "AdminUnlocked": s.isAdmin(r)})
+	render(w, "new_deploy.html", map[string]any{
+		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "CloudflareSet": cloudflareConfigured(),
+	})
 }
 
 func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
@@ -254,14 +257,25 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 	if container == "" {
 		container = tag
 	}
+	port := strings.TrimSpace(r.FormValue("cfport"))
+	if owner, used := s.portInUse(port, tag); used {
+		http.Error(w, "El puerto "+port+" ya lo usa '"+owner+"' — elegí otro.", http.StatusConflict)
+		return
+	}
+	cfhost := strings.TrimSpace(r.FormValue("cfhost"))
+	if cfhost != "" && !cloudflareConfigured() {
+		// Defensa en el servidor además del HTML: aunque alguien fuerce el campo,
+		// no se guarda un subdominio sin túnel configurado (quedaría inútil).
+		cfhost = ""
+	}
 	c := &Component{
 		Tag:       tag,
 		Name:      r.FormValue("name"),
 		Kind:      "none", // el código vive en su repo; si tiene datos propios, se edita después con más opciones
 		Install:   install,
 		Container: container,
-		CFHost:    r.FormValue("cfhost"),
-		CFPort:    r.FormValue("cfport"),
+		CFHost:    cfhost,
+		CFPort:    port,
 		Note:      "Desplegada vía CI/CD — agregada desde el panel.",
 	}
 	if err := writeComponentFile(s.siteCatalogDir+"/"+tag+".component", c); err != nil {

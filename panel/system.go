@@ -40,9 +40,7 @@ func (s *server) gatherSystemView() SystemView {
 	if _, err := os.Stat(ageKeyPath); err == nil {
 		v.AgeKeyExists = true
 	}
-	if _, err := os.Stat("/etc/cloudflared/config.yml"); err == nil {
-		v.CloudflareSet = true
-	}
+	v.CloudflareSet = cloudflareConfigured()
 	if entries, err := os.ReadDir(s.siteSecretsDir()); err == nil {
 		for _, e := range entries {
 			if strings.HasSuffix(e.Name(), ".tar.age") {

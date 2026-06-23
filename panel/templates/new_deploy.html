@@ -1,7 +1,10 @@
 {{define "new_deploy.html"}}
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><title>warden — conectar proyecto</title>{{template "_style"}}</head>
+<head>
+  <meta charset="utf-8"><title>warden — conectar proyecto</title>{{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+</head>
 <body>
   {{template "nav" .}}
   <div class="top">
@@ -10,7 +13,8 @@
   </div>
 
   <p class="muted">Esto solo describe tu app en el catálogo de warden — NO crea el repo ni lo despliega todavía.
-    Al guardar te muestro los pasos que faltan en GitHub.</p>
+    Al guardar te muestro los pasos que faltan en GitHub. Ojo: hace falta UN runner POR repo (no se comparten
+    entre proyectos), incluso si ya tenés runners corriendo para otras apps.</p>
 
   <form method="post" action="/new/deploy">
     <label>Nombre — cómo se va a ver en el Dashboard y el Catálogo</label>
@@ -20,7 +24,10 @@
     <input name="tag" placeholder="click-counter" required>
 
     <label>URL del repo de GitHub — en GitHub: botón verde "Code" → pestaña "HTTPS" → copiá esa URL</label>
-    <input name="install" placeholder="https://github.com/tu-usuario/tu-repo.git" required>
+    <input name="install" placeholder="https://github.com/tu-usuario/tu-repo.git" required
+           hx-post="/new/deploy/check-runner" hx-trigger="blur, keyup changed delay:500ms"
+           hx-target="#runner-status" hx-swap="innerHTML">
+    <div id="runner-status" style="margin-top:0.5rem"></div>
 
     <label>Puerto — el puerto donde tu app escucha DENTRO del contenedor (mirá tu Dockerfile/docker-compose.yml de esa app: la línea "EXPOSE" o "ports")</label>
     <input name="cfport" placeholder="3000">
@@ -28,8 +35,15 @@
     <label>Contenedor principal — el "container_name" de tu docker-compose.yml. Si lo dejás vacío, asumimos que es igual al Tag.</label>
     <input name="container" placeholder="(igual al tag si lo dejás vacío)">
 
+    {{if .CloudflareSet}}
     <label>Subdominio público — opcional, SOLO si querés que cualquiera pueda entrar desde internet con tu dominio</label>
     <input name="cfhost" placeholder="clicks.tudominio.site">
+    {{else}}
+    <label>Subdominio público</label>
+    <p class="muted">Todavía no hay un túnel de Cloudflare configurado en este server — la app quedará accesible
+      solo dentro de tu red por ahora. Configurá Cloudflare en la página <a href="/system">Sistema</a> y volvé
+      a editar esta app después si querés exponerla a internet.</p>
+    {{end}}
 
     <p><button class="btn" type="submit">Guardar y ver los próximos pasos</button></p>
   </form>
