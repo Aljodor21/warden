@@ -52,25 +52,27 @@ restic_ro() {
     restic/restic -r /repo "$@"
 }
 
-STOPPED=()
-_stop_container() {  # detiene UNA vez por nombre, recuerda para volver a prenderlo
+TO_ENSURE_RUNNING=()
+_stop_container() {  # detiene si está corriendo; SIEMPRE queda anotado para garantizar que vuelva a prender
   local c="$1"
   [ -n "$c" ] || return 0
+  printf '%s\n' "${TO_ENSURE_RUNNING[@]:-}" | grep -qx "$c" || TO_ENSURE_RUNNING+=("$c")
   docker ps --format '{{.Names}}' | grep -qx "$c" || return 0
-  printf '%s\n' "${STOPPED[@]:-}" | grep -qx "$c" && return 0
   log "Deteniendo $c"
   run "docker stop '$c'"
-  STOPPED+=("$c")
 }
-_restart_stopped() {
+# Garantiza que cada app afectada quede prendida al final, la hayamos
+# parado nosotros o ya estuviera caída de antes (ej. se crasheó sola por
+# los archivos que faltaban). 'docker start' en uno ya prendido no hace nada.
+_ensure_running() {
   local c
-  for c in "${STOPPED[@]:-}"; do
+  for c in "${TO_ENSURE_RUNNING[@]:-}"; do
     [ -n "$c" ] || continue
-    log "Volviendo a prender $c"
-    run "docker start '$c'"
+    log "Asegurando que $c quede prendido"
+    run "docker start '$c'" || warn "No pude prender $c, revisalo a mano (docker logs $c)"
   done
 }
-trap _restart_stopped EXIT
+trap _ensure_running EXIT
 
 # Carga los dumps restaurados ($STAGE/dumps/*.sql) en su contenedor,
 # deteniendo antes la app que los usa (no la BD) y prendiéndola al final.
