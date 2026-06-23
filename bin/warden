@@ -35,6 +35,10 @@ set -uo pipefail
 _self="$(readlink -f "${BASH_SOURCE[0]}")"
 HERE="$(cd "$(dirname "$_self")/.." && pwd)"
 WARDEN_ROOT="$HERE"; export WARDEN_ROOT
+# Config del sitio (WARDEN_LAN, WARDEN_HOSTNAME, etc.) — bootstrap.sh la carga
+# sola, pero si corrés 'warden <algo>' directo (sin pasar por bootstrap) en la
+# misma sesión, también tiene que estar disponible acá.
+[ -f "$HERE/site/site.conf" ] && source "$HERE/site/site.conf"
 # shellcheck source=/dev/null
 source "$HERE/lib/distro.sh"
 # shellcheck source=/dev/null

@@ -61,5 +61,15 @@ warden_panel_install() {
   run "systemctl daemon-reload"
   run "systemctl enable --now warden-panel"
 
-  ok "Panel listo. Desde tu LAN/Tailscale: http://$(hostname).local:7890 (la regla de ufw ya lo restringe a tu LAN)"
+  # No depender de que se reaplique TODO modules/firewall.sh — si ufw está
+  # activo, asegurar la regla de este puerto puntual, ahora mismo.
+  if has ufw && ufw status 2>/dev/null | grep -q "Status: active"; then
+    if [ -n "${WARDEN_LAN:-}" ]; then
+      run "ufw allow from '$WARDEN_LAN' to any port 7890 proto tcp comment 'warden panel'"
+    else
+      warn "ufw está activo pero no hay WARDEN_LAN definido — el panel puede no ser alcanzable. Agregá la regla a mano: ufw allow <TU_LAN> to any port 7890 proto tcp"
+    fi
+  fi
+
+  ok "Panel listo. Desde tu LAN/Tailscale: http://$(hostname).local:7890"
 }
