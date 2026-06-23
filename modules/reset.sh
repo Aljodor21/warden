@@ -12,9 +12,9 @@ _reset_down() {  # <archivo compose> [override]
   local compose="$1" override="${2:-}"
   [ -f "$compose" ] || return 0
   if [ -n "$override" ] && [ -f "$override" ]; then
-    _compose -f "$compose" -f "$override" down -v --remove-orphans 2>/dev/null
+    _compose -f "$compose" -f "$override" down -v --remove-orphans || warn "No bajó completo: $compose (revisalo a mano con docker ps -a)"
   else
-    _compose -f "$compose" down -v --remove-orphans 2>/dev/null
+    _compose -f "$compose" down -v --remove-orphans || warn "No bajó completo: $compose (revisalo a mano con docker ps -a)"
   fi
 }
 
