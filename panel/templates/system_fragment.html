@@ -25,6 +25,27 @@
 
 <div class="statusrow">
   <div>
+    <div class="label">Túnel de Cloudflare</div>
+    <div class="desc">
+      {{if .Sys.CloudflareSet}}Configurado{{if .Sys.CloudflareID}} — ID {{.Sys.CloudflareID}}{{end}}. Esto es lo
+        que necesita 'warden publish' para exponer tus apps con un subdominio propio.
+      {{else}}Sin configurar. Sin esto, ninguna app puede tener subdominio público — al hacer click te va a
+        pedir abrir una URL para autorizar este server con tu cuenta de Cloudflare, y elegir tu dominio.
+      {{end}}
+    </div>
+  </div>
+  {{if .Sys.CloudflareSet}}
+  <span class="badge on">configurado</span>
+  {{else}}
+  <form class="acts" hx-post="/system/cloudflare-init" hx-target="#cf-log-container" hx-swap="innerHTML">
+    <button class="btn" type="submit">Configurar<span class="spinner"></span></button>
+  </form>
+  {{end}}
+</div>
+{{if not .Sys.CloudflareSet}}<div id="cf-log-container" style="margin-top:0.5rem"></div>{{end}}
+
+<div class="statusrow">
+  <div>
     <div class="label">Llave de cifrado (age)</div>
     <div class="desc">
       {{if .Sys.AgeKeyExists}}Generada — copiala FUERA de este server (USB, gestor de contraseñas). Sin ella,

@@ -31,6 +31,9 @@
 
     <label>Puerto — el puerto donde tu app escucha DENTRO del contenedor (mirá tu Dockerfile/docker-compose.yml de esa app: la línea "EXPOSE" o "ports")</label>
     <input name="cfport" placeholder="3000">
+    {{if .UsedPorts}}
+    <p class="muted" style="margin-top:0.4rem">Puertos ya en uso (evitalos): {{range $i, $p := .UsedPorts}}{{if $i}}, {{end}}<strong>{{$p.Port}}</strong> ({{$p.Name}}){{end}}.</p>
+    {{end}}
 
     <label>Contenedor principal — el "container_name" de tu docker-compose.yml. Si lo dejás vacío, asumimos que es igual al Tag.</label>
     <input name="container" placeholder="(igual al tag si lo dejás vacío)">

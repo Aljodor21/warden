@@ -1,0 +1,11 @@
+{{define "cloudflare_log.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+<div id="cf-log-box" {{if .Running}}hx-get="/system/cloudflare-log" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if .Running}}
+  <p class="muted">Corriendo… si aparece una URL abajo, abrila en tu navegador para autorizar y completar el login.</p>
+  {{else if .Done}}
+  <div class="ok-msg">Terminó. <a href="/system">Recargá la página</a> para ver el estado actualizado.</div>
+  {{end}}
+  {{if .Log}}<pre style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+</div>
+{{end}}

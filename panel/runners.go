@@ -53,6 +53,28 @@ func findRunnerInUnits(unitsOutput, owner, repo string) (service string, found b
 	return "", false
 }
 
+type UsedPort struct {
+	Port string
+	Tag  string
+	Name string
+}
+
+// usedPorts: la lista completa de puertos ya ocupados por el catálogo —
+// para mostrarla AL LLENAR el formulario (no solo rechazar al guardar).
+func (s *server) usedPorts() []UsedPort {
+	comps, err := listComponentsMerged(s.catalogDirs())
+	if err != nil {
+		return nil
+	}
+	var out []UsedPort
+	for _, c := range comps {
+		if c.CFPort != "" {
+			out = append(out, UsedPort{Port: c.CFPort, Tag: c.Tag, Name: c.Name})
+		}
+	}
+	return out
+}
+
 // portInUse: ¿algún OTRO componente del catálogo ya usa este puerto?
 // (excludeTag para permitir que una app se edite a sí misma sin chocar).
 func (s *server) portInUse(port, excludeTag string) (tag string, used bool) {

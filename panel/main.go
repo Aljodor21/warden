@@ -69,6 +69,9 @@ type server struct {
 	// Estado del backup en segundo plano (puede tardar minutos).
 	bmu           sync.Mutex
 	backupRunning bool
+
+	// Estado de 'cloudflare-init' en segundo plano (espera tu login).
+	cfInit cfInitState
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
@@ -127,6 +130,8 @@ func main() {
 	mux.HandleFunc("POST /system/vpn", s.requireAdmin("system_fragment.html", withSys, s.handleVPNInstall))
 	mux.HandleFunc("POST /system/secrets-init", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsInit))
 	mux.HandleFunc("POST /system/secrets-save", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsSave))
+	mux.HandleFunc("POST /system/cloudflare-init", s.requireAdmin("cloudflare_log.html", noExtra, s.handleCloudflareInitStart))
+	mux.HandleFunc("GET /system/cloudflare-log", s.handleCloudflareInitPoll)
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
@@ -240,6 +245,7 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 func (s *server) handleNewDeployForm(w http.ResponseWriter, r *http.Request) {
 	render(w, "new_deploy.html", map[string]any{
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "CloudflareSet": cloudflareConfigured(),
+		"UsedPorts": s.usedPorts(),
 	})
 }
 
