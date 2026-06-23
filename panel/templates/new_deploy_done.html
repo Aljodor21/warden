@@ -67,10 +67,19 @@ jobs:
 
   <div class="panel" style="margin-top:1rem">
     <h2>2. Registrar el runner (una sola vez por repo)</h2>
+    <p class="muted">¿Qué es esto? El "runner" es el programa que queda corriendo en ESTE server,
+      escuchando avisos de GitHub. Cuando hacés push, GitHub no construye nada por su cuenta — le avisa
+      a tu runner, y es TU server (no GitHub) el que clona el código, construye la imagen de Docker y la
+      levanta. Por eso hace falta uno: sin él, ningún push dispara nada acá.</p>
     <p>En GitHub: tu repo → Settings → Actions → Runners → "New self-hosted runner" → Linux.
-      Te va a mostrar un token (después de <code>--token</code>) — copialo.</p>
-    <p>Por consola, en este server:</p>
-    <pre>sudo warden runner {{.Install}} TU_TOKEN_AQUI</pre>
+      Te va a mostrar un token (después de <code>--token</code>) — copialo y pegalo aquí, el panel hace el
+      resto (descargar, registrar, dejarlo corriendo como servicio):</p>
+    <form hx-post="/runner/register" hx-target="#runner-reg-result" hx-swap="innerHTML">
+      <input type="hidden" name="install" value="{{.Install}}">
+      <input type="password" name="token" placeholder="Pegá el token aquí" required>
+      <p><button class="btn" type="submit">Registrar runner<span class="spinner"></span></button></p>
+    </form>
+    <div id="runner-reg-result"></div>
   </div>
 
   <div class="panel" style="margin-top:1rem">

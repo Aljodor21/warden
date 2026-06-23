@@ -13,6 +13,33 @@ func cloudflareConfigured() bool {
 	return err == nil
 }
 
+type RunnerInfo struct {
+	Service string
+	Active  bool
+}
+
+// listRunners: todos los runners de GitHub Actions registrados en este
+// server (no hay un token permanente de GitHub que warden guarde — el
+// token de registro se usa una sola vez y se descarta; esta lista es la
+// forma real de ver "qué hay autorizado", en vez de un secreto guardado).
+func listRunners() []RunnerInfo {
+	out, err := exec.Command("systemctl", "list-units", "--type=service", "--all",
+		"--no-legend", "--plain").Output()
+	if err != nil {
+		return nil
+	}
+	var out2 []RunnerInfo
+	for _, line := range strings.Split(string(out), "\n") {
+		f := strings.Fields(line)
+		if len(f) == 0 || !strings.HasPrefix(f[0], "actions.runner.") {
+			continue
+		}
+		active := len(f) > 2 && f[2] == "running"
+		out2 = append(out2, RunnerInfo{Service: f[0], Active: active})
+	}
+	return out2
+}
+
 var githubRepoRe = regexp.MustCompile(`github\.com[:/]([^/]+)/([^/.]+)(\.git)?/?$`)
 
 // parseGitHubRepo extrae owner/repo de una URL de GitHub (https o git@).

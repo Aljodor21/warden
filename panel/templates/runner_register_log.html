@@ -1,0 +1,11 @@
+{{define "runner_register_log.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+<div id="runner-reg-box" {{if .Running}}hx-get="/runner/register-log" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if .Running}}
+  <p class="muted">Descargando y registrando el runner…</p>
+  {{else if .Done}}
+  <div class="ok-msg">Terminó. Si dice "registered and ready", ya quedó corriendo — podés hacer push.</div>
+  {{end}}
+  {{if .Log}}<pre style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+</div>
+{{end}}

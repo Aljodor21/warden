@@ -22,6 +22,7 @@ type SystemView struct {
 	CloudflareSet      bool   // /etc/cloudflared/config.yml existe (hay túnel)
 	CloudflareID       string // ID del túnel configurado, si hay uno
 	CloudflareTokenSet bool   // hay un API Token guardado (para borrar registros DNS)
+	Runners            []RunnerInfo
 }
 
 func (s *server) gatherSystemView() SystemView {
@@ -45,6 +46,7 @@ func (s *server) gatherSystemView() SystemView {
 	v.CloudflareSet = cloudflareConfigured()
 	v.CloudflareID = cloudflareTunnelID()
 	v.CloudflareTokenSet = cloudflareTokenExists()
+	v.Runners = listRunners()
 	if entries, err := os.ReadDir(s.siteSecretsDir()); err == nil {
 		for _, e := range entries {
 			if strings.HasSuffix(e.Name(), ".tar.age") {

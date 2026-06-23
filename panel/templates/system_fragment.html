@@ -4,6 +4,23 @@
 
 <div class="statusrow">
   <div>
+    <div class="label">Credenciales de GitHub (runners)</div>
+    <div class="desc">
+      Warden NO guarda ningún token de GitHub permanente — el token que pegás al registrar un runner se usa
+      UNA SOLA VEZ (vence en minutos) para autorizarlo; después, el runner queda con sus propias credenciales
+      internas y ya no necesita ese token nunca más. Esta lista son los runners reales que quedaron activos:
+      {{if .Sys.Runners}}
+      <ul style="margin:0.4rem 0 0 1rem">
+        {{range .Sys.Runners}}<li>{{.Service}} — {{if .Active}}corriendo{{else}}detenido{{end}}</li>{{end}}
+      </ul>
+      {{else}}Ninguno todavía — se registran desde el Catálogo, al agregar un proyecto de CI/CD.
+      {{end}}
+    </div>
+  </div>
+</div>
+
+<div class="statusrow">
+  <div>
     <div class="label">VPN (Tailscale)</div>
     <div class="desc">
       {{if .Sys.TailscaleConnected}}Conectada — IP {{.Sys.TailscaleIP}}. Acceso remoto seguro, sin abrir puertos.

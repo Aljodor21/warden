@@ -2,17 +2,16 @@
 {{if .Invalid}}
 <p class="muted">Esa no parece una URL de GitHub (debería ser algo como https://github.com/usuario/repo.git).</p>
 {{else if .Owner}}
+<p class="muted" style="margin-top:0.3rem">
+  El runner es el programa que va a quedar corriendo EN ESTE server, escuchando avisos de GitHub — cuando
+  hacés push, es tu server (no GitHub) el que construye y levanta la app. Hace falta uno por cada repo.
+</p>
 {{if .Found}}
 <div class="ok-msg">Ya hay un runner registrado para <strong>{{.Owner}}/{{.Repo}}</strong> ({{.Service}}) — listo para desplegar.</div>
 {{else}}
 <div class="err">
-  No hay ningún runner registrado para <strong>{{.Owner}}/{{.Repo}}</strong> todavía. Hace falta uno
-  POR CADA repo (no se comparten entre proyectos). Para registrarlo:
-  <ol style="margin:0.5rem 0 0 1rem">
-    <li>En GitHub: tu repo → Settings → Actions → Runners → "New self-hosted runner" → Linux</li>
-    <li>Copiá el token (la parte después de <code>--token</code>)</li>
-    <li>Por consola en este server: <code>sudo warden runner {{.Install}} TU_TOKEN</code></li>
-  </ol>
+  No hay ningún runner registrado para <strong>{{.Owner}}/{{.Repo}}</strong> todavía — lo registrás más abajo,
+  al guardar, pegando el token que te dé GitHub.
 </div>
 {{end}}
 {{end}}

@@ -71,7 +71,10 @@ type server struct {
 	backupRunning bool
 
 	// Estado de 'cloudflare-init' en segundo plano (espera tu login).
-	cfInit cfInitState
+	cfInit bgProcess
+
+	// Estado de 'warden runner' en segundo plano (descarga + registro).
+	runnerReg bgProcess
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
@@ -119,6 +122,8 @@ func main() {
 	mux.HandleFunc("GET /new/deploy", s.handleNewDeployForm)
 	mux.HandleFunc("POST /new/deploy", s.handleNewDeploySave)
 	mux.HandleFunc("POST /new/deploy/check-runner", s.handleCheckRunner)
+	mux.HandleFunc("POST /runner/register", s.requireAdmin("runner_register_log.html", noExtra, s.handleRunnerRegisterStart))
+	mux.HandleFunc("GET /runner/register-log", s.handleRunnerRegisterPoll)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	mux.HandleFunc("GET /nas", s.handleNAS)
