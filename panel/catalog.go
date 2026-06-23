@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -226,5 +227,11 @@ func listComponentsMerged(dirs []string) ([]*Component, error) {
 	for _, tag := range order {
 		out = append(out, byTag[tag])
 	}
+	// Orden alfabético por nombre — la fusión de carpetas no tiene un orden
+	// natural (depende del orden del filesystem), así que sin esto la lista
+	// se ve "desordenada" para quien la mira.
+	sort.Slice(out, func(i, j int) bool {
+		return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name)
+	})
 	return out, nil
 }
