@@ -15,6 +15,7 @@
 #   backup              [root] Respalda todo el catálogo (restic)
 #   verify              [root] restic check (integridad del repo)
 #   register            [root] Fija el disco en fstab + activa los timers
+#   cloudflare-init      [root] Crea un túnel de Cloudflare desde cero (una vez)
 #   publish             [root] (Re)genera el ingress de Cloudflare desde el catálogo
 #   runner <url> <tok>  [root] Registra un self-hosted runner de GitHub Actions
 #   secrets <accion>    [root] Cifra/restaura secretos con age (init|save|restore)
@@ -51,6 +52,8 @@ source "$HERE/modules/register.sh"
 source "$HERE/modules/doctor.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/cloudflare.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/cloudflare_init.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/runner.sh"
 # shellcheck source=/dev/null
@@ -192,6 +195,7 @@ case "${1:-menu}" in
   backup)      need_root; warden_backup ;;
   verify)      need_root; warden_verify ;;
   register)    need_root; warden_register ;;
+  cloudflare-init) need_root; warden_cloudflare_init ;;
   publish)     need_root; warden_publish ;;
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
   vpn)         need_root; warden_tailscale_install ;;
