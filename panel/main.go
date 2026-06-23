@@ -16,6 +16,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -32,12 +33,30 @@ var templatesFS embed.FS
 //go:embed static/*
 var staticFS embed.FS
 
-var tmpl = template.Must(template.ParseFS(templatesFS, "templates/*.html"))
+// 'dict' deja armar el mapa de datos para un sub-template en una sola línea
+// desde dentro de otro template (ej. pasarle el estado de admin a "nav").
+var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
+	"dict": func(pairs ...any) (map[string]any, error) {
+		if len(pairs)%2 != 0 {
+			return nil, fmt.Errorf("dict: número impar de argumentos")
+		}
+		m := make(map[string]any, len(pairs)/2)
+		for i := 0; i < len(pairs); i += 2 {
+			key, ok := pairs[i].(string)
+			if !ok {
+				return nil, fmt.Errorf("dict: la clave debe ser string")
+			}
+			m[key] = pairs[i+1]
+		}
+		return m, nil
+	},
+}).ParseFS(templatesFS, "templates/*.html"))
 
 type server struct {
 	catalogDir   string
 	wardenBin    string
 	passwordHash string // sha256 hex, vacío = sin auth (solo pruebas locales)
+	adminSess    *adminSessions
 
 	// Para calcular la tasa de red entre refrescos del dashboard.
 	mu          sync.Mutex
@@ -53,7 +72,7 @@ func main() {
 	passFile := flag.String("passfile", "/etc/warden/panel.passwd", "archivo con el hash sha256 de la clave")
 	flag.Parse()
 
-	s := &server{catalogDir: *catalogDir, wardenBin: *wardenBin}
+	s := &server{catalogDir: *catalogDir, wardenBin: *wardenBin, adminSess: newAdminSessions()}
 	if b, err := os.ReadFile(*passFile); err == nil {
 		s.passwordHash = strings.TrimSpace(string(b))
 	} else {
@@ -70,10 +89,15 @@ func main() {
 	mux.HandleFunc("GET /new", s.handleEditForm)
 	mux.HandleFunc("POST /new", s.handleEditSave)
 	mux.HandleFunc("POST /publish", s.handlePublish)
+	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
+	noExtra := func() map[string]any { return map[string]any{} }
 	mux.HandleFunc("GET /nas", s.handleNAS)
-	mux.HandleFunc("POST /nas/add", s.handleNASAdd)
-	mux.HandleFunc("POST /nas/del", s.handleNASDel)
-	mux.HandleFunc("POST /nas/reveal", s.handleNASReveal)
+	mux.HandleFunc("POST /nas/add", s.requireAdmin("nas_fragment.html", withUsers, s.handleNASAdd))
+	mux.HandleFunc("POST /nas/del", s.requireAdmin("nas_fragment.html", withUsers, s.handleNASDel))
+	mux.HandleFunc("POST /nas/reveal", s.requireAdmin("err_inline.html", noExtra, s.handleNASReveal))
+	mux.HandleFunc("POST /admin/unlock", s.handleAdminUnlock)
+	mux.HandleFunc("POST /admin/lock", s.handleAdminLock)
+	mux.HandleFunc("GET /admin/status", s.handleAdminStatus)
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	srv := &http.Server{
@@ -137,7 +161,7 @@ func (s *server) netRates(h Health) (down, up float64) {
 }
 
 func (s *server) handleDashboard(w http.ResponseWriter, r *http.Request) {
-	render(w, "dashboard.html", map[string]any{"Page": "dashboard"})
+	render(w, "dashboard.html", map[string]any{"Page": "dashboard", "AdminUnlocked": s.isAdmin(r)})
 }
 
 func (s *server) handleHealthPartial(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +185,7 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 	for _, c := range comps {
 		rows = append(rows, row{c, c.Container != "" && running[c.Container]})
 	}
-	render(w, "list.html", map[string]any{"Rows": rows, "Page": "catalog"})
+	render(w, "list.html", map[string]any{"Rows": rows, "Page": "catalog", "AdminUnlocked": s.isAdmin(r)})
 }
 
 func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {

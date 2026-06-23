@@ -17,19 +17,8 @@ func (s *server) runWarden(ctx context.Context, args ...string) (string, error) 
 	return string(out), err
 }
 
-// adminOK reconfirma la clave de admin para UNA acción puntual — es el
-// "candado" (como en Cockpit): aunque el navegador ya esté autenticado por
-// Basic Auth, las acciones que cambian algo del sistema piden la clave otra
-// vez, para que dejar el panel abierto en el navegador no sea suficiente.
-func (s *server) adminOK(r *http.Request) bool {
-	if s.passwordHash == "" {
-		return true // sin clave configurada = sin candado (solo pruebas locales)
-	}
-	return checkPassword(r.FormValue("adminpass"), s.passwordHash)
-}
-
 func (s *server) handleNAS(w http.ResponseWriter, r *http.Request) {
-	render(w, "nas.html", map[string]any{"Page": "nas", "Users": s.nasUsers()})
+	render(w, "nas.html", map[string]any{"Page": "nas", "Users": s.nasUsers(), "AdminUnlocked": s.isAdmin(r)})
 }
 
 func (s *server) nasUsers() []string {
@@ -50,10 +39,6 @@ func (s *server) nasUsers() []string {
 }
 
 func (s *server) handleNASAdd(w http.ResponseWriter, r *http.Request) {
-	if !s.adminOK(r) {
-		s.nasError(w, "Clave incorrecta — no se agregó el usuario.")
-		return
-	}
 	name := strings.TrimSpace(r.FormValue("name"))
 	if name == "" || strings.ContainsAny(name, " \t/:") {
 		s.nasError(w, "Nombre de usuario inválido.")
@@ -74,10 +59,6 @@ func (s *server) handleNASAdd(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleNASDel(w http.ResponseWriter, r *http.Request) {
-	if !s.adminOK(r) {
-		s.nasError(w, "Clave incorrecta — no se eliminó el usuario.")
-		return
-	}
 	name := strings.TrimSpace(r.FormValue("name"))
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
@@ -90,10 +71,6 @@ func (s *server) handleNASDel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleNASReveal(w http.ResponseWriter, r *http.Request) {
-	if !s.adminOK(r) {
-		s.nasError(w, "Clave incorrecta.")
-		return
-	}
 	name := strings.TrimSpace(r.FormValue("name"))
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()

@@ -70,11 +70,15 @@
   .reveal { font-family: monospace; background:#0f172a; padding:0.6rem 0.9rem;
             border-radius:8px; display:inline-block; margin-top:0.5rem; }
 
-  /* --- candado modal --- */
-  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex;
-              align-items:center; justify-content:center; z-index:50; }
-  .modal-box { background:#1e293b; border-radius:16px; padding:1.5rem; width:320px; }
-  .modal-box h3 { margin:0 0 0.8rem; display:flex; align-items:center; gap:0.5rem; }
+  /* --- modo admin (dialog nativo) --- */
+  dialog#admin-modal { background:#1e293b; color:#e2e8f0; border:none; border-radius:16px;
+                        padding:1.5rem; width:320px; }
+  dialog#admin-modal::backdrop { background:rgba(0,0,0,0.6); }
+  dialog#admin-modal h3 { margin:0 0 0.8rem; }
+  .adminbtn { background:#334155; color:#e2e8f0; border:none; border-radius:9px;
+              padding:0.4rem 0.9rem; cursor:pointer; font-size:0.85rem; }
+  .adminbtn.unlocked { background:#16a34a; }
+  .adminerr { color:#fca5a5; font-size:0.8rem; margin-left:0.5rem; }
   [x-cloak] { display: none !important; }
 </style>
 {{end}}
@@ -86,46 +90,26 @@
   <a href="/catalog" class="{{if eq .Page "catalog"}}active{{end}}">Catálogo</a>
   <a href="/nas" class="{{if eq .Page "nas"}}active{{end}}">NAS</a>
   <span class="spacer"></span>
+  <span id="admin-status">{{template "admin_status.html" (dict "Unlocked" .AdminUnlocked)}}</span>
 </div>
+{{template "adminmodal"}}
 {{end}}
 
-{{/* Candado de admin reusable: cualquier <form> agrega
-     hx-on:htmx:confirm="event.preventDefault(); Alpine.store('lock').request(event.target, event.detail.issueRequest)"
-     y queda protegido — pide la clave ANTES de ejecutar la acción, aunque el
-     navegador ya esté autenticado por Basic Auth (como el modo admin de Cockpit).
-     NOTA: dentro de hx-on (JS plano, fuera de Alpine) hay que usar
-     'Alpine.store(...)' — la magia '$store' solo existe dentro de
-     directivas de Alpine (x-show, @click, x-model, etc), no en hx-on. */}}
-{{define "lockmodal"}}
-<div x-data x-show="$store.lock.open" x-cloak class="modal-bg">
-  <div class="modal-box" @click.outside="$store.lock.cancel()">
-    <h3>🔒 Confirmar clave</h3>
-    <p class="muted" style="margin-top:-0.5rem">Esta acción cambia algo del sistema — confirmá tu clave.</p>
-    <input type="password" x-model="$store.lock.pass" @keyup.enter="$store.lock.confirm()"
-           placeholder="Clave del panel" x-ref="lockinput"
-           x-init="$watch('$store.lock.open', v => v && $nextTick(() => $refs.lockinput.focus()))">
+{{/* Modo admin: se desbloquea UNA vez por sesión del navegador con el botón
+     de la nav (no en cada acción). La sesión vive en una cookie de sesión
+     (sin Expires) — cerrar el navegador la borra y vuelve a pedir la clave. */}}
+{{define "adminmodal"}}
+<dialog id="admin-modal">
+  <h3>🔒 Modo admin</h3>
+  <p class="muted" style="margin-top:-0.5rem">Necesario para crear/eliminar usuarios del NAS y otras
+    acciones que cambian el sistema. Se pide una sola vez por sesión del navegador.</p>
+  <form hx-post="/admin/unlock" hx-target="#admin-status" hx-swap="innerHTML"
+        hx-on::after-request="if(event.detail.successful) document.getElementById('admin-modal').close()">
+    <input type="password" name="pass" placeholder="Clave del panel" autofocus required>
     <div style="margin-top:1rem; display:flex; gap:0.5rem; justify-content:flex-end">
-      <button class="btn secondary" type="button" @click="$store.lock.cancel()">Cancelar</button>
-      <button class="btn" type="button" @click="$store.lock.confirm()">Confirmar</button>
+      <button type="button" class="btn secondary" onclick="document.getElementById('admin-modal').close()">Cancelar</button>
+      <button type="submit" class="btn">Desbloquear</button>
     </div>
-  </div>
-</div>
-<script>
-document.addEventListener('alpine:init', () => {
-  Alpine.store('lock', {
-    open: false, pass: '', form: null, issue: null,
-    request(form, issue) { this.form = form; this.issue = issue; this.open = true; this.pass = ''; },
-    confirm() {
-      if (this.form) {
-        const f = this.form.querySelector('[name=adminpass]');
-        if (f) f.value = this.pass;
-      }
-      const issue = this.issue;
-      this.open = false; this.pass = ''; this.form = null; this.issue = null;
-      if (issue) issue();
-    },
-    cancel() { this.open = false; this.pass = ''; this.form = null; this.issue = null; },
-  });
-});
-</script>
+  </form>
+</dialog>
 {{end}}
