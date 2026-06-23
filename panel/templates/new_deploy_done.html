@@ -26,20 +26,27 @@
 
   <div class="panel">
     <h2>0. Tu repo necesita un Dockerfile y un docker-compose.yml (en la raíz)</h2>
-    <p>Si tu app YA tiene estos archivos, revisá que coincidan con esto — son los 2 puntos que warden
-      necesita para poder gestionarla (el nombre del contenedor y el puerto):</p>
+    <p>Si tu app YA tiene estos archivos, revisá que coincidan con esto — son los 3 puntos que warden
+      necesita para poder gestionarla (nombre del contenedor, puerto, y la variable que le dice a tu app
+      en qué puerto escuchar — sin esto, si alguna vez cambiás el puerto acá, tu app puede seguir
+      escuchando en el puerto viejo por dentro y romperse en silencio):</p>
     <pre>services:
   {{.Tag}}:
     build: .
     container_name: {{.Container}}        # debe ser EXACTO a lo que pusiste en "Contenedor principal"
     restart: unless-stopped
+    environment:
+      PORT: "{{.Port}}"                   # le dice a TU APP en qué puerto escuchar por dentro
     ports:
       - "{{.Port}}:{{.Port}}"              # el de la izquierda debe ser igual al "Puerto" que pusiste
-                                            # (el de la derecha es el puerto REAL dentro de tu app —
-                                            # pueden ser distintos, ajustalo a lo que tu app use)</pre>
-    <p class="muted">Si todavía no tenés Dockerfile, el patrón general es siempre el mismo (cambia el
-      comando exacto según tu lenguaje): instalar dependencias → copiar el código → exponer el puerto →
-      definir cómo arranca. Ejemplo con Node (lo mismo aplica con otras bases para Python, .NET, etc.):</p>
+                                            # (si tu app usa otra variable que no sea PORT, ajustá el
+                                            # nombre acá Y en tu código para que coincidan)</pre>
+    <p class="muted">Tu código tiene que LEER esa variable (ej. en Node: <code>process.env.PORT</code>)
+      en vez de tener el puerto fijo — así, cuando cambiés el puerto acá, tu app se entera sola, sin
+      tocar el código cada vez. Si todavía no tenés Dockerfile, el patrón general es siempre el mismo
+      (cambia el comando exacto según tu lenguaje): instalar dependencias → copiar el código → exponer
+      el puerto → definir cómo arranca. Ejemplo con Node (lo mismo aplica con otras bases para Python,
+      .NET, etc.):</p>
     <pre>FROM node:22-alpine
 WORKDIR /app
 COPY package.json .
