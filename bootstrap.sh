@@ -95,6 +95,15 @@ if ui_confirm "¿Instalar Tailscale?"; then
 fi
 
 echo
+echo "Cloudflare Tunnel deja exponer tus apps a internet con un dominio propio,"
+echo "sin abrir puertos — y es lo que necesita el CI/CD para publicar solo cada"
+echo "app nueva que desplegués. Si decís que sí, te va a pedir loguearte con tu"
+echo "cuenta de Cloudflare (abriendo una URL) y elegir el dominio."
+if ui_confirm "¿Configurar Cloudflare Tunnel?"; then
+  warden_cloudflare_init
+fi
+
+echo
 # --- Modo de instalación: preset (combo) o a la carta ---
 MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
   'básico — dashboard (Cockpit + Homepage) + NAS' \
