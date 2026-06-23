@@ -5,13 +5,15 @@
 #   warden reset
 #
 # Borra: contenedores/datos/config de warden, la llave age, el túnel de
-# Cloudflare (de tu cuenta, no solo local), la conexión de Tailscale, y
-# resetea el firewall (ufw) a desactivado/sin reglas. NO queda nada de lo
-# que warden configuró.
+# Cloudflare (de tu cuenta, no solo local), la conexión de Tailscale, las
+# apps desplegadas vía CI/CD (su contenedor, usando el repo que el runner
+# ya tenía clonado) + el runner mismo, y resetea el firewall (ufw) a
+# desactivado/sin reglas. NO queda nada de lo que warden configuró.
 #
 # NO toca nunca: el disco de backup externo, ni los paquetes del sistema
 # (Docker, avahi, zsh, cloudflared, tailscale — los binarios se quedan
-# instalados, solo se borra SU CONFIGURACIÓN/ESTADO), ni tu site/.
+# instalados, solo se borra SU CONFIGURACIÓN/ESTADO), ni tu site/, ni el
+# repo de GitHub de tus apps de CI/CD (solo lo que vive en este server).
 
 _reset_down() {  # <archivo compose> [override] [envfile]
   local compose="$1" override="${2:-}" envfile="${3:-}"
@@ -30,8 +32,9 @@ warden_reset() {
   echo "  - Imágenes de Docker que queden sin usar (docker image prune)"
   echo "  - El túnel de Cloudflare (se BORRA de tu cuenta, no solo local) y su config"
   echo "  - La conexión de Tailscale (este server se desconecta de tu tailnet)"
+  echo "  - Las apps desplegadas vía CI/CD (sus contenedores en este server) y el runner registrado"
   echo "  - El firewall (ufw vuelve a desactivado, sin reglas)"
-  echo "No toca: el disco de backup externo, ni los paquetes del sistema (quedan instalados)."
+  echo "No toca: el disco de backup externo, los paquetes del sistema, ni el repo de GitHub de tus apps."
   echo
 
   if [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
@@ -44,16 +47,27 @@ warden_reset() {
   _reset_down "$WARDEN_ROOT/stacks/backrest/docker-compose.yml"
   _reset_down "$WARDEN_ROOT/stacks/ntfy/docker-compose.yml"
 
-  log "Bajando apps del catálogo"
-  local tag
+  log "Bajando apps del catálogo (instaladas por warden y desplegadas vía CI/CD)"
+  local tag runner_dir="${RUNNER_DIR:-/opt/warden/actions-runner}"
   while IFS='|' read -r tag _ _ _; do
     [ -n "$tag" ] || continue
     catalog_load "$tag" || continue
     case "${COMP_INSTALL:-}" in
       */docker-compose.yml)
         _reset_down "$WARDEN_ROOT/$COMP_INSTALL" "/etc/warden/$tag/docker-compose.override.yml" "/etc/warden/secrets/$tag.env" ;;
+      http*://*|git@*)
+        # App de CI/CD: vive en su propio repo, clonado por el runner en
+        # _work/<repo>/<repo>/ (estructura estándar de actions-runner).
+        local reponame; reponame="$(basename "${COMP_INSTALL%.git}")"
+        _reset_down "$runner_dir/_work/$reponame/$reponame/docker-compose.yml" ;;
     esac
   done < <(catalog_each)
+
+  if [ -d "$runner_dir" ] && [ -f "$runner_dir/svc.sh" ]; then
+    log "Desinstalando el runner de GitHub Actions (queda offline en GitHub, podés borrarlo ahí si querés del todo)"
+    ( cd "$runner_dir" && ./svc.sh stop 2>/dev/null; ./svc.sh uninstall 2>/dev/null ) || true
+    run "rm -rf '$runner_dir'"
+  fi
 
   log "Limpiando imágenes de Docker sin usar (libera espacio en disco)"
   run "docker image prune -af"
