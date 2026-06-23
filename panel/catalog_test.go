@@ -93,6 +93,34 @@ func TestInlineCommentDoesNotBreakParsing(t *testing.T) {
 	}
 }
 
+// TestIndentedFileParsesCorrectly reproduce el bug real reportado por Al en
+// su VM: un archivo .component con TODAS sus líneas indentadas (2 espacios
+// antes de cada COMP_X=...) — pasó al pegar un heredoc en una terminal con
+// prompt multilínea. El ancla '^' de los regex exigía que la línea
+// empezara justo en el borde, así que CADA campo quedaba vacío en silencio
+// (el avatar de esa app mostraba "?" porque COMP_NAME nunca se leía).
+func TestIndentedFileParsesCorrectly(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/click-counter.component"
+	os.WriteFile(path, []byte(`  # comentario indentado
+  COMP_NAME="Click Counter (demo)"
+  COMP_TAG="click-counter"
+  COMP_CONTAINER="click-counter"
+  COMP_PATHS=()
+`), 0644)
+
+	c, err := parseComponentFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Name != "Click Counter (demo)" {
+		t.Errorf("COMP_NAME indentado no se parseó: got %q", c.Name)
+	}
+	if c.Container != "click-counter" {
+		t.Errorf("COMP_CONTAINER indentado no se parseó: got %q", c.Container)
+	}
+}
+
 // TestMergedCatalogSiteOverridesRepo: si el mismo tag existe en las dos
 // carpetas, site/catalog debe ganar (igual que en bash).
 func TestMergedCatalogSiteOverridesRepo(t *testing.T) {

@@ -75,7 +75,14 @@ func parseComponentFile(path string) (*Component, error) {
 	var inArrayBuf strings.Builder
 
 	for sc.Scan() {
-		line := sc.Text()
+		// Tolerar indentación accidental (común al pegar contenido en una
+		// terminal con prompt multilínea, o al editar a mano) — sin esto,
+		// CUALQUIER espacio antes de "COMP_X=..." hace que el campo entero
+		// quede vacío EN SILENCIO (^ ancla el regex al borde exacto de la
+		// línea). Bug real visto: un archivo con 2 espacios de indentación
+		// en TODAS sus líneas hacía que el avatar de esa app saliera "?"
+		// (nombre vacío) sin ningún error visible.
+		line := strings.TrimLeft(sc.Text(), " \t")
 
 		if firstLine {
 			firstLine = false
