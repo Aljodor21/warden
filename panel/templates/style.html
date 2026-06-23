@@ -32,6 +32,7 @@
   .panel { background: #1e293b; border-radius: 16px; padding: 1.25rem 1.4rem; }
   .panel h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
               opacity: 0.55; margin: 0 0 1rem; font-weight: 600; }
+  .panel h2 svg { width:16px; height:16px; vertical-align:-3px; margin-right:0.4rem; opacity:0.7; }
   .metric { font-size: 2.2rem; font-weight: 700; line-height: 1; }
   .metric small { font-size: 0.9rem; font-weight: 400; opacity: 0.6; }
   .muted { opacity: 0.55; font-size: 0.85rem; }
@@ -46,12 +47,35 @@
   .dash-head .metric { font-size:1.6rem; }
   .net { display:flex; gap:2rem; }
   .net .v { font-size:1.6rem; font-weight:700; }
-  .panel h2 svg { width:16px; height:16px; vertical-align:-3px; margin-right:0.4rem; opacity:0.7; }
   .clist { display: flex; flex-direction: column; gap: 0.4rem; max-height: 280px; overflow-y: auto; }
   .citem { display: flex; align-items: center; font-size: 0.9rem; }
   .citem .st { margin-left: auto; opacity: 0.5; font-size: 0.78rem; }
   .toolbtn { display: inline-block; margin: 0.25rem 0.4rem 0 0; padding: 0.55rem 1rem;
              border-radius: 10px; background: #334155; color: #e2e8f0; text-decoration: none; font-size: 0.9rem; }
+
+  /* --- NAS / formularios inline --- */
+  .userline { display:flex; align-items:center; gap:0.6rem; padding:0.6rem 0;
+              border-bottom:1px solid #0f172a; }
+  .userline:last-child { border-bottom:none; }
+  .userline .who { font-weight:600; }
+  .userline .acts { margin-left:auto; display:flex; gap:0.4rem; }
+  .iconbtn { background:#334155; border:none; color:#e2e8f0; border-radius:8px;
+             padding:0.4rem 0.7rem; cursor:pointer; font-size:0.82rem; }
+  .iconbtn.danger { background:#7f1d1d; }
+  .iconbtn.danger:hover { background:#991b1b; }
+  .inline-form { display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap; }
+  .inline-form input { width:auto; flex:1; min-width:160px; }
+  .err { background:#3f1d1d; color:#fca5a5; padding:0.7rem 1rem; border-radius:10px; margin-bottom:1rem; }
+  .ok-msg { background:#14302080; color:#86efac; padding:0.7rem 1rem; border-radius:10px; margin-bottom:1rem; }
+  .reveal { font-family: monospace; background:#0f172a; padding:0.6rem 0.9rem;
+            border-radius:8px; display:inline-block; margin-top:0.5rem; }
+
+  /* --- candado modal --- */
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex;
+              align-items:center; justify-content:center; z-index:50; }
+  .modal-box { background:#1e293b; border-radius:16px; padding:1.5rem; width:320px; }
+  .modal-box h3 { margin:0 0 0.8rem; display:flex; align-items:center; gap:0.5rem; }
+  [x-cloak] { display: none !important; }
 </style>
 {{end}}
 
@@ -60,6 +84,45 @@
   <span class="brand">⬡ warden</span>
   <a href="/" class="{{if eq .Page "dashboard"}}active{{end}}">Dashboard</a>
   <a href="/catalog" class="{{if eq .Page "catalog"}}active{{end}}">Catálogo</a>
+  <a href="/nas" class="{{if eq .Page "nas"}}active{{end}}">NAS</a>
   <span class="spacer"></span>
 </div>
+{{end}}
+
+{{/* Candado de admin reusable: cualquier <form> agrega
+     hx-on:htmx:confirm="event.preventDefault(); $store.lock.request(event.target, event.detail.issueRequest)"
+     y queda protegido — pide la clave ANTES de ejecutar la acción, aunque el
+     navegador ya esté autenticado por Basic Auth (como el modo admin de Cockpit). */}}
+{{define "lockmodal"}}
+<div x-data x-show="$store.lock.open" x-cloak class="modal-bg">
+  <div class="modal-box" @click.outside="$store.lock.cancel()">
+    <h3>🔒 Confirmar clave</h3>
+    <p class="muted" style="margin-top:-0.5rem">Esta acción cambia algo del sistema — confirmá tu clave.</p>
+    <input type="password" x-model="$store.lock.pass" @keyup.enter="$store.lock.confirm()"
+           placeholder="Clave del panel" x-ref="lockinput"
+           x-init="$watch('$store.lock.open', v => v && $nextTick(() => $refs.lockinput.focus()))">
+    <div style="margin-top:1rem; display:flex; gap:0.5rem; justify-content:flex-end">
+      <button class="btn secondary" type="button" @click="$store.lock.cancel()">Cancelar</button>
+      <button class="btn" type="button" @click="$store.lock.confirm()">Confirmar</button>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.store('lock', {
+    open: false, pass: '', form: null, issue: null,
+    request(form, issue) { this.form = form; this.issue = issue; this.open = true; this.pass = ''; },
+    confirm() {
+      if (this.form) {
+        const f = this.form.querySelector('[name=adminpass]');
+        if (f) f.value = this.pass;
+      }
+      const issue = this.issue;
+      this.open = false; this.pass = ''; this.form = null; this.issue = null;
+      if (issue) issue();
+    },
+    cancel() { this.open = false; this.pass = ''; this.form = null; this.issue = null; },
+  });
+});
+</script>
 {{end}}

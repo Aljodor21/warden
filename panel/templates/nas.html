@@ -1,0 +1,24 @@
+{{define "nas.html"}}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>warden — NAS</title>
+  {{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+  <script defer src="/static/alpine.min.js"></script>
+</head>
+<body>
+  {{template "nav" .}}
+
+  <div class="panel" style="margin-bottom:1rem">
+    <h2>Usuarios del NAS — smb://<span id="nashost">tu-server.local</span>/warden</h2>
+    <div id="nas-list">{{template "nas_fragment.html" .}}</div>
+  </div>
+
+  {{template "lockmodal" .}}
+  <script>document.getElementById('nashost').textContent = location.hostname;</script>
+</body>
+</html>
+{{end}}

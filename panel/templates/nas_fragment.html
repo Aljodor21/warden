@@ -1,0 +1,40 @@
+{{define "nas_fragment.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+{{if .Msg}}<div class="ok-msg">{{.Msg}}</div>{{end}}
+
+{{range .Users}}
+<div class="userline">
+  <span class="dot on"></span>
+  <span class="who">{{.}}</span>
+  <div class="acts">
+    <form hx-post="/nas/reveal" hx-target="#reveal-{{.}}" hx-swap="innerHTML"
+          hx-on:htmx:confirm="event.preventDefault(); $store.lock.request(event.target, event.detail.issueRequest)"
+          style="display:inline">
+      <input type="hidden" name="adminpass">
+      <input type="hidden" name="name" value="{{.}}">
+      <button class="iconbtn" type="submit">Ver clave</button>
+    </form>
+    {{if ne . "warden"}}
+    <form hx-post="/nas/del" hx-target="#nas-list" hx-swap="innerHTML"
+          hx-on:htmx:confirm="event.preventDefault(); if(confirm('¿Eliminar al usuario {{.}}? No podrá conectarse más al NAS.')) $store.lock.request(event.target, event.detail.issueRequest)"
+          style="display:inline">
+      <input type="hidden" name="adminpass">
+      <input type="hidden" name="name" value="{{.}}">
+      <button class="iconbtn danger" type="submit">Eliminar</button>
+    </form>
+    {{end}}
+  </div>
+</div>
+<div id="reveal-{{.}}"></div>
+{{else}}
+<p class="muted">No hay usuarios todavía.</p>
+{{end}}
+
+<form class="inline-form" hx-post="/nas/add" hx-target="#nas-list" hx-swap="innerHTML"
+      hx-on:htmx:confirm="event.preventDefault(); $store.lock.request(event.target, event.detail.issueRequest)">
+  <input type="hidden" name="adminpass">
+  <input name="name" placeholder="nombre de usuario nuevo" required>
+  <input name="pass" placeholder="clave (vacío = generar una segura)">
+  <button class="btn" type="submit">+ Agregar usuario</button>
+</form>
+{{end}}

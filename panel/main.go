@@ -70,6 +70,10 @@ func main() {
 	mux.HandleFunc("GET /new", s.handleEditForm)
 	mux.HandleFunc("POST /new", s.handleEditSave)
 	mux.HandleFunc("POST /publish", s.handlePublish)
+	mux.HandleFunc("GET /nas", s.handleNAS)
+	mux.HandleFunc("POST /nas/add", s.handleNASAdd)
+	mux.HandleFunc("POST /nas/del", s.handleNASDel)
+	mux.HandleFunc("POST /nas/reveal", s.handleNASReveal)
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	srv := &http.Server{
