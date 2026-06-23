@@ -32,6 +32,16 @@ type Component struct {
 	Note        string
 }
 
+// IsDeployed: la app vive en su propio repo y se levanta vía CI/CD (el
+// runner hace el build+up) — warden solo la publica/respalda, no la
+// instala. Si COMP_INSTALL apunta a un docker-compose.yml DENTRO del repo
+// de warden, en cambio, es una app que warden instala y administra entera.
+func (c *Component) IsDeployed() bool {
+	return strings.HasPrefix(c.Install, "http://") ||
+		strings.HasPrefix(c.Install, "https://") ||
+		strings.HasPrefix(c.Install, "git@")
+}
+
 // Permite un comentario inline después del valor (válido en bash, ej.
 // COMP_CONTAINER="excalidraw"   # contenedor principal) — sin esto, esas
 // líneas no calzaban y el campo quedaba vacío en silencio.

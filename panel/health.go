@@ -214,21 +214,22 @@ type Gauge struct {
 }
 
 type HealthView struct {
-	Hostname    string
-	OS          string
-	Uptime      string
-	Cores       int
-	CPU         Gauge
-	RAM         Gauge
-	Disks       []Gauge
-	DownRate    string
-	UpRate      string
-	Apps        []AppCard   // apps reales del catálogo, agrupadas, clickeables
-	Others      []Container // contenedores sueltos, sin app asociada
-	UpCount     int
-	TotalCount  int
-	OthersUp    int
-	OthersTotal int
+	Hostname      string
+	OS            string
+	Uptime        string
+	Cores         int
+	CPU           Gauge
+	RAM           Gauge
+	Disks         []Gauge
+	DownRate      string
+	UpRate        string
+	InstalledApps []AppCard   // instaladas/administradas por warden enteras
+	DeployedApps  []AppCard   // viven en su repo, vía CI/CD — warden solo publica/respalda
+	Others        []Container // contenedores sueltos, sin app asociada
+	UpCount       int
+	TotalCount    int
+	OthersUp      int
+	OthersTotal   int
 }
 
 func level(pct int) string {
@@ -284,11 +285,17 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 		Uptime:   humanUptime(h.UptimeSecs),
 		DownRate: humanRate(downBps), UpRate: humanRate(upBps),
 	}
-	v.Apps, v.Others = s.buildAppView(h.Containers)
-	for _, a := range v.Apps {
+	var apps []AppCard
+	apps, v.Others = s.buildAppView(h.Containers)
+	for _, a := range apps {
 		v.TotalCount++
 		if a.Up {
 			v.UpCount++
+		}
+		if a.Deployed {
+			v.DeployedApps = append(v.DeployedApps, a)
+		} else {
+			v.InstalledApps = append(v.InstalledApps, a)
 		}
 	}
 	for _, o := range v.Others {

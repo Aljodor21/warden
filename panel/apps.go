@@ -10,11 +10,12 @@ import (
 // (ej. docmost + docmost-postgres + docmost-redis); acá se agrupan bajo UNA
 // sola tarjeta clickeable, en vez de mostrar cada contenedor suelto.
 type AppCard struct {
-	Tag     string
-	Name    string
-	Up      bool
-	Link    string
-	Initial string // letra para el avatar tipográfico (sin íconos genéricos)
+	Tag      string
+	Name     string
+	Up       bool
+	Link     string
+	Initial  string // letra para el avatar tipográfico (sin íconos genéricos)
+	Deployed bool   // true = vive en su propio repo, vía CI/CD (no la instala warden)
 }
 
 // buildAppView separa los contenedores en (a) los que pertenecen a una app
@@ -52,7 +53,7 @@ func (s *server) buildAppView(containers []Container) (apps []AppCard, others []
 		}
 		apps = append(apps, AppCard{
 			Tag: c.Tag, Name: c.Name, Up: upByName[container] || hasAnyRunning(containers, c.Tag+"-"),
-			Link: link, Initial: firstLetter(c.Name),
+			Link: link, Initial: firstLetter(c.Name), Deployed: c.IsDeployed(),
 		})
 		// Los contenedores satélite suelen compartir el prefijo del tag
 		// (docmost-postgres, immich-redis...) — se agrupan bajo la misma app.

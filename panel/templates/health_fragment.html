@@ -41,9 +41,9 @@
 </div>
 
 <div class="panel" style="margin-top:1rem">
-  <h2>Tus apps ({{.UpCount}}/{{.TotalCount}} activas)</h2>
+  <h2>Instaladas por warden</h2>
   <div class="appgrid">
-    {{range .Apps}}
+    {{range .InstalledApps}}
     {{if .Link}}
     <a class="appcard" href="{{.Link}}" target="_blank" rel="noopener">
     {{else}}
@@ -54,7 +54,26 @@
       <span class="dot {{if .Up}}on{{else}}off{{end}}"></span>
     {{if .Link}}</a>{{else}}</div>{{end}}
     {{else}}
-    <p class="muted">No hay apps en el catálogo todavía. <a href="/new">+ Agregar una</a></p>
+    <p class="muted">Ninguna todavía. <a href="/new">+ Agregar una</a></p>
+    {{end}}
+  </div>
+</div>
+
+<div class="panel" style="margin-top:1rem">
+  <h2>Desplegadas vía CI/CD</h2>
+  <div class="appgrid">
+    {{range .DeployedApps}}
+    {{if .Link}}
+    <a class="appcard" href="{{.Link}}" target="_blank" rel="noopener">
+    {{else}}
+    <div class="appcard appcard-nolink">
+    {{end}}
+      <span class="avatar">{{.Initial}}</span>
+      <span class="appname">{{.Name}}</span>
+      <span class="dot {{if .Up}}on{{else}}off{{end}}"></span>
+    {{if .Link}}</a>{{else}}</div>{{end}}
+    {{else}}
+    <p class="muted">Ninguna todavía.</p>
     {{end}}
   </div>
 </div>

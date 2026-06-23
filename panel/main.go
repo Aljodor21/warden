@@ -200,11 +200,19 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 		*Component
 		Running bool
 	}
-	var rows []row
+	var installed, deployed []row
 	for _, c := range comps {
-		rows = append(rows, row{c, c.Container != "" && running[c.Container]})
+		rw := row{c, c.Container != "" && running[c.Container]}
+		if c.IsDeployed() {
+			deployed = append(deployed, rw)
+		} else {
+			installed = append(installed, rw)
+		}
 	}
-	render(w, "list.html", map[string]any{"Rows": rows, "Page": "catalog", "AdminUnlocked": s.isAdmin(r)})
+	render(w, "list.html", map[string]any{
+		"Installed": installed, "Deployed": deployed,
+		"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
+	})
 }
 
 func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {

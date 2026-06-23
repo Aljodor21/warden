@@ -14,7 +14,10 @@
     </div>
   </div>
 
-  {{range .Rows}}
+  <h2 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; opacity:0.55">
+    Instaladas por warden — warden las levanta y administra enteras
+  </h2>
+  {{range .Installed}}
   <div class="card">
     <div>
       <span class="dot {{if .Running}}on{{else}}off{{end}}"></span>
@@ -24,7 +27,24 @@
     <a class="btn secondary" href="/edit/{{.Tag}}">Editar</a>
   </div>
   {{else}}
-  <p style="opacity:0.6">No hay apps en el catálogo todavía.</p>
+  <p class="muted">Ninguna todavía.</p>
+  {{end}}
+
+  <h2 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; opacity:0.55; margin-top:1.5rem">
+    Desplegadas vía CI/CD — viven en su propio repo; el runner hace build+up, warden solo publica/respalda
+  </h2>
+  {{range .Deployed}}
+  <div class="card">
+    <div>
+      <span class="dot {{if .Running}}on{{else}}off{{end}}"></span>
+      <strong>{{.Name}}</strong> <span style="opacity:0.5">({{.Tag}})</span>
+      <div class="muted" style="margin-top:0.2rem">{{.Install}}</div>
+      {{if .CFHost}}<div style="margin-top:0.3rem"><a href="https://{{.CFHost}}" target="_blank">https://{{.CFHost}}</a></div>{{end}}
+    </div>
+    <a class="btn secondary" href="/edit/{{.Tag}}">Editar</a>
+  </div>
+  {{else}}
+  <p class="muted">Ninguna todavía.</p>
   {{end}}
 </body>
 </html>
