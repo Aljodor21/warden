@@ -90,9 +90,12 @@
 {{end}}
 
 {{/* Candado de admin reusable: cualquier <form> agrega
-     hx-on:htmx:confirm="event.preventDefault(); $store.lock.request(event.target, event.detail.issueRequest)"
+     hx-on:htmx:confirm="event.preventDefault(); Alpine.store('lock').request(event.target, event.detail.issueRequest)"
      y queda protegido — pide la clave ANTES de ejecutar la acción, aunque el
-     navegador ya esté autenticado por Basic Auth (como el modo admin de Cockpit). */}}
+     navegador ya esté autenticado por Basic Auth (como el modo admin de Cockpit).
+     NOTA: dentro de hx-on (JS plano, fuera de Alpine) hay que usar
+     'Alpine.store(...)' — la magia '$store' solo existe dentro de
+     directivas de Alpine (x-show, @click, x-model, etc), no en hx-on. */}}
 {{define "lockmodal"}}
 <div x-data x-show="$store.lock.open" x-cloak class="modal-bg">
   <div class="modal-box" @click.outside="$store.lock.cancel()">
