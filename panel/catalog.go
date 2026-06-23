@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -45,6 +45,7 @@ func parseComponentFile(path string) (*Component, error) {
 
 	c := &Component{}
 	scalars := map[string]*string{
+		"COMP_TAG":          &c.Tag,
 		"COMP_NAME":         &c.Name,
 		"COMP_KIND":         &c.Kind,
 		"COMP_DB_TYPE":      &c.DBType,
@@ -158,6 +159,9 @@ func writeComponentFile(path string, c *Component) error {
 	fmt.Fprintf(&b, "COMP_CF_HOST=\"%s\"\n", escape(c.CFHost))
 	fmt.Fprintf(&b, "COMP_CF_PORT=\"%s\"\n", escape(c.CFPort))
 	fmt.Fprintf(&b, "COMP_NOTE=\"%s\"\n", escape(c.Note))
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
 	return os.WriteFile(path, []byte(b.String()), 0644)
 }
 
@@ -173,8 +177,8 @@ func writeArray(b *strings.Builder, key string, items []string) {
 	fmt.Fprintf(b, ")\n")
 }
 
-// listComponents lee todos los .component de un directorio, ordenados por tag.
-func listComponents(dir string) ([]*Component, error) {
+// listComponentsOne lee todos los .component de UN directorio.
+func listComponentsOne(dir string) ([]*Component, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -187,14 +191,40 @@ func listComponents(dir string) ([]*Component, error) {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".component") {
 			continue
 		}
-		tag := strings.TrimSuffix(e.Name(), ".component")
 		c, err := parseComponentFile(dir + "/" + e.Name())
 		if err != nil {
 			continue
 		}
-		c.Tag = tag
+		if c.Tag == "" { // el archivo no definía COMP_TAG explícito
+			c.Tag = strings.TrimSuffix(e.Name(), ".component")
+		}
 		out = append(out, c)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Tag < out[j].Tag })
+	return out, nil
+}
+
+// listComponentsMerged combina varias carpetas de catálogo, en el MISMO
+// orden de prioridad que lib/catalog.sh: las carpetas se procesan en orden,
+// y si un tag se repite, la última carpeta (normalmente site/catalog) gana
+// — así el catálogo genérico del repo y el de tu sitio se ven como uno solo.
+func listComponentsMerged(dirs []string) ([]*Component, error) {
+	byTag := map[string]*Component{}
+	var order []string
+	for _, dir := range dirs {
+		comps, err := listComponentsOne(dir)
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range comps {
+			if _, exists := byTag[c.Tag]; !exists {
+				order = append(order, c.Tag)
+			}
+			byTag[c.Tag] = c // último gana
+		}
+	}
+	out := make([]*Component, 0, len(order))
+	for _, tag := range order {
+		out = append(out, byTag[tag])
+	}
 	return out, nil
 }

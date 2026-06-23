@@ -21,7 +21,7 @@ type AppCard struct {
 // del catálogo -> AppCards clickeables, y (b) el resto -> lista cruda para
 // quien quiera el detalle técnico (sin mezclarlos).
 func (s *server) buildAppView(containers []Container) (apps []AppCard, others []Container) {
-	comps, _ := listComponents(s.catalogDir)
+	comps, _ := listComponentsMerged(s.catalogDirs())
 	upByName := map[string]bool{}
 	for _, c := range containers {
 		upByName[c.Name] = c.Up

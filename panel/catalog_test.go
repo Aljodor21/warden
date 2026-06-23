@@ -6,9 +6,9 @@ import (
 )
 
 func TestParseAndRoundtripRealCatalog(t *testing.T) {
-	comps, err := listComponents("../catalog")
+	comps, err := listComponentsOne("../catalog")
 	if err != nil {
-		t.Fatalf("listComponents: %v", err)
+		t.Fatalf("listComponentsOne: %v", err)
 	}
 	if len(comps) == 0 {
 		t.Fatal("esperaba al menos un componente en ../catalog")
@@ -48,4 +48,50 @@ func TestRoundtripPreservesFields(t *testing.T) {
 
 	b, _ := os.ReadFile(tmp)
 	t.Logf("archivo regenerado:\n%s", b)
+}
+
+// TestMergedCatalogCombinesRepoAndSite reproduce el bug real reportado por
+// Al: en su VM, site/catalog solo tenía 1 componente propio (click-counter),
+// y el dashboard mostraba "1/1" en vez de ver también Immich/Docmost/NAS/
+// Excalidraw — porque el panel solo leía site/catalog, ignorando catalog/
+// del repo. listComponentsMerged debe ver AMBAS carpetas combinadas, igual
+// que hace lib/catalog.sh (catalog_each) en bash.
+func TestMergedCatalogCombinesRepoAndSite(t *testing.T) {
+	siteDir := t.TempDir()
+	os.WriteFile(siteDir+"/click-counter.component", []byte(`COMP_TAG="click-counter"
+COMP_NAME="Click Counter"
+`), 0644)
+
+	comps, err := listComponentsMerged([]string{"../catalog", siteDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tags := map[string]bool{}
+	for _, c := range comps {
+		tags[c.Tag] = true
+	}
+	for _, want := range []string{"immich", "docmost", "nas", "excalidraw", "click-counter"} {
+		if !tags[want] {
+			t.Errorf("esperaba ver '%s' en el catálogo combinado, no apareció (tags vistos: %v)", want, tags)
+		}
+	}
+}
+
+// TestMergedCatalogSiteOverridesRepo: si el mismo tag existe en las dos
+// carpetas, site/catalog debe ganar (igual que en bash).
+func TestMergedCatalogSiteOverridesRepo(t *testing.T) {
+	siteDir := t.TempDir()
+	os.WriteFile(siteDir+"/immich.component", []byte(`COMP_TAG="immich"
+COMP_NAME="Mi Immich personalizado"
+`), 0644)
+
+	comps, err := listComponentsMerged([]string{"../catalog", siteDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range comps {
+		if c.Tag == "immich" && c.Name != "Mi Immich personalizado" {
+			t.Errorf("site/catalog debería ganar sobre catalog/ del repo, pero quedó: %q", c.Name)
+		}
+	}
 }

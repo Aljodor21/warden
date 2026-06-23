@@ -53,10 +53,11 @@ var tmpl = template.Must(template.New("").Funcs(template.FuncMap{
 }).ParseFS(templatesFS, "templates/*.html"))
 
 type server struct {
-	catalogDir   string
-	wardenBin    string
-	passwordHash string // sha256 hex, vacío = sin auth (solo pruebas locales)
-	adminSess    *adminSessions
+	repoCatalogDir string // <root>/catalog — recetas genéricas (solo lectura)
+	siteCatalogDir string // <root>/site/catalog — tuyo, gana en empates, ÚNICO destino de escritura
+	wardenBin      string
+	passwordHash   string // sha256 hex, vacío = sin auth (solo pruebas locales)
+	adminSess      *adminSessions
 
 	// Para calcular la tasa de red entre refrescos del dashboard.
 	mu          sync.Mutex
@@ -65,14 +66,25 @@ type server struct {
 	lastNetTime time.Time
 }
 
+// catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
+// después — si un tag se repite, site gana).
+func (s *server) catalogDirs() []string {
+	return []string{s.repoCatalogDir, s.siteCatalogDir}
+}
+
 func main() {
 	addr := flag.String("addr", "0.0.0.0:7890", "dirección donde escuchar")
-	catalogDir := flag.String("catalog", "/home/alejo/proyectos/warden/site/catalog", "carpeta de site/catalog")
+	root := flag.String("root", "/home/alejo/proyectos/warden", "raíz del repo de warden (WARDEN_ROOT)")
 	wardenBin := flag.String("warden", "/usr/local/bin/warden", "ruta del binario warden")
 	passFile := flag.String("passfile", "/etc/warden/panel.passwd", "archivo con el hash sha256 de la clave")
 	flag.Parse()
 
-	s := &server{catalogDir: *catalogDir, wardenBin: *wardenBin, adminSess: newAdminSessions()}
+	s := &server{
+		repoCatalogDir: *root + "/catalog",
+		siteCatalogDir: *root + "/site/catalog",
+		wardenBin:      *wardenBin,
+		adminSess:      newAdminSessions(),
+	}
 	if b, err := os.ReadFile(*passFile); err == nil {
 		s.passwordHash = strings.TrimSpace(string(b))
 	} else {
@@ -107,7 +119,7 @@ func main() {
 		WriteTimeout: 30 * time.Second, // 'publish' puede tardar un poco
 		IdleTimeout:  60 * time.Second,
 	}
-	log.Printf("warden-panel escuchando en %s (catálogo: %s)", *addr, *catalogDir)
+	log.Printf("warden-panel escuchando en %s (catálogo: %s + %s)", *addr, s.repoCatalogDir, s.siteCatalogDir)
 	log.Fatal(srv.ListenAndServe())
 }
 
@@ -171,7 +183,7 @@ func (s *server) handleHealthPartial(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
-	comps, err := listComponents(s.catalogDir)
+	comps, err := listComponentsMerged(s.catalogDirs())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -192,10 +204,20 @@ func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {
 	tag := r.PathValue("tag")
 	c := &Component{}
 	if tag != "" {
-		var err error
-		c, err = parseComponentFile(s.catalogDir + "/" + tag + ".component")
+		comps, err := listComponentsMerged(s.catalogDirs())
 		if err != nil {
-			http.Error(w, "no encontré ese componente: "+err.Error(), http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		found := false
+		for _, cc := range comps {
+			if cc.Tag == tag {
+				c, found = cc, true
+				break
+			}
+		}
+		if !found {
+			http.Error(w, "no encontré ese componente: "+tag, http.StatusNotFound)
 			return
 		}
 		c.Tag = tag
@@ -236,7 +258,9 @@ func (s *server) handleEditSave(w http.ResponseWriter, r *http.Request) {
 		CFPort:      r.FormValue("cfport"),
 		Note:        r.FormValue("note"),
 	}
-	if err := writeComponentFile(s.catalogDir+"/"+tag+".component", c); err != nil {
+	// SIEMPRE en site/catalog — nunca en catalog/ (eso es del repo genérico,
+	// se actualiza con git pull, no se debe pisar con cambios locales).
+	if err := writeComponentFile(s.siteCatalogDir+"/"+tag+".component", c); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
