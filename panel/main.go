@@ -155,29 +155,13 @@ func main() {
 
 	srv := &http.Server{
 		Addr:         *addr,
-		Handler:      s.withAuth(mux),
+		Handler:      mux,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second, // 'publish' puede tardar un poco
 		IdleTimeout:  60 * time.Second,
 	}
 	log.Printf("warden-panel escuchando en %s (catálogo: %s + %s)", *addr, s.repoCatalogDir, s.siteCatalogDir)
 	log.Fatal(srv.ListenAndServe())
-}
-
-func (s *server) withAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.passwordHash == "" {
-			next.ServeHTTP(w, r)
-			return
-		}
-		_, pass, ok := r.BasicAuth()
-		if !ok || !checkPassword(pass, s.passwordHash) {
-			w.Header().Set("WWW-Authenticate", `Basic realm="warden-panel"`)
-			http.Error(w, "no autorizado", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 func checkPassword(given, wantHashHex string) bool {
