@@ -17,7 +17,7 @@ warden_register() {
   local mp="${WARDEN_BACKUP_MOUNT:-/mnt/warden-backup}" marker=".warden-backup.id" src uuid
   src="$(findmnt -no SOURCE --target "$mp" 2>/dev/null)"
   { [ -n "$src" ] && [ -f "$mp/$marker" ]; } || \
-    die "No hay disco de backup montado en $mp (montalo o revisá 'warden status')."
+    die "No hay disco de backup montado en $mp. Si es un disco NUEVO: warden init-disk /dev/XXX"
   uuid="$(blkid -s UUID -o value "$src")"
   [ -n "$uuid" ] || die "No pude leer el UUID de $src"
 

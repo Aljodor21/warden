@@ -22,6 +22,7 @@
 #   homepage            [root] Regenera la config de Homepage y la recarga
 #   nas <accion> ...    [root] Usuarios del NAS (adduser|passwd|deluser|users)
 #   reset [--full]      [root] Instalación limpia: borra apps/datos de warden
+#   init-disk <dev>     [root] Prepara un disco NUEVO como destino de backup
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
 #   catalog             Lista los componentes del catálogo
@@ -64,6 +65,8 @@ source "$HERE/modules/homepage.sh"
 source "$HERE/modules/nas.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/reset.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/initdisk.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -214,6 +217,7 @@ case "${1:-menu}" in
     ;;
   motd)        need_root; warden_motd_install ;;
   reset)       need_root; warden_reset "${2:-}" ;;
+  init-disk)   need_root; warden_init_disk "${2:-}" ;;
   secrets)
     need_root
     case "${2:-}" in
