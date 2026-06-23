@@ -33,8 +33,33 @@ need_root
 
 # Asegurar la carpeta de config del sitio (un clon nuevo no la trae, está en .gitignore).
 mkdir -p "$HERE/site/catalog"
-# Config del sitio (si existe). Plantilla en examples/site.conf.example
-[ -f "$HERE/site/site.conf" ] && { source "$HERE/site/site.conf"; ok "Cargado site/site.conf"; }
+
+if [ -f "$HERE/site/site.conf" ]; then
+  source "$HERE/site/site.conf"
+  ok "Cargado site/site.conf"
+else
+  # Primera vez: lo preguntamos solo (con valores detectados), nada de
+  # editar un archivo a mano. Plantilla completa en examples/site.conf.example.
+  log "Primera vez en este server — unos datos básicos (después no se vuelve a preguntar):"
+  def_host="$(hostname)"
+  def_tz="$(timedatectl show --property=Timezone --value 2>/dev/null || cat /etc/timezone 2>/dev/null || echo America/Bogota)"
+  def_lan="$(ip -4 addr show scope global 2>/dev/null | awk '/inet /{print $2; exit}')"
+  [ -n "$def_lan" ] || def_lan="192.168.0.0/24"
+
+  WARDEN_HOSTNAME="$(ui_input 'Nombre del server (se accede como nombre.local)' "$def_host")"
+  WARDEN_TIMEZONE="$(ui_input 'Zona horaria' "$def_tz")"
+  WARDEN_LAN="$(ui_input 'Subred de tu LAN (para el firewall)' "$def_lan")"
+
+  {
+    echo "WARDEN_HOSTNAME=\"$WARDEN_HOSTNAME\""
+    echo "WARDEN_TIMEZONE=\"$WARDEN_TIMEZONE\""
+    echo "WARDEN_LAN=\"$WARDEN_LAN\""
+    echo 'WARDEN_PRESET=""'
+    echo 'WARDEN_BACKUP_UUID=""'
+    echo 'WARDEN_DATA="/srv/warden"'
+  } > "$HERE/site/site.conf"
+  ok "Guardado en site/site.conf — no hace falta tocarlo de nuevo."
+fi
 
 ui_banner
 log "Distro: $DISTRO    Hostname objetivo: ${WARDEN_HOSTNAME:-(sin cambio)}"
