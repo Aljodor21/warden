@@ -15,6 +15,15 @@
   <p class="muted">Esto solo describió tu app — todavía faltan pasos en tu repo y en GitHub para que el
     despliegue automático funcione de verdad. Hacelos en orden.</p>
 
+  {{if .Published}}
+    {{if .PublishErr}}
+    <div class="err">Pusiste un subdominio, pero falló al publicar el túnel: {{.PublishErr}}</div>
+    {{else}}
+    <div class="ok-msg">Túnel publicado ya mismo — el subdominio queda apuntando a tu app en cuanto el
+      contenedor esté corriendo.</div>
+    {{end}}
+  {{end}}
+
   <div class="panel">
     <h2>0. Tu repo necesita un Dockerfile y un docker-compose.yml (en la raíz)</h2>
     <p>Si tu app YA tiene estos archivos, revisá que coincidan con esto — son los 2 puntos que warden

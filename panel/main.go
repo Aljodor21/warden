@@ -298,9 +298,23 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Si tiene subdominio, publicar YA — sin esto, el túnel queda con el
+	// ingress viejo hasta que alguien se acuerde de tocar el botón
+	// "Publicar" en Catálogo (bug real visto: guardar/editar sin esto deja
+	// el subdominio configurado pero sin responder, porque cloudflared
+	// nunca se entera del cambio).
+	var publishErr error
+	if c.CFHost != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+		defer cancel()
+		_, publishErr = s.runWarden(ctx, "publish")
+	}
+
 	render(w, "new_deploy_done.html", map[string]any{
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "Name": c.Name, "Install": c.Install,
 		"Tag": c.Tag, "Container": c.Container, "Port": c.CFPort,
+		"Published": c.CFHost != "", "PublishErr": publishErr,
 	})
 }
 
@@ -368,6 +382,20 @@ func (s *server) handleEditSave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Mismo motivo que en handleNewDeploySave: si tiene subdominio, hay que
+	// publicar YA — bug real visto en vivo (Al cambió puerto/contenedor de
+	// una app y el subdominio quedó sin responder hasta correr 'publish' a
+	// mano). Si falla, no escondo el error en un redirect silencioso.
+	if c.CFHost != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+		defer cancel()
+		if out, err := s.runWarden(ctx, "publish"); err != nil {
+			http.Error(w, "Guardado, pero falló al publicar el túnel: "+out, http.StatusInternalServerError)
+			return
+		}
+	}
+
 	http.Redirect(w, r, "/catalog", http.StatusSeeOther)
 }
 
