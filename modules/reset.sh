@@ -19,6 +19,14 @@
 _reset_down() {  # <archivo compose> [override] [envfile] [contenedor]
   local compose="$1" override="${2:-}" envfile="${3:-}" container="${4:-}"
   [ -f "$compose" ] || return 0
+  # Si una corrida anterior ya purgó Docker (estado intermedio real, no
+  # hipotético — visto en vivo), _compose moriría con 'die' y abortaría
+  # TODO el reset antes de llegar a la purga de paquetes/limpieza de
+  # directorios. No hay nada que bajar sin Docker de todas formas.
+  if ! has docker; then
+    warn "Docker ya no está instalado — salto bajar $compose (no hay nada corriendo sin Docker)"
+    return 0
+  fi
   local args=(-f "$compose")
   [ -n "$override" ] && [ -f "$override" ] && args+=(-f "$override")
   [ -n "$envfile" ] && [ -f "$envfile" ] && args+=(--env-file "$envfile")
@@ -82,8 +90,10 @@ warden_reset() {
     run "rm -rf '$runner_dir'"
   fi
 
-  log "Limpiando imágenes de Docker sin usar (libera espacio en disco)"
-  run "docker image prune -af"
+  if has docker; then
+    log "Limpiando imágenes de Docker sin usar (libera espacio en disco)"
+    run "docker image prune -af"
+  fi
 
   log "Desactivando timers"
   run "systemctl disable --now warden-backup.timer warden-verify.timer 2>/dev/null || true"
