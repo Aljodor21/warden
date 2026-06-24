@@ -68,3 +68,24 @@ ui_menu() {
     echo "${opts[$((n-1))]:-}"
   fi
 }
+
+# ui_timezone "default" -> elegís de la lista REAL de zonas horarias del
+# sistema (timedatectl list-timezones), no escribís/copiás el nombre a
+# mano. Con gum podés escribir para filtrar (ej: "Bogota") en vez de
+# scrollear cientos de opciones; el valor detectado queda primero en la
+# lista para confirmarlo con un solo Enter.
+ui_timezone() {
+  local def="${1:-}"
+  local list=()
+  if has timedatectl; then
+    mapfile -t list < <(timedatectl list-timezones)
+  elif [ -d /usr/share/zoneinfo ]; then
+    mapfile -t list < <(find /usr/share/zoneinfo -type f -printf '%P\n' 2>/dev/null | sort)
+  fi
+  if [ "${#list[@]}" -eq 0 ] || ! has gum; then
+    ui_input "Zona horaria (ej: America/Bogota)" "$def"
+    return
+  fi
+  [ -n "$def" ] && list=("$def" "${list[@]}")
+  ui_menu "Zona horaria — escribí para filtrar (ej: Bogota)" "${list[@]}"
+}

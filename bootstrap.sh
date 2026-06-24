@@ -47,7 +47,7 @@ else
   [ -n "$def_lan" ] || def_lan="192.168.0.0/24"
 
   WARDEN_HOSTNAME="$(ui_input 'Nombre del server (se accede como nombre.local)' "$def_host")"
-  WARDEN_TIMEZONE="$(ui_input 'Zona horaria' "$def_tz")"
+  WARDEN_TIMEZONE="$(ui_timezone "$def_tz")"
   WARDEN_LAN="$(ui_input 'Subred de tu LAN (para el firewall)' "$def_lan")"
 
   {
