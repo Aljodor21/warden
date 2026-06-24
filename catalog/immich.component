@@ -2,7 +2,11 @@
 COMP_NAME="Immich (fotos)"
 COMP_TAG="immich"
 COMP_KIND="files+db"
-COMP_PATHS=( "${WARDEN_DATA:-/srv/warden}/immich/upload" )
+COMP_PATHS=(
+  "${WARDEN_DATA:-/srv/warden}/immich/upload"
+  "${WARDEN_DATA:-/srv/warden}/immich/library"
+  "${WARDEN_DATA:-/srv/warden}/immich/profile"
+)
 COMP_EXCLUDES=()
 COMP_DB_TYPE="postgres"
 COMP_DB_CONTAINER="immich-postgres"
