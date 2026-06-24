@@ -40,6 +40,22 @@
 
 </div>
 
+{{if .Tools}}
+<div class="panel" style="margin-top:1rem">
+  <h2>Herramientas</h2>
+  <p class="muted" style="margin-top:-0.6rem; margin-bottom:0.8rem">No viven en el catálogo de apps — son del sistema, cada una con su propia URL.</p>
+  <div class="appgrid">
+    {{range .Tools}}
+    <a class="appcard" href="{{.URL}}" target="_blank" rel="noopener">
+      <span class="avatar">{{slice .Name 0 1}}</span>
+      <span class="appname">{{.Name}}</span>
+      <span class="dot on"></span>
+    </a>
+    {{end}}
+  </div>
+</div>
+{{end}}
+
 <div class="panel" style="margin-top:1rem">
   <h2>Instaladas por warden</h2>
   <div class="appgrid">

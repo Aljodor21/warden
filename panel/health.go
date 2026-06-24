@@ -226,6 +226,7 @@ type HealthView struct {
 	InstalledApps []AppCard   // instaladas/administradas por warden enteras
 	DeployedApps  []AppCard   // viven en su repo, vía CI/CD — warden solo publica/respalda
 	Others        []Container // contenedores sueltos, sin app asociada
+	Tools         []ToolLink  // Cockpit/Backrest/ntfy — no viven en el catálogo
 	UpCount       int
 	TotalCount    int
 	OthersUp      int
@@ -287,6 +288,7 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 	}
 	var apps []AppCard
 	apps, v.Others = s.buildAppView(h.Containers)
+	v.Tools = gatherTools(h.Containers, h.Hostname)
 	for _, a := range apps {
 		v.TotalCount++
 		if a.Up {
