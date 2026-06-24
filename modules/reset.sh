@@ -16,13 +16,24 @@
 # NO toca nunca: el disco de backup externo, tu site/, ni el repo de
 # GitHub de tus apps de CI/CD (solo lo que vive en este server).
 
-_reset_down() {  # <archivo compose> [override] [envfile]
-  local compose="$1" override="${2:-}" envfile="${3:-}"
+_reset_down() {  # <archivo compose> [override] [envfile] [contenedor]
+  local compose="$1" override="${2:-}" envfile="${3:-}" container="${4:-}"
   [ -f "$compose" ] || return 0
   local args=(-f "$compose")
   [ -n "$override" ] && [ -f "$override" ] && args+=(-f "$override")
   [ -n "$envfile" ] && [ -f "$envfile" ] && args+=(--env-file "$envfile")
-  _compose "${args[@]}" down -v --remove-orphans || warn "No bajó completo: $compose (revisalo a mano con docker ps -a)"
+  if ! _compose "${args[@]}" down -v --remove-orphans; then
+    # Pasa si falta el .env (ej. un reset previo ya borró /etc/warden):
+    # docker compose ni siquiera puede interpolar el archivo, y no baja
+    # nada. Si conocemos el contenedor por el catálogo, lo forzamos directo
+    # en vez de dejarlo corriendo suelto.
+    if [ -n "$container" ] && docker ps -a --format '{{.Names}}' | grep -qx "$container"; then
+      warn "$compose no bajó por compose (probable .env faltante) — forzando 'docker rm -f $container'"
+      run "docker rm -f '$container'" || warn "No pude borrar $container, revisalo a mano"
+    else
+      warn "No bajó completo: $compose (revisalo a mano con docker ps -a)"
+    fi
+  fi
 }
 
 warden_reset() {
@@ -56,7 +67,7 @@ warden_reset() {
     catalog_load "$tag" || continue
     case "${COMP_INSTALL:-}" in
       */docker-compose.yml)
-        _reset_down "$WARDEN_ROOT/$COMP_INSTALL" "/etc/warden/$tag/docker-compose.override.yml" "/etc/warden/secrets/$tag.env" ;;
+        _reset_down "$WARDEN_ROOT/$COMP_INSTALL" "/etc/warden/$tag/docker-compose.override.yml" "/etc/warden/secrets/$tag.env" "${COMP_CONTAINER:-}" ;;
       http*://*|git@*)
         # App de CI/CD: vive en su propio repo, clonado por el runner en
         # _work/<repo>/<repo>/ (estructura estándar de actions-runner).
