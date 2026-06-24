@@ -6,6 +6,8 @@ COMP_PATHS=(
   "${WARDEN_DATA:-/srv/warden}/immich/upload"
   "${WARDEN_DATA:-/srv/warden}/immich/library"
   "${WARDEN_DATA:-/srv/warden}/immich/profile"
+  "${WARDEN_DATA:-/srv/warden}/immich/thumbs"
+  "${WARDEN_DATA:-/srv/warden}/immich/encoded-video"
 )
 COMP_EXCLUDES=()
 COMP_DB_TYPE="postgres"
