@@ -38,6 +38,16 @@
     <label>Contenedor principal — el "container_name" de tu docker-compose.yml. Si lo dejás vacío, asumimos que es igual al Tag.</label>
     <input name="container" placeholder="(igual al tag si lo dejás vacío)">
 
+    <label>Ruta de datos en este server (opcional)</label>
+    <p class="muted" style="margin-top:-0.5rem">
+      Si tu app guarda algo importante en un volumen/carpeta de este server (fotos, una base de datos,
+      lo que sea), poné esa ruta acá para que <strong>'warden backup' la respalde</strong>. Mirá el lado
+      izquierdo de tus "volumes:" en docker-compose.yml — esa ruta del host, no la de dentro del
+      contenedor. Si tu app no guarda nada importante localmente (todo vive en una BD externa, o no
+      importa perderlo), dejalo vacío.
+    </p>
+    <input name="datapath" placeholder="/home/usuario/click-counter/data">
+
     <label>Subdominio público (opcional)</label>
     <p class="muted" style="margin-top:-0.5rem">
       El túnel de Cloudflare NO es obligatorio. Si solo vas a usar esta app dentro de tu red (casa/oficina),

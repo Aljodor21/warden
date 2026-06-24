@@ -274,12 +274,20 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 		// no se guarda un subdominio sin túnel configurado (quedaría inútil).
 		cfhost = ""
 	}
+	datapath := strings.TrimSpace(r.FormValue("datapath"))
+	var paths []string
+	kind := "none" // el código vive en su repo; sin datapath, warden backup no tiene nada que copiar
+	if datapath != "" {
+		paths = []string{datapath}
+		kind = "files"
+	}
 	c := &Component{
 		Tag:       tag,
 		Name:      r.FormValue("name"),
-		Kind:      "none", // el código vive en su repo; si tiene datos propios, se edita después con más opciones
+		Kind:      kind,
 		Install:   install,
 		Container: container,
+		Paths:     paths,
 		CFHost:    cfhost,
 		CFPort:    port,
 		Note:      "Desplegada vía CI/CD — agregada desde el panel.",
