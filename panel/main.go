@@ -222,7 +222,15 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 	}
 	var installed, deployed []row
 	for _, c := range comps {
-		rw := row{c, c.Container != "" && running[c.Container]}
+		isRunning := c.Container != "" && running[c.Container]
+		if !isRunning {
+			// El catálogo (la receta) sobrevive a un 'warden reset' a propósito
+			// (para no tener que redescribir cada app al reinstalar) — pero acá
+			// solo mostramos lo que está REALMENTE instalado ahora, no recetas
+			// de algo que ya no corre. Para reinstalar algo viejo: "+ Nueva app".
+			continue
+		}
+		rw := row{c, isRunning}
 		if c.IsDeployed() {
 			deployed = append(deployed, rw)
 		} else {
