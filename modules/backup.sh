@@ -34,8 +34,14 @@ warden_backup() {
       if [ "$dry" = 1 ]; then
         echo "   [dry-run] pg_dump $COMP_DB_NAME -> $dumps/$COMP_DB_NAME.sql"
       else
+        # --clean --if-exists: el dump incluye un DROP antes de cada CREATE.
+        # Sin esto, restaurar sobre una BD recién instalada (con su esquema
+        # inicial + un usuario admin default) choca: los CREATE fallan con
+        # "already exists" y los INSERT/COPY de los datos reales fallan por
+        # conflictos de FK contra ese esquema inicial — la app queda "viva"
+        # pero casi sin datos reales, en silencio (visto en vivo con Immich).
         docker exec -e PGPASSWORD="$pass" "$COMP_DB_CONTAINER" \
-          pg_dump -U "$COMP_DB_USER" -d "$COMP_DB_NAME" > "$dumps/$COMP_DB_NAME.sql"
+          pg_dump -U "$COMP_DB_USER" -d "$COMP_DB_NAME" --clean --if-exists > "$dumps/$COMP_DB_NAME.sql"
       fi
     fi
   done < <(catalog_each)
