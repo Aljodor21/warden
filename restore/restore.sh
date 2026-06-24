@@ -61,7 +61,15 @@ MARKER=".warden-backup.id"
 MOUNT="${WARDEN_BACKUP_MOUNT:-/mnt/warden-backup}"
 RESTIC_PASS_FILE="${RESTIC_PASS_FILE:-/root/.warden-restic-password}"
 STAGE="${WARDEN_RESTORE_DIR:-/var/tmp/warden-restore}"   # solo para dumps de BD
-AUTO="${WARDEN_RESTORE_AUTO:-0}"                          # 1 = sin preguntar (panel)
+AUTO_FLAG_FILE="/run/warden-restore-auto"
+AUTO=0
+[ "${WARDEN_RESTORE_AUTO:-0}" = 1 ] && AUTO=1
+[ -f "$AUTO_FLAG_FILE" ] && AUTO=1
+# El flag de variable de entorno puede perderse al cruzar un 'sudo'
+# intermedio según la política de sudoers (visto en vivo: una versión de
+# sudo que ignora '-E' y bloquea preservar el entorno completo) — el
+# archivo en /run es un respaldo que no depende de eso en absoluto, el
+# panel lo crea/borra él mismo alrededor del comando.
 
 # --- restic en Docker ---
 restic_files() {  # restaura archivos DIRECTO en su ruta real del host

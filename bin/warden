@@ -186,10 +186,10 @@ cmd_menu() {
   case "$opt" in
     'Estado del sistema')        cmd_status ;;
     'Chequeo de salud')          warden_doctor ;;
-    'Hacer un backup')           exec sudo -E bash "$HERE/bin/warden" backup ;;
-    'Restaurar un backup')       exec sudo -E bash "$HERE/restore/restore.sh" ;;
-    'Activar backup automático') exec sudo -E bash "$HERE/bin/warden" register ;;
-    'Instalar / configurar')     exec sudo -E bash "$HERE/bootstrap.sh" ;;
+    'Hacer un backup')           exec sudo --preserve-env=WARDEN_RESTORE_AUTO,WARDEN_DRY_RUN,WARDEN_BACKUP_MOUNT,RESTIC_PASS_FILE,WARDEN_RESTORE_DIR,WARDEN_DATA bash "$HERE/bin/warden" backup ;;
+    'Restaurar un backup')       exec sudo --preserve-env=WARDEN_RESTORE_AUTO,WARDEN_DRY_RUN,WARDEN_BACKUP_MOUNT,RESTIC_PASS_FILE,WARDEN_RESTORE_DIR,WARDEN_DATA bash "$HERE/restore/restore.sh" ;;
+    'Activar backup automático') exec sudo --preserve-env=WARDEN_RESTORE_AUTO,WARDEN_DRY_RUN,WARDEN_BACKUP_MOUNT,RESTIC_PASS_FILE,WARDEN_RESTORE_DIR,WARDEN_DATA bash "$HERE/bin/warden" register ;;
+    'Instalar / configurar')     exec sudo --preserve-env=WARDEN_RESTORE_AUTO,WARDEN_DRY_RUN,WARDEN_BACKUP_MOUNT,RESTIC_PASS_FILE,WARDEN_RESTORE_DIR,WARDEN_DATA bash "$HERE/bootstrap.sh" ;;
     *) : ;;
   esac
 }
@@ -198,7 +198,7 @@ case "${1:-menu}" in
   menu)        cmd_menu ;;
   status)      cmd_status ;;
   doctor)      warden_doctor ;;
-  install)     exec sudo -E bash "$HERE/bootstrap.sh" ;;
+  install)     exec sudo --preserve-env=WARDEN_RESTORE_AUTO,WARDEN_DRY_RUN,WARDEN_BACKUP_MOUNT,RESTIC_PASS_FILE,WARDEN_RESTORE_DIR,WARDEN_DATA bash "$HERE/bootstrap.sh" ;;
   backup)      need_root; warden_backup ;;
   verify)      need_root; warden_verify ;;
   register)    need_root; warden_register ;;
@@ -231,7 +231,7 @@ case "${1:-menu}" in
       *) echo "Uso: warden secrets {init|save|restore}"; exit 1 ;;
     esac
     ;;
-  restore)     exec sudo -E bash "$HERE/restore/restore.sh" "${@:2}" ;;
+  restore)     exec sudo --preserve-env=WARDEN_RESTORE_AUTO,WARDEN_DRY_RUN,WARDEN_BACKUP_MOUNT,RESTIC_PASS_FILE,WARDEN_RESTORE_DIR,WARDEN_DATA bash "$HERE/restore/restore.sh" "${@:2}" ;;
   list-disks)  lsblk -dpno NAME,SIZE,TYPE,TRAN,MODEL | awk '$3=="disk"' ;;
   catalog)     catalog_each ;;
   -h|--help|help) sed -n '2,30p' "$0" | sed 's/^#\s\{0,1\}//' ;;
