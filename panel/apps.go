@@ -24,8 +24,10 @@ type AppCard struct {
 func (s *server) buildAppView(containers []Container) (apps []AppCard, others []Container) {
 	comps, _ := listComponentsMerged(s.catalogDirs())
 	upByName := map[string]bool{}
+	existsByName := map[string]bool{}
 	for _, c := range containers {
 		upByName[c.Name] = c.Up
+		existsByName[c.Name] = true
 	}
 
 	claimed := map[string]bool{}
@@ -38,11 +40,16 @@ func (s *server) buildAppView(containers []Container) (apps []AppCard, others []
 		// docker compose: <tag>-<servicio>).
 		container := c.Container
 		if container == "" {
-			if upByName[c.Tag] || hasAnyPrefixed(containers, c.Tag+"-") {
+			if existsByName[c.Tag] || hasAnyPrefixed(containers, c.Tag+"-") {
 				container = c.Tag
 			} else {
 				continue // no hay ningún contenedor que coincida con esta app
 			}
+		} else if !existsByName[container] && !hasAnyPrefixed(containers, c.Tag+"-") {
+			// COMP_CONTAINER está declarado en el catálogo (la receta), pero
+			// no hay NINGÚN contenedor real con ese nombre — la app no está
+			// instalada (o ya no), no se muestra como si lo estuviera.
+			continue
 		}
 		link := ""
 		switch {
