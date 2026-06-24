@@ -3,7 +3,8 @@
   {{if .Running}}
   <p class="muted">Instalando…</p>
   {{else if .Done}}
-  <div class="ok-msg">Listo. Volvé a Catálogo para verla arriba.</div>
+  <div class="ok-msg">Listo, ya queda. Recargando…</div>
+  <script>setTimeout(function(){ location.reload(); }, 1200);</script>
   {{end}}
   {{if .Log}}<pre style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
 </div>

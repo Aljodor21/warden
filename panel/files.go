@@ -22,21 +22,29 @@ func humanFileSize(n int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(n)/float64(div), "KMGTPE"[exp])
 }
 
-// filesProxy: la sección "Archivos" del panel no es un explorador propio —
-// es un reverse proxy hacia el contenedor FileBrowser (catalog/filebrowser),
-// publicado solo en loopback (127.0.0.1:8095) y nunca expuesto directo a la
-// LAN. Al entra siempre por /files en el panel (mismo puerto de siempre);
-// por detrás, esto reenvía al contenedor real. FileBrowser corre con
-// --baseurl /files (ver stacks/filebrowser/docker-compose.yml) para que sus
-// propios links/assets coincidan con este prefijo.
+// newFilesProxy: reverse proxy hacia el contenedor FileBrowser
+// (catalog/filebrowser), publicado solo en loopback (127.0.0.1:8095) y
+// nunca expuesto directo a la LAN. FileBrowser corre con --baseurl /files
+// (ver stacks/filebrowser/docker-compose.yml) para que sus propios
+// links/assets coincidan con este prefijo.
 func newFilesProxy() http.Handler {
 	target, err := url.Parse("http://127.0.0.1:8095")
 	if err != nil {
 		panic(err) // URL fija y válida — solo fallaría por un typo en el código
 	}
-	proxy := httputil.NewSingleHostReverseProxy(target)
-	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		http.Error(w, "FileBrowser no está disponible — ¿está instalado y corriendo? (Catálogo → FileBrowser)", http.StatusBadGateway)
+	return httputil.NewSingleHostReverseProxy(target)
+}
+
+// handleFiles: "Archivos" en el panel. Si FileBrowser no está instalado o
+// no está corriendo, se ofrece instalarlo CON UN CLICK, ahí mismo — sin
+// mandar a otra sección a buscarlo (eso fue justo la confusión real: el
+// catálogo general no es donde la gente espera resolver esto).
+func (s *server) handleFiles(w http.ResponseWriter, r *http.Request) {
+	if !runningContainers()["filebrowser"] {
+		render(w, "files_install.html", map[string]any{
+			"Page": "files", "AdminUnlocked": s.isAdmin(r),
+		})
+		return
 	}
-	return proxy
+	s.filesProxy.ServeHTTP(w, r)
 }

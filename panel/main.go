@@ -59,6 +59,7 @@ type server struct {
 	wardenBin      string
 	passwordHash   string // sha256 hex, vacío = sin auth (solo pruebas locales)
 	adminSess      *adminSessions
+	filesProxy     http.Handler // hacia el contenedor FileBrowser, ver files.go
 
 	// Para calcular la tasa de red entre refrescos del dashboard.
 	mu          sync.Mutex
@@ -99,6 +100,7 @@ func main() {
 		siteCatalogDir: *root + "/site/catalog",
 		wardenBin:      *wardenBin,
 		adminSess:      newAdminSessions(),
+		filesProxy:     newFilesProxy(),
 	}
 	if b, err := os.ReadFile(*passFile); err == nil {
 		s.passwordHash = strings.TrimSpace(string(b))
@@ -154,9 +156,8 @@ func main() {
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("GET /about", s.handleAbout)
-	filesProxy := newFilesProxy()
-	mux.Handle("/files/", filesProxy)
-	mux.Handle("/files", filesProxy)
+	mux.HandleFunc("/files/", s.handleFiles)
+	mux.HandleFunc("/files", s.handleFiles)
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
 	mux.HandleFunc("POST /backups/register-timer", s.requireAdmin("backups_fragment.html", withBackups, s.handleRegisterTimer))
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))

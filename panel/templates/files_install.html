@@ -1,0 +1,26 @@
+{{define "files_install.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — archivos</title>{{template "_style"}}
+<script src="/static/htmx.min.js"></script>
+</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>Archivos del NAS</h1>
+  </div>
+
+  <div class="panel">
+    <p>El gestor de archivos (FileBrowser) todavía no está instalado.</p>
+    {{if .AdminUnlocked}}
+    <form hx-post="/catalog/install/filebrowser" hx-target="#install-result" hx-swap="innerHTML">
+      <button class="btn" type="submit">Instalar ahora<span class="spinner"></span></button>
+    </form>
+    {{else}}
+    <p class="muted">Desbloqueá el modo admin (🔒 arriba) para instalarlo.</p>
+    {{end}}
+    <div id="install-result" style="margin-top:0.8rem"></div>
+  </div>
+</body>
+</html>
+{{end}}
