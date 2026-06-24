@@ -118,13 +118,26 @@ warden_reset() {
   log "Desinstalando los paquetes que warden instaló (Docker, Cockpit, cloudflared, tailscale, etc.) — el sistema queda como antes de instalar warden, no solo sin su configuración"
   case "${DISTRO:-unknown}" in
     debian)
-      run "apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin cockpit cockpit-bridge avahi-daemon ufw zsh age cloudflared tailscale golang-go 2>/dev/null || true"
-      run "apt-get autoremove -y 2>/dev/null || true"
+      # Uno por uno, no todos en una sola invocación: un script post-removal
+      # roto de un paquete (visto en vivo con 'cockpit' — su limpieza interna
+      # de cockpit-bridge se traga el resto de la lista de argumentos y
+      # aborta TODO el purge a mitad de camino) no debe frenar a los demás.
+      local pkg
+      for pkg in docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin \
+                 cockpit avahi-daemon ufw zsh age cloudflared tailscale golang-go; do
+        dpkg -l "$pkg" 2>/dev/null | grep -q '^ii' || continue
+        run "apt-get purge -y '$pkg'" || warn "No pude purgar '$pkg', revisalo a mano (dpkg -l | grep $pkg)"
+      done
+      run "apt-get autoremove --purge -y"
       run "rm -rf /var/lib/docker /var/lib/containerd"
       run "rm -f /etc/apt/sources.list.d/tailscale.list"
       ;;
     arch)
-      run "pacman -Rns --noconfirm docker docker-compose cockpit avahi ufw zsh age cloudflared tailscale go 2>/dev/null || true"
+      local pkg
+      for pkg in docker docker-compose cockpit avahi ufw zsh age cloudflared tailscale go; do
+        pacman -Qi "$pkg" >/dev/null 2>&1 || continue
+        run "pacman -Rns --noconfirm '$pkg'" || warn "No pude quitar '$pkg', revisalo a mano (pacman -Qi $pkg)"
+      done
       run "rm -rf /var/lib/docker"
       ;;
     *) warn "Distro no reconocida — los paquetes quedan instalados, desinstalalos a mano si querés" ;;
