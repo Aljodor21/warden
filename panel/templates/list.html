@@ -49,6 +49,26 @@
   {{else}}
   <p class="muted">Ninguna todavía.</p>
   {{end}}
+
+  {{if .Available}}
+  <h2 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; opacity:0.55; margin-top:1.5rem">
+    Disponibles para instalar — herramientas del sistema, listas en un click
+  </h2>
+  {{range .Available}}
+  <div class="card">
+    <div>
+      <strong>{{.Name}}</strong> <span style="opacity:0.5">({{.Tag}})</span>
+      {{if .Note}}<div class="muted" style="margin-top:0.2rem; font-size:0.85rem">{{.Note}}</div>{{end}}
+    </div>
+    {{if $.AdminUnlocked}}
+    <form hx-post="/catalog/install/{{.Tag}}" hx-target="#install-result-{{.Tag}}" hx-swap="innerHTML">
+      <button class="btn secondary" type="submit">Instalar</button>
+    </form>
+    {{end}}
+  </div>
+  <div id="install-result-{{.Tag}}"></div>
+  {{end}}
+  {{end}}
 </body>
 </html>
 {{end}}

@@ -13,6 +13,7 @@
 #   doctor              Chequeo de salud del sistema
 #   install             Lanza el instalador (bootstrap.sh)
 #   backup              [root] Respalda todo el catálogo (restic)
+#   install-component <tag> [root] Instala UN componente del catálogo (ej. filebrowser)
 #   verify              [root] restic check (integridad del repo)
 #   register            [root] Fija el disco en fstab + activa los timers
 #   cloudflare-init      [root] Crea un túnel de Cloudflare desde cero (una vez)
@@ -200,6 +201,7 @@ case "${1:-menu}" in
   doctor)      warden_doctor ;;
   install)     exec sudo --preserve-env=WARDEN_RESTORE_AUTO,WARDEN_DRY_RUN,WARDEN_BACKUP_MOUNT,RESTIC_PASS_FILE,WARDEN_RESTORE_DIR,WARDEN_DATA bash "$HERE/bootstrap.sh" ;;
   backup)      need_root; warden_backup ;;
+  install-component) need_root; warden_stack_install "${2:-}" ;;
   verify)      need_root; warden_verify ;;
   register)    need_root; warden_register ;;
   cloudflare-init) need_root; warden_cloudflare_init ;;

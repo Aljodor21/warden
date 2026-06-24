@@ -127,6 +127,8 @@ func main() {
 	mux.HandleFunc("POST /new/deploy/check-runner", s.handleCheckRunner)
 	mux.HandleFunc("POST /runner/register", s.requireAdmin("runner_register_log.html", noExtra, s.handleRunnerRegisterStart))
 	mux.HandleFunc("GET /runner/register-log", s.handleRunnerRegisterPoll)
+	mux.HandleFunc("POST /catalog/install/{tag}", s.requireAdmin("catalog_install_log.html", noExtra, s.handleCatalogInstallStart))
+	mux.HandleFunc("GET /catalog/install-log", s.handleCatalogInstallPoll)
 	mux.HandleFunc("POST /backups/restore", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreStart))
 	mux.HandleFunc("POST /backups/restore-from", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreFromSnapshot))
 	mux.HandleFunc("GET /backups/restore-log", s.handleRestorePoll)
@@ -224,14 +226,18 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 		*Component
 		Running bool
 	}
-	var installed, deployed []row
+	var installed, deployed, available []row
 	for _, c := range comps {
 		isRunning := c.Container != "" && running[c.Container]
 		if !isRunning {
 			// El catálogo (la receta) sobrevive a un 'warden reset' a propósito
-			// (para no tener que redescribir cada app al reinstalar) — pero acá
-			// solo mostramos lo que está REALMENTE instalado ahora, no recetas
-			// de algo que ya no corre. Para reinstalar algo viejo: "+ Nueva app".
+			// (para no tener que redescribir cada app al reinstalar) — lo que
+			// no corre no se mezcla con lo instalado, pero SÍ se ofrece abajo
+			// para instalar con un click (si tiene un compose propio — los
+			// deployed via CI/CD no se instalan por aquí, eso lo hace el runner).
+			if !c.IsDeployed() {
+				available = append(available, row{c, false})
+			}
 			continue
 		}
 		rw := row{c, isRunning}
@@ -242,7 +248,7 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	render(w, "list.html", map[string]any{
-		"Installed": installed, "Deployed": deployed,
+		"Installed": installed, "Deployed": deployed, "Available": available,
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
 	})
 }

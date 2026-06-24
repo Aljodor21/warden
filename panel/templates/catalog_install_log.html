@@ -1,0 +1,10 @@
+{{define "catalog_install_log.html"}}
+<div id="install-box-{{.Tag}}" {{if .Running}}hx-get="/catalog/install-log?tag={{.Tag}}" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if .Running}}
+  <p class="muted">Instalando…</p>
+  {{else if .Done}}
+  <div class="ok-msg">Listo. Volvé a Catálogo para verla arriba.</div>
+  {{end}}
+  {{if .Log}}<pre style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+</div>
+{{end}}
