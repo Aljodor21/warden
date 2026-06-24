@@ -232,6 +232,11 @@ func (s *server) gatherBackupsView() BackupsView {
 		return v
 	}
 
+	if _, err := exec.LookPath("docker"); err != nil {
+		v.SnapshotsErr = "Falta Docker instalado (restic corre en un contenedor) — corré 'sudo ./bootstrap.sh' primero."
+		return v
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, "docker", "run", "--rm",
@@ -240,7 +245,11 @@ func (s *server) gatherBackupsView() BackupsView {
 		"-v", repo+":/repo",
 		"restic/restic", "-r", "/repo", "snapshots", "--json").Output()
 	if err != nil {
-		v.SnapshotsErr = "No pude leer los snapshots (¿el disco está montado?)"
+		detail := err.Error()
+		if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
+			detail = strings.TrimSpace(string(ee.Stderr))
+		}
+		v.SnapshotsErr = "No pude leer los snapshots: " + detail
 		return v
 	}
 	var snaps []Snapshot
