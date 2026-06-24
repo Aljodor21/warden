@@ -133,8 +133,8 @@ warden_reset() {
       # de cockpit-bridge se traga el resto de la lista de argumentos y
       # aborta TODO el purge a mitad de camino) no debe frenar a los demás.
       local pkg
-      for pkg in docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin \
-                 cockpit avahi-daemon ufw zsh age cloudflared tailscale golang-go; do
+      for pkg in docker-ce docker-ce-cli docker-ce-rootless-extras containerd.io docker-buildx-plugin \
+                 docker-compose-plugin cockpit avahi-daemon ufw zsh age cloudflared tailscale golang-go; do
         dpkg -l "$pkg" 2>/dev/null | grep -q '^ii' || continue
         run "apt-get purge -y '$pkg'" || warn "No pude purgar '$pkg', revisalo a mano (dpkg -l | grep $pkg)"
       done
