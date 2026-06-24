@@ -62,3 +62,13 @@ catalog_load() {
   done
   return 1
 }
+
+# is_deployed_install <COMP_INSTALL> — true si apunta a un repo git (CI/CD:
+# el runner clona/build/up por su cuenta), no a un docker-compose.yml local
+# del propio repo de warden. Las apps CI/CD quedan FUERA del backup/restore
+# automático a propósito (decisión explícita: ya hay bastante configuración
+# separada para túnel+runner, sumarle backup/restore automático era más
+# complejidad de la que vale — se agregan a mano si hace falta).
+is_deployed_install() {
+  case "$1" in http*://*|git@*) return 0 ;; *) return 1 ;; esac
+}

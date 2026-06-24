@@ -7,7 +7,7 @@ import (
 )
 
 // installProcs: un bgProcess por tag, para instalar varios componentes del
-// catálogo sin que sus logs se pisen entre sí (mismo patrón que restoreAppProc).
+// catálogo sin que sus logs se pisen entre sí.
 var (
 	installMu    sync.Mutex
 	installProcs = map[string]*bgProcess{}

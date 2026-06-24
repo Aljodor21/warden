@@ -134,8 +134,6 @@ func main() {
 	mux.HandleFunc("POST /backups/restore", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreStart))
 	mux.HandleFunc("POST /backups/restore-from", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreFromSnapshot))
 	mux.HandleFunc("GET /backups/restore-log", s.handleRestorePoll)
-	mux.HandleFunc("POST /backups/restore-app", s.requireAdmin("restore_app_log.html", noExtra, s.handleRestoreAppStart))
-	mux.HandleFunc("GET /backups/restore-app-log", s.handleRestoreAppPoll)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	mux.HandleFunc("GET /nas", s.handleNAS)
@@ -292,23 +290,15 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 		// no se guarda un subdominio sin túnel configurado (quedaría inútil).
 		cfhost = ""
 	}
-	datapath := strings.TrimSpace(r.FormValue("datapath"))
-	var paths []string
-	kind := "none" // el código vive en su repo; sin datapath, warden backup no tiene nada que copiar
-	if datapath != "" {
-		paths = []string{datapath}
-		kind = "files"
-	}
 	c := &Component{
 		Tag:       tag,
 		Name:      r.FormValue("name"),
-		Kind:      kind,
+		Kind:      "none", // el código vive en su repo — fuera del backup/restore automático a propósito
 		Install:   install,
 		Container: container,
-		Paths:     paths,
 		CFHost:    cfhost,
 		CFPort:    port,
-		Note:      "Desplegada vía CI/CD — agregada desde el panel.",
+		Note:      "Desplegada vía CI/CD — agregada desde el panel. No entra en backup/restore automático.",
 	}
 	if err := writeComponentFile(s.siteCatalogDir+"/"+tag+".component", c); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

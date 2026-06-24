@@ -5,40 +5,9 @@
   <p class="muted">Restaurando — instala lo que falte, restaura archivos y BD, y deja el disco
     registrado para el backup automático. Puede tardar varios minutos.</p>
   {{else if .Done}}
-  <div class="ok-msg">Terminó. Revisá el detalle abajo — cualquier app de CI/CD o dato sin receta
-    conocida queda avisado, no se inventa nada.</div>
+  <div class="ok-msg">Terminó. Las apps de CI/CD (su propio repo) no entran en este ciclo — se
+    respaldan/restauran a mano si hace falta.</div>
   {{end}}
   {{if .Log}}<pre style="max-height:320px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
-
-  {{range .Pending}}
-  <div class="panel" style="margin-top:1rem">
-    <h2>'{{.Name}}' tiene datos en el backup, pero vive en su propio repo</h2>
-    <p class="muted">Para restaurarla hace falta que esté desplegada primero. Pasos:</p>
-    <ol style="margin:0 0 0.8rem 1.2rem; font-size:0.9rem">
-      {{if .RunnerFound}}
-      <li>Runner: ya hay uno registrado ({{.RunnerService}}) ✓</li>
-      {{else}}
-      <li>Registrá el runner — en GitHub: <code>{{.Install}}</code> → Settings → Actions → Runners →
-        "New self-hosted runner" → Linux, copiá el token (después de <code>--token</code>):
-        <form hx-post="/runner/register" hx-target="#runner-reg-{{.Tag}}" hx-swap="innerHTML" style="margin-top:0.4rem">
-          <input type="hidden" name="install" value="{{.Install}}">
-          <input type="password" name="token" placeholder="Pegá el token aquí" required>
-          <button class="btn" type="submit" style="margin-top:0.4rem">Registrar runner<span class="spinner"></span></button>
-        </form>
-        <div id="runner-reg-{{.Tag}}" style="margin-top:0.4rem"></div>
-      </li>
-      {{end}}
-      <li>Hacé un <code>git push</code> a esa app (o re-ejecutá el último workflow desde GitHub →
-        Actions) para que el runner la construya y la levante.</li>
-      <li>Cuando el contenedor ya esté arriba, apretá este botón para meterle los datos del backup:
-        <form hx-post="/backups/restore-app" hx-target="#restore-app-result-{{.Tag}}" hx-swap="innerHTML" style="margin-top:0.4rem">
-          <input type="hidden" name="tag" value="{{.Tag}}">
-          <button class="btn" type="submit">Ya desplegué, restaurar datos ahora<span class="spinner"></span></button>
-        </form>
-        <div id="restore-app-result-{{.Tag}}" style="margin-top:0.4rem"></div>
-      </li>
-    </ol>
-  </div>
-  {{end}}
 </div>
 {{end}}

@@ -21,6 +21,10 @@ warden_backup() {
   while IFS='|' read -r tag _ _ _; do
     [ -n "$tag" ] || continue
     catalog_load "$tag" || continue
+    # Las apps de CI/CD (su propio repo git) quedan fuera del backup
+    # automático a propósito — ya tienen suficiente configuración separada
+    # (túnel, runner); si necesitan respaldo, se agrega a mano.
+    is_deployed_install "${COMP_INSTALL:-}" && continue
     for p in "${COMP_PATHS[@]:-}"; do
       [ -n "$p" ] && [ -e "$p" ] && file_paths+=("$p")
     done

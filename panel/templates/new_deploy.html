@@ -15,6 +15,8 @@
   <p class="muted">Esto solo describe tu app en el catálogo de warden — NO crea el repo ni lo despliega todavía.
     Al guardar te muestro los pasos que faltan en GitHub. Ojo: hace falta UN runner POR repo (no se comparten
     entre proyectos), incluso si ya tenés runners corriendo para otras apps.</p>
+  <p class="muted">Las apps de CI/CD no entran en el backup/restore automático de warden (su código ya
+    vive en GitHub) — si guardan algo importante localmente, respaldalo a mano.</p>
 
   <form method="post" action="/new/deploy">
     <label>Nombre — cómo se va a ver en el Dashboard y el Catálogo</label>
@@ -37,16 +39,6 @@
 
     <label>Contenedor principal — el "container_name" de tu docker-compose.yml. Si lo dejás vacío, asumimos que es igual al Tag.</label>
     <input name="container" placeholder="(igual al tag si lo dejás vacío)">
-
-    <label>Ruta de datos en este server (opcional)</label>
-    <p class="muted" style="margin-top:-0.5rem">
-      Si tu app guarda algo importante en un volumen/carpeta de este server (fotos, una base de datos,
-      lo que sea), poné esa ruta acá para que <strong>'warden backup' la respalde</strong>. Mirá el lado
-      izquierdo de tus "volumes:" en docker-compose.yml — esa ruta del host, no la de dentro del
-      contenedor. Si tu app no guarda nada importante localmente (todo vive en una BD externa, o no
-      importa perderlo), dejalo vacío.
-    </p>
-    <input name="datapath" placeholder="/home/usuario/click-counter/data">
 
     <label>Subdominio público (opcional)</label>
     <p class="muted" style="margin-top:-0.5rem">
