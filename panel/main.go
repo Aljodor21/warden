@@ -227,18 +227,14 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 		*Component
 		Running bool
 	}
-	var installed, deployed, available []row
+	var installed, deployed []row
 	for _, c := range comps {
 		isRunning := c.Container != "" && running[c.Container]
 		if !isRunning {
 			// El catálogo (la receta) sobrevive a un 'warden reset' a propósito
-			// (para no tener que redescribir cada app al reinstalar) — lo que
-			// no corre no se mezcla con lo instalado, pero SÍ se ofrece abajo
-			// para instalar con un click (si tiene un compose propio — los
-			// deployed via CI/CD no se instalan por aquí, eso lo hace el runner).
-			if !c.IsDeployed() {
-				available = append(available, row{c, false})
-			}
+			// (para no tener que redescribir cada app al reinstalar) — pero acá
+			// solo mostramos lo que está REALMENTE instalado ahora, no recetas
+			// de algo que ya no corre.
 			continue
 		}
 		rw := row{c, isRunning}
@@ -249,7 +245,7 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	render(w, "list.html", map[string]any{
-		"Installed": installed, "Deployed": deployed, "Available": available,
+		"Installed": installed, "Deployed": deployed,
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
 	})
 }
