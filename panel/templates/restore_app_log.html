@@ -1,0 +1,11 @@
+{{define "restore_app_log.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+<div id="restore-app-{{.Tag}}" {{if .Running}}hx-get="/backups/restore-app-log?tag={{.Tag}}" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if .Running}}
+  <p class="muted">Restaurando los datos de '{{.Tag}}'…</p>
+  {{else if .Done}}
+  <div class="ok-msg">Listo — si el contenedor ya estaba arriba, sus datos quedaron restaurados.</div>
+  {{end}}
+  {{if .Log}}<pre style="max-height:200px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+</div>
+{{end}}

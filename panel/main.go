@@ -129,6 +129,8 @@ func main() {
 	mux.HandleFunc("GET /runner/register-log", s.handleRunnerRegisterPoll)
 	mux.HandleFunc("POST /backups/restore", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreStart))
 	mux.HandleFunc("GET /backups/restore-log", s.handleRestorePoll)
+	mux.HandleFunc("POST /backups/restore-app", s.requireAdmin("restore_app_log.html", noExtra, s.handleRestoreAppStart))
+	mux.HandleFunc("GET /backups/restore-app-log", s.handleRestoreAppPoll)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	mux.HandleFunc("GET /nas", s.handleNAS)

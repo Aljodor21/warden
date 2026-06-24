@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+	"sync"
+)
 
 // handleRestoreStart corre 'warden restore' en modo automático desde el
 // panel — Al fue explícito: el flujo real para él SIEMPRE es el navegador,
@@ -29,5 +33,101 @@ func (s *server) handleRestorePoll(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) renderRestoreLog(w http.ResponseWriter) {
 	logText, running, done := s.restoreProc.snapshot()
-	render(w, "restore_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
+	data := map[string]any{"Log": logText, "Running": running, "Done": done}
+	if done {
+		data["Pending"] = s.pendingCICDFrom(logText)
+	}
+	render(w, "restore_log.html", data)
+}
+
+// PendingCICD: una app con datos en el backup que restore.sh no pudo
+// instalar sola (vive en su propio repo) — el panel le da un camino
+// accionable en vez de dejarla como un simple aviso de texto.
+type PendingCICD struct {
+	Tag, Name, Install string
+	Owner, Repo        string
+	RunnerFound        bool
+	RunnerService      string
+}
+
+// pendingCICDFrom busca la línea 'PENDING_CICD:tag1,tag2' que restore.sh
+// imprime al final, y resuelve cada tag contra el catálogo real.
+func (s *server) pendingCICDFrom(logText string) []PendingCICD {
+	var tags []string
+	for _, line := range strings.Split(logText, "\n") {
+		if t, ok := strings.CutPrefix(strings.TrimSpace(line), "PENDING_CICD:"); ok {
+			tags = strings.Split(t, ",")
+			break
+		}
+	}
+	var out []PendingCICD
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		c, err := parseComponentFile(s.siteCatalogDir + "/" + tag + ".component")
+		if err != nil {
+			c, err = parseComponentFile(s.repoCatalogDir + "/" + tag + ".component")
+		}
+		if err != nil {
+			continue
+		}
+		p := PendingCICD{Tag: tag, Name: c.Name, Install: c.Install}
+		if owner, repo, ok := parseGitHubRepo(c.Install); ok {
+			p.Owner, p.Repo = owner, repo
+			p.RunnerService, p.RunnerFound = findRunnerService(owner, repo)
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+// restoreAppProcs: un bgProcess por tag, para poder restaurar varias apps
+// pendientes en paralelo sin que se pisen los logs entre sí.
+var (
+	restoreAppMu    sync.Mutex
+	restoreAppProcs = map[string]*bgProcess{}
+)
+
+func restoreAppProc(tag string) *bgProcess {
+	restoreAppMu.Lock()
+	defer restoreAppMu.Unlock()
+	p, ok := restoreAppProcs[tag]
+	if !ok {
+		p = &bgProcess{}
+		restoreAppProcs[tag] = p
+	}
+	return p
+}
+
+// handleRestoreAppStart: "Ya desplegué, restaurar datos ahora" — corre
+// 'warden restore --tag <tag>' (no toca nada más del sistema), pensado
+// para usarse después de pegar el token del runner y hacer push/re-run.
+func (s *server) handleRestoreAppStart(w http.ResponseWriter, r *http.Request) {
+	tag := strings.TrimSpace(r.FormValue("tag"))
+	if tag == "" {
+		http.Error(w, "Falta el tag.", http.StatusBadRequest)
+		return
+	}
+	proc := restoreAppProc(tag)
+	if proc.start() {
+		go func() {
+			ctx, cancel := bgCtx3min()
+			defer cancel()
+			runInBackground(ctx, proc, "sudo", "env", "WARDEN_RESTORE_AUTO=1", s.wardenBin, "restore", "--tag", tag)
+		}()
+	}
+	s.renderRestoreAppLog(w, tag)
+}
+
+func (s *server) handleRestoreAppPoll(w http.ResponseWriter, r *http.Request) {
+	s.renderRestoreAppLog(w, strings.TrimSpace(r.URL.Query().Get("tag")))
+}
+
+func (s *server) renderRestoreAppLog(w http.ResponseWriter, tag string) {
+	logText, running, done := restoreAppProc(tag).snapshot()
+	render(w, "restore_app_log.html", map[string]any{
+		"Tag": tag, "Log": logText, "Running": running, "Done": done,
+	})
 }
