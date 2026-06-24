@@ -2,9 +2,32 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 )
+
+// readSecret lee /etc/warden/secrets/<tag>.env (generado por
+// warden_stack_install para COMP_SECRETS) y devuelve el valor de una clave
+// concreta — para mostrarla en el panel en vez de pedirle al usuario que
+// revise logs o archivos en consola.
+func readSecret(tag, key string) string {
+	b, err := os.ReadFile("/etc/warden/secrets/" + tag + ".env")
+	if err != nil {
+		return ""
+	}
+	return parseEnvValue(string(b), key)
+}
+
+func parseEnvValue(envContent, key string) string {
+	for _, line := range strings.Split(envContent, "\n") {
+		k, v, ok := strings.Cut(line, "=")
+		if ok && strings.TrimSpace(k) == key {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
 
 // installProcs: un bgProcess por tag, para instalar varios componentes del
 // catálogo sin que sus logs se pisen entre sí (mismo patrón que restoreAppProc).
@@ -52,7 +75,13 @@ func (s *server) handleCatalogInstallPoll(w http.ResponseWriter, r *http.Request
 
 func (s *server) renderCatalogInstallLog(w http.ResponseWriter, tag string) {
 	logText, running, done := installProc(tag).snapshot()
-	render(w, "catalog_install_log.html", map[string]any{
+	data := map[string]any{
 		"Tag": tag, "Log": logText, "Running": running, "Done": done,
-	})
+	}
+	if done && tag == "filebrowser" {
+		if pass := readSecret("filebrowser", "FILEBROWSER_PASSWORD"); pass != "" {
+			data["Credentials"] = map[string]string{"User": "admin", "Pass": pass}
+		}
+	}
+	render(w, "catalog_install_log.html", data)
 }

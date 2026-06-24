@@ -29,6 +29,12 @@ services:
       - "127.0.0.1:${FILEBROWSER_PORT:-8095}:80"
     environment:
       TZ: "${TZ:-UTC}"
+      # Seedea el usuario admin con una clave conocida (generada por warden
+      # al instalar, ver COMP_SECRETS) en vez de depender de la clave
+      # aleatoria que la imagen genera sola y solo se ve en sus logs — Al
+      # fue explícito: nada de tener que revisar consola para esto.
+      FB_USERNAME: "admin"
+      FB_PASSWORD: "${FILEBROWSER_PASSWORD}"
     volumes:
       - "${WARDEN_DATA:-/srv/warden}/nas:/srv"
       - "${WARDEN_DATA:-/srv/warden}/filebrowser:/database"
