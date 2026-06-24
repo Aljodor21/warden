@@ -49,7 +49,7 @@ warden_panel_install() {
     echo "After=network.target"
     echo
     echo "[Service]"
-    echo "ExecStart=$PANEL_BIN -addr 0.0.0.0:7890 -root $WARDEN_ROOT -warden /usr/local/bin/warden -passfile $PANEL_PASSFILE -data ${WARDEN_DATA:-/srv/warden}"
+    echo "ExecStart=$PANEL_BIN -addr 0.0.0.0:7890 -root $WARDEN_ROOT -warden /usr/local/bin/warden -passfile $PANEL_PASSFILE"
     echo "Restart=on-failure"
     echo "User=root"
     echo

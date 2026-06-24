@@ -9,8 +9,16 @@ services:
     image: filebrowser/filebrowser:latest
     container_name: filebrowser
     restart: unless-stopped
+    # --baseurl /files: el panel hace de proxy hacia este contenedor bajo
+    # /files — sin esto, los links/assets que genera FileBrowser asumen que
+    # vive en la raíz "/" y se rompen detrás del proxy.
+    command: ["--baseurl", "/files"]
+    # Publicado SOLO en loopback (127.0.0.1): el panel corre nativo en el
+    # host (no en Docker, no puede resolver 'filebrowser' por nombre de
+    # servicio) y le habla por localhost — pero nadie en la LAN puede
+    # entrar directo a este puerto, solo a través de /files en el panel.
     ports:
-      - "${FILEBROWSER_PORT:-8095}:80"
+      - "127.0.0.1:${FILEBROWSER_PORT:-8095}:80"
     environment:
       TZ: "${TZ:-UTC}"
     volumes:

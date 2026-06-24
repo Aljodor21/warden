@@ -57,7 +57,6 @@ type server struct {
 	repoCatalogDir string // <root>/catalog — recetas genéricas (solo lectura)
 	siteCatalogDir string // <root>/site/catalog — tuyo, gana en empates, ÚNICO destino de escritura
 	wardenBin      string
-	dataRoot       string // WARDEN_DATA — donde viven los datos de las apps (NAS, Immich, Docmost...)
 	passwordHash   string // sha256 hex, vacío = sin auth (solo pruebas locales)
 	adminSess      *adminSessions
 
@@ -92,7 +91,6 @@ func main() {
 	root := flag.String("root", "/home/alejo/proyectos/warden", "raíz del repo de warden (WARDEN_ROOT)")
 	wardenBin := flag.String("warden", "/usr/local/bin/warden", "ruta del binario warden")
 	passFile := flag.String("passfile", "/etc/warden/panel.passwd", "archivo con el hash sha256 de la clave")
-	dataRoot := flag.String("data", "/srv/warden", "raíz de datos de las apps (WARDEN_DATA) — el explorador de archivos no sale de ahí")
 	flag.Parse()
 
 	s := &server{
@@ -100,7 +98,6 @@ func main() {
 		repoCatalogDir: *root + "/catalog",
 		siteCatalogDir: *root + "/site/catalog",
 		wardenBin:      *wardenBin,
-		dataRoot:       *dataRoot,
 		adminSess:      newAdminSessions(),
 	}
 	if b, err := os.ReadFile(*passFile); err == nil {
@@ -155,12 +152,9 @@ func main() {
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("GET /about", s.handleAbout)
-	mux.HandleFunc("GET /files", s.handleFilesBrowse)
-	mux.HandleFunc("GET /files/download", s.handleFilesDownload)
-	mux.HandleFunc("POST /files/upload", s.handleFilesUpload)
-	mux.HandleFunc("POST /files/mkdir", s.handleFilesMkdir)
-	mux.HandleFunc("POST /files/delete", s.handleFilesDelete)
-	mux.HandleFunc("POST /files/rename", s.handleFilesRename)
+	filesProxy := newFilesProxy()
+	mux.Handle("/files/", filesProxy)
+	mux.Handle("/files", filesProxy)
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
 	mux.HandleFunc("POST /backups/register-timer", s.requireAdmin("backups_fragment.html", withBackups, s.handleRegisterTimer))
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
