@@ -22,10 +22,21 @@
 #   Modo automático (para el panel, sin preguntar nada):
 #     WARDEN_RESTORE_AUTO=1 ./restore.sh
 #   Modo interactivo (consola): ./restore.sh
+#   Solo una app puntual (desde el panel tras registrar un runner, o desde
+#   el propio deploy.yml de esa app después de levantar su contenedor):
+#     WARDEN_RESTORE_AUTO=1 ./restore.sh --tag <tag>
 #
 #   restic corre en Docker (cero instalación).
 #
 set -euo pipefail
+
+ONLY_TAG=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --tag) ONLY_TAG="${2:-}"; shift 2 ;;
+    *) shift ;;
+  esac
+done
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WARDEN_ROOT="$(cd "$HERE/.." && pwd)"; export WARDEN_ROOT
@@ -73,14 +84,14 @@ TO_ENSURE_RUNNING=()
 _stop_container() {
   local c="$1"
   [ -n "$c" ] || return 0
-  printf '%s\n' "${TO_ENSURE_RUNNING[@]:-}" | grep -qx "$c" || TO_ENSURE_RUNNING+=("$c")
+  printf '%s\n' "${TO_ENSURE_RUNNING[@]}" | grep -qx "$c" || TO_ENSURE_RUNNING+=("$c")
   docker ps --format '{{.Names}}' | grep -qx "$c" || return 0
   log "Deteniendo $c"
   run "docker stop '$c'"
 }
 _ensure_running() {
   local c
-  for c in "${TO_ENSURE_RUNNING[@]:-}"; do
+  for c in "${TO_ENSURE_RUNNING[@]}"; do
     [ -n "$c" ] || continue
     log "Asegurando que $c quede prendido"
     run "docker start '$c'" || warn "No pude prender $c, revisalo a mano (docker logs $c)"
@@ -132,7 +143,7 @@ restic_ro snapshots
 mapfile -t filePaths < <(restic_ro snapshots --tag files --json --latest 1 2>/dev/null \
   | jq -r '.[0].paths[]? // empty' 2>/dev/null || true)
 mapfile -t dbFiles < <(restic_ro ls latest --tag db 2>/dev/null | grep '\.sql$' || true)
-dbNames=(); for f in "${dbFiles[@]:-}"; do [ -n "$f" ] && dbNames+=("$(basename "$f" .sql)"); done
+dbNames=(); for f in "${dbFiles[@]}"; do [ -n "$f" ] && dbNames+=("$(basename "$f" .sql)"); done
 
 if [ "${#filePaths[@]}" -eq 0 ] && [ "${#dbNames[@]}" -eq 0 ]; then
   ok "No hay nada para restaurar en este disco."
@@ -146,33 +157,33 @@ declare -A PATH_TO_TAG DBNAME_TO_TAG
 while IFS='|' read -r t _ _ _; do
   [ -n "$t" ] || continue
   catalog_load "$t" 2>/dev/null || continue
-  for p in "${COMP_PATHS[@]:-}"; do [ -n "$p" ] && PATH_TO_TAG["$p"]="$t"; done
+  for p in "${COMP_PATHS[@]}"; do [ -n "$p" ] && PATH_TO_TAG["$p"]="$t"; done
   [ -n "${COMP_DB_NAME:-}" ] && DBNAME_TO_TAG["${COMP_DB_NAME}"]="$t"
 done < <(catalog_each)
 
 neededTags=(); unknownPaths=()
-for p in "${filePaths[@]:-}"; do
+for p in "${filePaths[@]}"; do
   t="${PATH_TO_TAG[$p]:-}"
   if [ -n "$t" ]; then neededTags+=("$t"); else unknownPaths+=("$p"); fi
 done
 
 neededDBTags=(); unknownDBs=()
-for db in "${dbNames[@]:-}"; do
+for db in "${dbNames[@]}"; do
   t="${DBNAME_TO_TAG[$db]:-}"
   if [ -n "$t" ]; then neededDBTags+=("$t"); else unknownDBs+=("$db"); fi
 done
 
-for p in "${unknownPaths[@]:-}"; do
+for p in "${unknownPaths[@]}"; do
   warn "Hay datos respaldados en '$p' pero ningún componente del catálogo los reclama (¿falta tu site/catalog?) — no se restauran."
 done
-for db in "${unknownDBs[@]:-}"; do
+for db in "${unknownDBs[@]}"; do
   warn "Hay un dump de BD '$db' pero ningún componente lo reclama — no se restaura."
 done
 
 # Unión de tags a procesar (archivos + BD), sin duplicados.
 declare -A seen
 allTags=()
-for t in "${neededTags[@]:-}" "${neededDBTags[@]:-}"; do
+for t in "${neededTags[@]}" "${neededDBTags[@]}"; do
   [ -n "${seen[$t]:-}" ] && continue
   seen[$t]=1
   allTags+=("$t")
@@ -181,6 +192,15 @@ done
 if [ "${#allTags[@]}" -eq 0 ]; then
   ok "Nada que restaurar (todo lo del backup es de rutas/BD sin receta conocida)."
   exit 0
+fi
+
+if [ -n "$ONLY_TAG" ]; then
+  if printf '%s\n' "${allTags[@]}" | grep -qx "$ONLY_TAG"; then
+    allTags=("$ONLY_TAG")
+  else
+    ok "No hay datos pendientes en el backup para '$ONLY_TAG'."
+    exit 0
+  fi
 fi
 
 # --- 4. Por cada app con datos en el backup: instalarla si falta, o avisar
@@ -231,13 +251,13 @@ for t in "${toRestore[@]}"; do
 
   if [ "${#COMP_PATHS[@]}" -gt 0 ]; then
     log "Restaurando archivos de '${COMP_NAME:-$t}' en su ubicación real…"
-    for p in "${COMP_PATHS[@]:-}"; do
+    for p in "${COMP_PATHS[@]}"; do
       [ -n "$p" ] || continue
       run "restic_files restore latest --tag files --include '$p' --target /restore"
     done
   fi
 
-  if [ -n "${COMP_DB_NAME:-}" ] && printf '%s\n' "${dbNames[@]:-}" | grep -qx "$COMP_DB_NAME"; then
+  if [ -n "${COMP_DB_NAME:-}" ] && printf '%s\n' "${dbNames[@]}" | grep -qx "$COMP_DB_NAME"; then
     log "Restaurando dump de BD '${COMP_DB_NAME}'…"
     run "mkdir -p '$STAGE'"
     [ -f "$STAGE/dumps/${COMP_DB_NAME}.sql" ] || run "restic_dumps restore latest --tag db --include /dumps/${COMP_DB_NAME}.sql --target /restore"
