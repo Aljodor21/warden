@@ -1,0 +1,44 @@
+{{define "files.html"}}
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>warden — archivos</title>{{template "_style"}}</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>Archivos</h1>
+  </div>
+  <p class="muted" style="margin-top:-0.8rem; margin-bottom:1rem">
+    Solo lectura — ver y descargar, no se puede borrar ni subir nada desde aquí. Limitado a los datos
+    que warden gestiona (NAS, Immich, Docmost...), nunca el resto del sistema.
+  </p>
+
+  <div class="panel">
+    <p class="muted" style="margin:0 0 0.8rem">
+      <code>{{.Cur}}</code>
+    </p>
+    {{if .Parent}}
+    <div class="card" style="margin-bottom:0.5rem">
+      <a href="/files?path={{.Parent}}">&larr; Subir un nivel</a>
+    </div>
+    {{end}}
+    {{range .Entries}}
+    <div class="card">
+      <div>
+        {{if .IsDir}}
+        <a href="/files?path={{.Path}}">📁 {{.Name}}</a>
+        {{else}}
+        <span>📄 {{.Name}}</span>
+        {{end}}
+        <div class="muted" style="margin-top:0.2rem; font-size:0.8rem">{{.Size}} · {{.ModTime}}</div>
+      </div>
+      {{if not .IsDir}}
+      <a class="btn secondary" href="/files/download?path={{.Path}}">Descargar</a>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="muted">Esta carpeta está vacía.</p>
+    {{end}}
+  </div>
+</body>
+</html>
+{{end}}
