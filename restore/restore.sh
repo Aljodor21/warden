@@ -205,7 +205,7 @@ fi
 
 # --- 4. Por cada app con datos en el backup: instalarla si falta, o avisar
 #        si es de CI/CD (no se puede instalar sola) ---
-toRestore=(); affected=()
+toRestore=(); affected=(); pendingCICD=()
 for t in "${allTags[@]}"; do
   catalog_load "$t" || { warn "'$t' no está en el catálogo, lo salto."; continue; }
   name="${COMP_NAME:-$t}"
@@ -217,6 +217,7 @@ for t in "${allTags[@]}"; do
   if [ "$running" -eq 0 ]; then
     if [ -n "${COMP_INSTALL:-}" ] && is_deployed_install "$COMP_INSTALL"; then
       warn "'$name' tiene datos en el backup pero vive en su propio repo (CI/CD) — no se puede instalar sola. Registrá su runner y hacé un deploy, después volvé a restaurar. Salto por ahora."
+      pendingCICD+=("$t")
       continue
     fi
     log "'$name' no está instalada — instalándola con su receta del catálogo…"
@@ -232,6 +233,10 @@ for t in "${allTags[@]}"; do
   toRestore+=("$t")
   [ -n "$container" ] && affected+=("$container")
 done
+
+# Línea parseable: el panel la lee para mostrar, por cada app de CI/CD
+# pendiente, el flujo de 'pegá el token / hacé push / restaurar datos'.
+[ "${#pendingCICD[@]}" -gt 0 ] && echo "PENDING_CICD:$(IFS=,; echo "${pendingCICD[*]}")"
 
 if [ "${#toRestore[@]}" -eq 0 ]; then
   ok "No quedó nada instalable para restaurar."
