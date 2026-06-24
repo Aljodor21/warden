@@ -25,6 +25,22 @@ warden_docker_install() {
 
   run "systemctl enable --now docker"
 
+  # 'enable --now' devuelve apenas el servicio arrancó, pero containerd
+  # puede tardar unos segundos más en terminar de inicializar su
+  # almacenamiento interno — un módulo posterior (ej. NAS) que haga
+  # 'docker compose up' de inmediato puede pegarle a esa ventana y fallar
+  # con un error de mkdir en /var/lib/containerd. Esperamos activamente a
+  # que el daemon responda de verdad antes de seguir.
+  if [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
+    log "Esperando a que el daemon de Docker esté listo de verdad"
+    local i=0
+    until docker info >/dev/null 2>&1; do
+      i=$((i + 1))
+      [ "$i" -ge 30 ] && { warn "Docker tardó más de 30s en responder — seguimos igual."; break; }
+      sleep 1
+    done
+  fi
+
   # Permitir docker sin sudo al usuario que invocó el script.
   local u="${SUDO_USER:-}"
   if [ -n "$u" ] && [ "$u" != root ]; then
