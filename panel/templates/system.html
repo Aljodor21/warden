@@ -12,6 +12,19 @@
 <body>
   {{template "nav" .}}
   <div class="panel">
+    <h2>Consumo de RAM</h2>
+    <p class="muted" style="margin-top:-0.5rem">Lo que ya se ve en el Dashboard es el total del sistema —
+      esto es el desglose de quién usa qué, para saber cuánto le suma cada cosa.</p>
+    <table style="width:100%; border-collapse:collapse">
+      <tr><td>warden-panel</td><td style="text-align:right">{{.Sys.PanelMem}}</td></tr>
+      {{range .Sys.Containers}}
+      <tr><td>{{.Name}}</td><td style="text-align:right">{{.Mem}}</td></tr>
+      {{end}}
+      <tr style="border-top:1px solid #334155"><td><strong>Total (panel + contenedores)</strong></td>
+        <td style="text-align:right"><strong>{{.Sys.TotalMemAll}}</strong></td></tr>
+    </table>
+  </div>
+  <div class="panel">
     <h2>VPN y credenciales</h2>
     <div id="system-status">{{template "system_fragment.html" (dict "Sys" .Sys)}}</div>
   </div>

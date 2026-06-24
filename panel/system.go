@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -23,6 +25,19 @@ type SystemView struct {
 	CloudflareID       string // ID del túnel configurado, si hay uno
 	CloudflareTokenSet bool   // hay un API Token guardado (para borrar registros DNS)
 	Runners            []RunnerInfo
+
+	PanelMem    string         // RAM del propio proceso warden-panel
+	Containers  []ContainerMem // uno por contenedor corriendo, RAM usada
+	TotalMemAll string         // panel + todos los contenedores, para responder "cuánto pesa todo esto"
+}
+
+// ContainerMem: una fila de 'docker stats' — cuánta RAM usa un contenedor
+// puntual, para responder "¿cuánto le agregó X al total?" en vez de solo
+// ver el total general del sistema (que ya se ve en el Dashboard).
+type ContainerMem struct {
+	Name  string
+	Mem   string
+	bytes int64
 }
 
 func (s *server) gatherSystemView() SystemView {
@@ -55,7 +70,88 @@ func (s *server) gatherSystemView() SystemView {
 		}
 		v.SecretsExist = v.SecretsCount > 0
 	}
+
+	panelBytes := panelMemBytes()
+	v.PanelMem = humanBytes(panelBytes)
+	v.Containers = containerMemStats()
+	total := panelBytes
+	for _, c := range v.Containers {
+		total += c.bytes
+	}
+	v.TotalMemAll = humanBytes(total)
+
 	return v
+}
+
+// panelMemBytes: RAM (RSS) del propio proceso warden-panel — vive nativo en
+// el host, no en un contenedor, así que no aparece en 'docker stats'.
+func panelMemBytes() int64 {
+	b, err := os.ReadFile("/proc/self/status")
+	if err != nil {
+		return 0
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		if strings.HasPrefix(line, "VmRSS:") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				kb, _ := strconv.ParseInt(fields[1], 10, 64)
+				return kb * 1024
+			}
+		}
+	}
+	return 0
+}
+
+// containerMemStats: cuánta RAM usa cada contenedor corriendo — responde
+// "¿cuánto le suma X al total?" en vez de solo el porcentaje general del
+// sistema que ya se ve en el Dashboard.
+func containerMemStats() []ContainerMem {
+	out, err := exec.Command("docker", "stats", "--no-stream", "--format", "{{.Name}}\t{{.MemUsage}}").Output()
+	if err != nil {
+		return nil
+	}
+	var rows []ContainerMem
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		// MemUsage viene como "12.34MiB / 1.944GiB" — solo nos importa el usado.
+		used := strings.TrimSpace(strings.SplitN(parts[1], "/", 2)[0])
+		b := parseDockerMem(used)
+		rows = append(rows, ContainerMem{Name: parts[0], Mem: used, bytes: b})
+	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].bytes > rows[j].bytes })
+	return rows
+}
+
+// parseDockerMem convierte "12.34MiB" / "512KiB" / "1.2GiB" a bytes.
+// El orden de los sufijos importa: "B" también coincide con el final de
+// "MiB"/"GiB" — hay que probar los más largos primero (un map, al iterar
+// en orden no garantizado, puede chequear "B" antes que "MiB" y truncar
+// mal el número).
+func parseDockerMem(s string) int64 {
+	type unit struct {
+		suffix string
+		mult   float64
+	}
+	units := []unit{
+		{"TiB", 1 << 40}, {"GiB", 1 << 30}, {"MiB", 1 << 20}, {"KiB", 1 << 10}, {"B", 1},
+	}
+	for _, u := range units {
+		if strings.HasSuffix(s, u.suffix) {
+			numStr := strings.TrimSuffix(s, u.suffix)
+			n, err := strconv.ParseFloat(numStr, 64)
+			if err != nil {
+				return 0
+			}
+			return int64(n * u.mult)
+		}
+	}
+	return 0
 }
 
 func (s *server) siteSecretsDir() string {
