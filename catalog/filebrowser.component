@@ -1,0 +1,17 @@
+# FileBrowser — gestor de archivos web del NAS (genérico). Vacío en instalación limpia.
+COMP_NAME="FileBrowser (gestor de archivos)"
+COMP_TAG="filebrowser"
+COMP_KIND="files"
+# Solo respalda su PROPIA config/DB (usuarios, tema) — la carpeta del NAS en
+# sí ya la respalda el componente 'nas'; FileBrowser solo la sirve, no es su
+# dueño en el catálogo.
+COMP_PATHS=( "${WARDEN_DATA:-/srv/warden}/filebrowser" )
+COMP_EXCLUDES=()
+COMP_DB_TYPE=""
+COMP_INSTALL="stacks/filebrowser/docker-compose.yml"
+COMP_CONTAINER="filebrowser"
+COMP_SECRETS=()
+COMP_ICON="filebrowser"
+COMP_CF_HOST=""
+COMP_CF_PORT="8095"
+COMP_NOTE="Alternativa web a SMB/Dolphin para manejar la carpeta del NAS: subir, bajar, mover, renombrar, buscar. En el primer arranque, la clave del admin se genera sola y se imprime en 'docker logs filebrowser' — cambiala desde la propia interfaz al entrar."

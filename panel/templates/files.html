@@ -14,6 +14,12 @@
   .fileitem:hover .ops, .fileitem .ops.open { display:flex; }
   .fileitem .ops button, .fileitem .ops a { font-size:0.7rem; padding:0.1rem 0.4rem; }
   .filetoolbar { display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; margin-bottom:0.8rem; }
+  .lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000;
+              align-items:center; justify-content:center; }
+  .lightbox.open { display:flex; }
+  .lightbox img { max-width:92vw; max-height:88vh; border-radius:6px; }
+  .lightbox .close { position:absolute; top:1rem; right:1.2rem; font-size:2rem; line-height:1;
+                      color:#fff; background:none; border:none; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -60,7 +66,7 @@
         <a href="/files?path={{.Path}}"><div class="thumb">📁</div></a>
         <a class="name" href="/files?path={{.Path}}">{{.Name}}</a>
         {{else if .IsImage}}
-        <a href="/files/download?path={{.Path}}"><div class="thumb"><img src="/files/download?path={{.Path}}" loading="lazy" alt=""></div></a>
+        <a href="#" onclick="return openLightbox('/files/download?path={{.Path}}')"><div class="thumb"><img src="/files/download?path={{.Path}}" loading="lazy" alt=""></div></a>
         <span class="name">{{.Name}}</span>
         {{else}}
         <a href="/files/download?path={{.Path}}"><div class="thumb">📄</div></a>
@@ -89,6 +95,23 @@
       {{end}}
     </div>
   </div>
+
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="close" onclick="closeLightbox(); event.stopPropagation();">&times;</button>
+    <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
+  </div>
+  <script>
+    function openLightbox(src) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox').classList.add('open');
+      return false;
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.getElementById('lightbox-img').src = '';
+    }
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+  </script>
 </body>
 </html>
 {{end}}
