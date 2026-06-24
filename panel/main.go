@@ -131,6 +131,7 @@ func main() {
 	mux.HandleFunc("POST /runner/register", s.requireAdmin("runner_register_log.html", noExtra, s.handleRunnerRegisterStart))
 	mux.HandleFunc("GET /runner/register-log", s.handleRunnerRegisterPoll)
 	mux.HandleFunc("POST /backups/restore", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreStart))
+	mux.HandleFunc("POST /backups/restore-from", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreFromSnapshot))
 	mux.HandleFunc("GET /backups/restore-log", s.handleRestorePoll)
 	mux.HandleFunc("POST /backups/restore-app", s.requireAdmin("restore_app_log.html", noExtra, s.handleRestoreAppStart))
 	mux.HandleFunc("GET /backups/restore-app-log", s.handleRestoreAppPoll)

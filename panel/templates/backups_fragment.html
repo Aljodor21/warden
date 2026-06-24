@@ -99,5 +99,35 @@
   </form>
   <div id="restore-result" style="margin-top:0.8rem"></div>
 </div>
+
+{{if .B.BackupRuns}}
+<div class="panel" style="margin-top:1rem">
+  <h2>Restaurar desde una corrida específica</h2>
+  <p class="muted">"Restaurar ahora" siempre usa la corrida más reciente — pero si el backup automático
+    corrió justo después de reinstalar algo (sin datos reales todavía aún), esa corrida puede estar casi
+    vacía. Elegí una de abajo en vez de asumir que la última es la buena (mirá el tamaño: si dice "0 B" o
+    es chico comparado con las demás, probablemente esa no tiene contenido real).</p>
+  <div class="clist">
+    {{range .B.BackupRuns}}
+    <div class="citem" style="align-items:flex-start; flex-direction:column; gap:0.3rem; padding:0.5rem 0; border-bottom:1px solid #0f172a">
+      <div style="display:flex; width:100%; justify-content:space-between; align-items:center">
+        <strong>{{.WhenFull}}</strong>
+        <span class="muted">{{.WhenAgo}}</span>
+      </div>
+      <div class="muted" style="font-size:0.82rem">
+        Archivos: {{if .FilesSize}}{{.FilesSize}}{{else}}(tamaño no disponible){{end}}
+        {{if .DBID}} · BD: {{if .DBSize}}{{.DBSize}}{{else}}(tamaño no disponible){{end}}{{else}} · sin BD asociada{{end}}
+      </div>
+      <form hx-post="/backups/restore-from" hx-target="#restore-result" hx-swap="innerHTML"
+            onsubmit="return confirm('¿Restaurar desde la corrida del {{.WhenFull}}?')" style="margin-top:0.2rem">
+        <input type="hidden" name="files_id" value="{{.FilesID}}">
+        <input type="hidden" name="db_id" value="{{.DBID}}">
+        <button class="iconbtn" type="submit">Restaurar desde aquí<span class="spinner"></span></button>
+      </form>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
 {{end}}
 {{end}}

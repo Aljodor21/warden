@@ -63,6 +63,35 @@ func (s *server) handleRestorePoll(w http.ResponseWriter, r *http.Request) {
 	s.renderRestoreLog(w)
 }
 
+// handleRestoreFromSnapshot: "Restaurar desde esta corrida" — igual que
+// 'Restaurar ahora', pero fijando QUÉ snapshot de archivos/BD usar, en
+// vez de dejar que restore.sh asuma ciegamente que el más reciente tiene
+// contenido real (no siempre es así: el backup automático puede correr
+// justo después de reinstalar una app, capturándola vacía).
+func (s *server) handleRestoreFromSnapshot(w http.ResponseWriter, r *http.Request) {
+	filesID := strings.TrimSpace(r.FormValue("files_id"))
+	dbID := strings.TrimSpace(r.FormValue("db_id"))
+	if filesID == "" {
+		http.Error(w, "Falta el snapshot de archivos.", http.StatusBadRequest)
+		return
+	}
+	if s.restoreProc.start() {
+		acquireRestoreAutoFlag()
+		go func() {
+			defer releaseRestoreAutoFlag()
+			ctx, cancel := bgCtx10min()
+			defer cancel()
+			args := []string{"restore", "--files-snapshot", filesID}
+			if dbID != "" {
+				args = append(args, "--db-snapshot", dbID)
+			}
+			cmdArgs := append([]string{"env", "WARDEN_RESTORE_AUTO=1", s.wardenBin}, args...)
+			runInBackground(ctx, &s.restoreProc, "sudo", cmdArgs...)
+		}()
+	}
+	s.renderRestoreLog(w)
+}
+
 func (s *server) renderRestoreLog(w http.ResponseWriter) {
 	logText, running, done := s.restoreProc.snapshot()
 	data := map[string]any{"Log": logText, "Running": running, "Done": done}

@@ -22,12 +22,15 @@ type DiskRow struct {
 }
 
 type Snapshot struct {
-	ID       string   `json:"short_id"`
-	Time     string   `json:"time"`
-	Tags     []string `json:"tags"`
-	Paths    []string `json:"paths"`
-	WhenAgo  string   // calculado: "hace 2 horas"
-	WhenFull string   // calculado: fecha+hora legible
+	ID      string   `json:"short_id"`
+	Time    string   `json:"time"`
+	Tags    []string `json:"tags"`
+	Paths   []string `json:"paths"`
+	Summary struct {
+		TotalBytesProcessed int64 `json:"total_bytes_processed"`
+	} `json:"summary"` // puede venir vacío según la versión de restic — se trata como opcional
+	WhenAgo  string // calculado: "hace 2 horas"
+	WhenFull string // calculado: fecha+hora legible
 }
 
 type BackupsView struct {
@@ -47,6 +50,23 @@ type BackupsView struct {
 	TimerNext      string // próxima ejecución, legible
 	TimerLast      string // última ejecución que el timer disparó, legible
 	HasBackupDisk  bool   // ya hay un disco con el marcador de warden — activar el timer no preguntará nada
+
+	BackupRuns []BackupRun // cada corrida real (files+db juntos), para elegir cuál restaurar
+}
+
+// BackupRun: una corrida real de 'warden backup' — agrupa el snapshot de
+// archivos y el de BD que se generaron juntos (siempre van pegados en el
+// tiempo, uno justo después del otro). Restaurar siempre "lo más
+// reciente" es una trampa real: si el backup automático corrió justo
+// después de reinstalar una app (antes de que tuviera datos), ESE
+// snapshot vacío se vuelve "el más nuevo" y tapa a uno viejo con
+// contenido real — por eso se puede elegir cualquier corrida, no solo
+// la última.
+type BackupRun struct {
+	FilesID, DBID     string
+	WhenFull, WhenAgo string
+	FilesSize, DBSize string // "" si la versión de restic no reporta tamaño
+	Paths             []string
 }
 
 // systemDiskName replica bin/warden:system_disk() — el disco que contiene '/'.
@@ -279,7 +299,66 @@ func (s *server) gatherBackupsView() BackupsView {
 			v.AgeLevel = ageLevel(t)
 		}
 	}
+	v.BackupRuns = groupBackupRuns(snaps)
 	return v
+}
+
+// groupBackupRuns empareja cada snapshot de "files" con el de "db" más
+// cercano en el tiempo (siempre se generan juntos, segundos aparte, en
+// la misma corrida de 'warden backup') — para que el panel pueda ofrecer
+// "restaurar desde esta corrida" sin asumir que la más reciente es la
+// que tiene contenido real.
+func groupBackupRuns(snaps []Snapshot) []BackupRun {
+	var filesSnaps, dbSnaps []Snapshot
+	for _, sn := range snaps {
+		for _, tag := range sn.Tags {
+			if tag == "files" {
+				filesSnaps = append(filesSnaps, sn)
+			} else if tag == "db" {
+				dbSnaps = append(dbSnaps, sn)
+			}
+		}
+	}
+	var runs []BackupRun
+	for _, fs := range filesSnaps {
+		ft, err := time.Parse(time.RFC3339Nano, fs.Time)
+		if err != nil {
+			continue
+		}
+		run := BackupRun{FilesID: fs.ID, WhenFull: fs.WhenFull, WhenAgo: fs.WhenAgo, Paths: fs.Paths}
+		if fs.Summary.TotalBytesProcessed > 0 {
+			run.FilesSize = humanFileSize(fs.Summary.TotalBytesProcessed)
+		}
+		// El "compañero" de db: el más cercano en el tiempo, dentro de 1 minuto.
+		var best Snapshot
+		bestDiff := time.Hour
+		for _, ds := range dbSnaps {
+			dt, err := time.Parse(time.RFC3339Nano, ds.Time)
+			if err != nil {
+				continue
+			}
+			diff := dt.Sub(ft)
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff < bestDiff {
+				bestDiff = diff
+				best = ds
+			}
+		}
+		if bestDiff <= time.Minute {
+			run.DBID = best.ID
+			if best.Summary.TotalBytesProcessed > 0 {
+				run.DBSize = humanFileSize(best.Summary.TotalBytesProcessed)
+			}
+		}
+		runs = append(runs, run)
+	}
+	// Más reciente primero — el usuario decide cuál usar, no se le impone.
+	for i, j := 0, len(runs)-1; i < j; i, j = i+1, j-1 {
+		runs[i], runs[j] = runs[j], runs[i]
+	}
+	return runs
 }
 
 func (s *server) handleBackupsPage(w http.ResponseWriter, r *http.Request) {

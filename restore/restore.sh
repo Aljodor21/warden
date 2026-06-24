@@ -31,9 +31,21 @@
 set -euo pipefail
 
 ONLY_TAG=""
+FILES_SNAP="latest"
+DB_SNAP="latest"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --tag) ONLY_TAG="${2:-}"; shift 2 ;;
+    # Por defecto usa el snapshot MÁS RECIENTE de cada tag — pero el
+    # backup automático (cada hora) puede correr en un mal momento (ej.
+    # justo después de reinstalar una app, antes de que tenga datos
+    # reales) y dejar "el más reciente" prácticamente vacío. Estas dos
+    # banderas permiten elegir una corrida de backup específica en vez de
+    # asumir ciegamente que la última es la buena (visto en vivo: Al
+    # restauró y el NAS volvió vacío porque el snapshot más nuevo lo
+    # capturó así, mientras uno más viejo SÍ tenía contenido real).
+    --files-snapshot) FILES_SNAP="${2:-latest}"; shift 2 ;;
+    --db-snapshot)    DB_SNAP="${2:-latest}"; shift 2 ;;
     *) shift ;;
   esac
 done
@@ -148,9 +160,18 @@ log "Snapshots en el disco:"
 restic_ro snapshots
 
 # --- 3. Qué hay REALMENTE en el backup (no una lista fija) ---
-mapfile -t filePaths < <(restic_ro snapshots --tag files --json --latest 1 2>/dev/null \
-  | jq -r '.[0].paths[]? // empty' 2>/dev/null || true)
-mapfile -t dbFiles < <(restic_ro ls latest --tag db 2>/dev/null | grep '\.sql$' || true)
+if [ "$FILES_SNAP" = "latest" ]; then
+  mapfile -t filePaths < <(restic_ro snapshots --tag files --json --latest 1 2>/dev/null \
+    | jq -r '.[0].paths[]? // empty' 2>/dev/null || true)
+else
+  mapfile -t filePaths < <(restic_ro snapshots --json "$FILES_SNAP" 2>/dev/null \
+    | jq -r '.[0].paths[]? // empty' 2>/dev/null || true)
+fi
+if [ "$DB_SNAP" = "latest" ]; then
+  mapfile -t dbFiles < <(restic_ro ls latest --tag db 2>/dev/null | grep '\.sql$' || true)
+else
+  mapfile -t dbFiles < <(restic_ro ls "$DB_SNAP" 2>/dev/null | grep '\.sql$' || true)
+fi
 dbNames=(); for f in "${dbFiles[@]}"; do [ -n "$f" ] && dbNames+=("$(basename "$f" .sql)"); done
 
 if [ "${#filePaths[@]}" -eq 0 ] && [ "${#dbNames[@]}" -eq 0 ]; then
@@ -273,14 +294,14 @@ for t in "${toRestore[@]}"; do
     log "Restaurando archivos de '${COMP_NAME:-$t}' en su ubicación real…"
     for p in "${COMP_PATHS[@]}"; do
       [ -n "$p" ] || continue
-      run "restic_files restore latest --tag files --include '$p' --target /restore"
+      run "restic_files restore '$FILES_SNAP' --tag files --include '$p' --target /restore"
     done
   fi
 
   if [ -n "${COMP_DB_NAME:-}" ] && printf '%s\n' "${dbNames[@]}" | grep -qx "$COMP_DB_NAME"; then
     log "Restaurando dump de BD '${COMP_DB_NAME}'…"
     run "mkdir -p '$STAGE'"
-    [ -f "$STAGE/dumps/${COMP_DB_NAME}.sql" ] || run "restic_dumps restore latest --tag db --include /dumps/${COMP_DB_NAME}.sql --target /restore"
+    [ -f "$STAGE/dumps/${COMP_DB_NAME}.sql" ] || run "restic_dumps restore '$DB_SNAP' --tag db --include /dumps/${COMP_DB_NAME}.sql --target /restore"
     if docker ps --format '{{.Names}}' | grep -qx "${COMP_DB_CONTAINER:-}"; then
       pass="$(docker exec "$COMP_DB_CONTAINER" printenv POSTGRES_PASSWORD 2>/dev/null || true)"
       run "docker exec -i -e PGPASSWORD='$pass' '$COMP_DB_CONTAINER' psql -U '$COMP_DB_USER' -d '$COMP_DB_NAME' < '$STAGE/dumps/${COMP_DB_NAME}.sql'"
