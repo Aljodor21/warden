@@ -257,6 +257,13 @@ if [ "$AUTO" != 1 ]; then
   ui_confirm "¿Restaurar ahora?" || { log "Cancelado."; exit 0; }
 fi
 
+# Limpiar el staging de dumps de una corrida ANTERIOR — sin esto, un dump
+# viejo que quedó en disco se reutiliza en vez de bajar el del backup
+# actual (bug real: generar un backup nuevo no servía de nada porque
+# restore.sh seguía usando el .sql de la corrida pasada, detectando que
+# "ya existe" sin chequear si es el más reciente).
+run "rm -rf '$STAGE/dumps'"
+
 # --- 5. Restaurar de verdad ---
 for t in "${toRestore[@]}"; do
   catalog_load "$t" || continue
