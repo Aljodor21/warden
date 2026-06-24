@@ -156,6 +156,7 @@ func main() {
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("GET /about", s.handleAbout)
+	mux.HandleFunc("/files/app/", s.handleFilesApp)
 	mux.HandleFunc("/files/", s.handleFiles)
 	mux.HandleFunc("/files", s.handleFiles)
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))

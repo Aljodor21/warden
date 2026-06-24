@@ -3,14 +3,8 @@
   {{if .Running}}
   <p class="muted">Instalando…</p>
   {{else if .Done}}
-  {{if .Credentials}}
-  <div class="ok-msg">Listo. Usuario y clave para entrar (anotalos, no se vuelven a mostrar así de fácil):</div>
-  <p style="margin:0.5rem 0"><code>Usuario: {{.Credentials.User}}</code><br><code>Clave: {{.Credentials.Pass}}</code></p>
-  <button class="btn" onclick="location.reload()">Ya la anoté, continuar</button>
-  {{else}}
   <div class="ok-msg">Listo, ya queda. Recargando…</div>
   <script>setTimeout(function(){ location.reload(); }, 1200);</script>
-  {{end}}
   {{end}}
   {{if .Log}}<pre style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
 </div>

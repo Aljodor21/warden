@@ -14,13 +14,16 @@ services:
     # de datos en /database (visto en vivo: crash loop apenas instalado).
     # Queda igual de confinado: solo ve lo que sus volúmenes montan.
     user: "0:0"
-    # --baseurl /files: el panel hace de proxy hacia este contenedor bajo
-    # /files — sin esto, los links/assets que genera FileBrowser asumen que
-    # vive en la raíz "/" y se rompen detrás del proxy.
-    # (el flag se llama --baseURL en versiones nuevas, pero --baseurl
-    # sigue funcionando como alias deprecado — se mantiene por compatibilidad
-    # con versiones viejas de la imagen 'latest' que pudieran quedar cacheadas)
-    command: ["--baseurl", "/files"]
+    # --baseurl /files/app: vive en un iframe dentro de la página de
+    # Archivos del panel (no reemplaza toda la pantalla) — así el menú de
+    # warden queda siempre visible arriba para volver, sin tener que
+    # navegar "atrás" adentro de FileBrowser carpeta por carpeta.
+    # --noauth: sin login propio — entrar a /files YA exige el admin lock
+    # del panel (requireAdmin), pedir credenciales DE NUEVO acá adentro es
+    # un segundo candado redundante. Seguro porque nunca se expone más
+    # puerto que loopback (ver 'ports' abajo): solo se llega a esto a
+    # través del panel.
+    command: ["--baseurl", "/files/app", "--noauth"]
     # Publicado SOLO en loopback (127.0.0.1): el panel corre nativo en el
     # host (no en Docker, no puede resolver 'filebrowser' por nombre de
     # servicio) y le habla por localhost — pero nadie en la LAN puede
@@ -29,12 +32,6 @@ services:
       - "127.0.0.1:${FILEBROWSER_PORT:-8095}:80"
     environment:
       TZ: "${TZ:-UTC}"
-      # Seedea el usuario admin con una clave conocida (generada por warden
-      # al instalar, ver COMP_SECRETS) en vez de depender de la clave
-      # aleatoria que la imagen genera sola y solo se ve en sus logs — Al
-      # fue explícito: nada de tener que revisar consola para esto.
-      FB_USERNAME: "admin"
-      FB_PASSWORD: "${FILEBROWSER_PASSWORD}"
     volumes:
       - "${WARDEN_DATA:-/srv/warden}/nas:/srv"
       - "${WARDEN_DATA:-/srv/warden}/filebrowser:/database"
