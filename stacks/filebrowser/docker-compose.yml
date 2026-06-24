@@ -9,9 +9,17 @@ services:
     image: filebrowser/filebrowser:latest
     container_name: filebrowser
     restart: unless-stopped
+    # root: la imagen corre con un usuario sin permisos de escritura
+    # propios — sin esto, falla con "permission denied" al crear su base
+    # de datos en /database (visto en vivo: crash loop apenas instalado).
+    # Queda igual de confinado: solo ve lo que sus volúmenes montan.
+    user: "0:0"
     # --baseurl /files: el panel hace de proxy hacia este contenedor bajo
     # /files — sin esto, los links/assets que genera FileBrowser asumen que
     # vive en la raíz "/" y se rompen detrás del proxy.
+    # (el flag se llama --baseURL en versiones nuevas, pero --baseurl
+    # sigue funcionando como alias deprecado — se mantiene por compatibilidad
+    # con versiones viejas de la imagen 'latest' que pudieran quedar cacheadas)
     command: ["--baseurl", "/files"]
     # Publicado SOLO en loopback (127.0.0.1): el panel corre nativo en el
     # host (no en Docker, no puede resolver 'filebrowser' por nombre de
