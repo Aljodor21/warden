@@ -126,9 +126,45 @@ func readMem() MemInfo {
 			avail = v
 		}
 	}
-	m.TotalKB = total
 	m.UsedKB = total - avail
+	// Usar RAM física real (suma de regiones "System RAM" en /proc/iomem)
+	// en vez de MemTotal, que excluye lo que el kernel se reserva para sí mismo.
+	if phys := readPhysRAMKB(); phys > total {
+		m.TotalKB = phys
+	} else {
+		m.TotalKB = total
+	}
 	return m
+}
+
+// readPhysRAMKB suma las regiones "System RAM" de /proc/iomem para obtener
+// el total físico visible al OS (más cercano al hardware real que MemTotal).
+func readPhysRAMKB() int64 {
+	b, err := os.ReadFile("/proc/iomem")
+	if err != nil {
+		return 0
+	}
+	var total int64
+	for _, line := range strings.Split(string(b), "\n") {
+		if !strings.Contains(line, "System RAM") {
+			continue
+		}
+		parts := strings.SplitN(strings.TrimSpace(line), " : ", 2)
+		if len(parts) < 1 {
+			continue
+		}
+		addrs := strings.SplitN(strings.TrimSpace(parts[0]), "-", 2)
+		if len(addrs) != 2 {
+			continue
+		}
+		start, e1 := strconv.ParseInt(addrs[0], 16, 64)
+		end, e2 := strconv.ParseInt(addrs[1], 16, 64)
+		if e1 != nil || e2 != nil {
+			continue
+		}
+		total += end - start + 1
+	}
+	return total / 1024
 }
 
 func readDisks() []DiskInfo {
