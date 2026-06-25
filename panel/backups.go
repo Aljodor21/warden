@@ -594,7 +594,7 @@ func (s *server) handleSetPassfile(w http.ResponseWriter, r *http.Request) {
 				"-e", "RESTIC_PASSWORD_FILE=/pass",
 				"-v", tmp.Name()+":/pass:ro",
 				"-v", repo+":/repo:ro",
-				"restic/restic", "-r", "/repo", "snapshots", "--json").CombinedOutput()
+				"restic/restic", "-r", "/repo", "snapshots", "--no-lock", "--json").CombinedOutput()
 			if err != nil {
 				detail := strings.TrimSpace(string(out))
 				if strings.Contains(detail, "wrong password") || strings.Contains(detail, "MAC verification") {
