@@ -36,6 +36,10 @@
           <button class="iconbtn" type="submit">Preparar</button>
         </form>
       {{else if eq .Role "OTHER"}}
+        <form hx-post="/backups/disk/mount" hx-target="#backups-content" hx-swap="innerHTML">
+          <input type="hidden" name="dev" value="{{.Name}}">
+          <button class="iconbtn" type="submit">Montar</button>
+        </form>
         <form hx-post="/backups/disk/prepare" hx-target="#backups-content" hx-swap="innerHTML"
               onsubmit="return confirm('⚠ {{.Name}} TIENE DATOS. Prepararlo va a BORRAR TODO. ¿Estás seguro?')">
           <input type="hidden" name="dev" value="{{.Name}}">
