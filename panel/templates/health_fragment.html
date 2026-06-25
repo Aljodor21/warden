@@ -10,35 +10,93 @@
 
   <div class="panel">
     <h2>CPU</h2>
-    <div class="row"><span class="muted">{{.CPU.Detail}}</span><span>{{.CPU.Pct}}%</span></div>
-    <div class="bar"><span class="lvl-{{.CPU.Level}}" style="width:{{.CPU.Pct}}%"></span></div>
+    <div class="gauge-row">
+      <svg viewBox="0 0 80 80" width="72" height="72" style="flex-shrink:0">
+        <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+        <circle cx="40" cy="40" r="30" fill="none"
+          stroke="{{.CPU.Color}}" stroke-width="7"
+          stroke-dasharray="{{printf "%.1f" .CPU.Arc}} 188.5"
+          stroke-linecap="round" transform="rotate(-90 40 40)"/>
+        <text x="40" y="45" text-anchor="middle" fill="#dde6f0"
+          font-size="14" font-weight="700" font-family="-apple-system,system-ui,sans-serif">{{.CPU.Pct}}%</text>
+      </svg>
+      <div style="flex:1">
+        <div class="muted" style="font-size:0.82rem; margin-bottom:0.5rem">{{.CPU.Detail}}</div>
+        <div class="bar" style="height:5px"><span class="lvl-{{.CPU.Level}}" style="width:{{.CPU.Pct}}%"></span></div>
+      </div>
+    </div>
   </div>
 
   <div class="panel">
     <h2>Memoria RAM</h2>
-    <div class="row"><span class="muted">{{.RAM.Detail}}</span><span>{{.RAM.Pct}}%</span></div>
-    <div class="bar"><span class="lvl-{{.RAM.Level}}" style="width:{{.RAM.Pct}}%"></span></div>
+    <div class="gauge-row">
+      <svg viewBox="0 0 80 80" width="72" height="72" style="flex-shrink:0">
+        <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+        <circle cx="40" cy="40" r="30" fill="none"
+          stroke="{{.RAM.Color}}" stroke-width="7"
+          stroke-dasharray="{{printf "%.1f" .RAM.Arc}} 188.5"
+          stroke-linecap="round" transform="rotate(-90 40 40)"/>
+        <text x="40" y="45" text-anchor="middle" fill="#dde6f0"
+          font-size="14" font-weight="700" font-family="-apple-system,system-ui,sans-serif">{{.RAM.Pct}}%</text>
+      </svg>
+      <div style="flex:1">
+        <div class="muted" style="font-size:0.82rem; margin-bottom:0.5rem">{{.RAM.Detail}}</div>
+        <div class="bar" style="height:5px"><span class="lvl-{{.RAM.Level}}" style="width:{{.RAM.Pct}}%"></span></div>
+        <div class="muted" style="font-size:0.74rem; margin-top:0.4rem">el total visible es lo que el SO reserva — ~1 GB lo usa el GPU integrado</div>
+      </div>
+    </div>
   </div>
 
   <div class="panel">
     <h2>Discos</h2>
-    {{range .Disks}}
-    <div class="row"><span class="muted">{{.Label}} — {{.Detail}}</span><span>{{.Pct}}%</span></div>
-    <div class="bar"><span class="lvl-{{.Level}}" style="width:{{.Pct}}%"></span></div>
-    {{else}}
-    <p class="muted">Sin discos detectados.</p>
-    {{end}}
+    <div class="disk-grid">
+      {{range .Disks}}
+      <div class="disk-card">
+        <svg viewBox="0 0 80 80" width="70" height="70">
+          <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+          <circle cx="40" cy="40" r="30" fill="none"
+            stroke="{{.Color}}" stroke-width="7"
+            stroke-dasharray="{{printf "%.1f" .Arc}} 188.5"
+            stroke-linecap="round" transform="rotate(-90 40 40)"/>
+          <text x="40" y="45" text-anchor="middle" fill="#dde6f0"
+            font-size="13" font-weight="700" font-family="-apple-system,system-ui,sans-serif">{{.Pct}}%</text>
+        </svg>
+        <div class="disk-label">{{.Label}}</div>
+        <div class="disk-detail">{{.Detail}}</div>
+      </div>
+      {{else}}
+      <p class="muted">Sin discos detectados.</p>
+      {{end}}
+    </div>
   </div>
 
   <div class="panel">
     <h2>Red</h2>
     <div class="net">
-      <div><div class="muted">↓ bajada</div><div class="v">{{.DownRate}}</div></div>
-      <div><div class="muted">↑ subida</div><div class="v">{{.UpRate}}</div></div>
+      <div><div class="muted">&#8595; bajada</div><div class="v">{{.DownRate}}</div></div>
+      <div><div class="muted">&#8593; subida</div><div class="v">{{.UpRate}}</div></div>
     </div>
   </div>
 
 </div>
+
+{{if .TopProcs}}
+<div class="panel" style="margin-top:1rem">
+  <h2>Procesos (top CPU)</h2>
+  <div class="proc-header">
+    <span>PID</span><span>Proceso</span><span></span><span>CPU</span><span>MEM</span>
+  </div>
+  {{range .TopProcs}}
+  <div class="proc-row">
+    <span class="proc-pid">{{.Pid}}</span>
+    <span class="proc-name">{{.Name}}</span>
+    <span class="proc-bar-wrap"><span class="proc-bar" style="width:{{printf "%.0f" .CPUPct}}%"></span></span>
+    <span class="proc-cpu">{{.CPU}}%</span>
+    <span class="proc-mem">{{.Mem}}%</span>
+  </div>
+  {{end}}
+</div>
+{{end}}
 
 {{if .Tools}}
 <div class="panel" style="margin-top:1rem">

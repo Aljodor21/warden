@@ -210,7 +210,17 @@ type Gauge struct {
 	Label  string
 	Pct    int
 	Detail string
-	Level  string // ok | warn | crit (clase CSS de color)
+	Level  string
+	Arc    float64 // stroke-dasharray para SVG donut (r=30, circ≈188.5)
+	Color  string  // hex del trazo según Level
+}
+
+type ProcRow struct {
+	Pid    int
+	Name   string
+	CPU    string
+	Mem    string
+	CPUPct float64
 }
 
 type HealthView struct {
@@ -223,10 +233,11 @@ type HealthView struct {
 	Disks         []Gauge
 	DownRate      string
 	UpRate        string
-	InstalledApps []AppCard   // instaladas/administradas por warden enteras
-	DeployedApps  []AppCard   // viven en su repo, vía CI/CD — warden solo publica/respalda
-	Others        []Container // contenedores sueltos, sin app asociada
-	Tools         []ToolLink  // Cockpit/Backrest/ntfy — no viven en el catálogo
+	TopProcs      []ProcRow
+	InstalledApps []AppCard
+	DeployedApps  []AppCard
+	Others        []Container
+	Tools         []ToolLink
 	UpCount       int
 	TotalCount    int
 	OthersUp      int
@@ -242,6 +253,46 @@ func level(pct int) string {
 	default:
 		return "ok"
 	}
+}
+
+func gaugeColor(lv string) string {
+	switch lv {
+	case "crit":
+		return "#f87171"
+	case "warn":
+		return "#f59e0b"
+	default:
+		return "#38bdf8"
+	}
+}
+
+func readTopProcs() []ProcRow {
+	out, err := exec.Command("ps", "-eo", "pid,comm,%cpu,%mem", "--sort=-%cpu").Output()
+	if err != nil {
+		return nil
+	}
+	var rows []ProcRow
+	for i, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if i == 0 {
+			continue
+		}
+		if len(rows) >= 10 {
+			break
+		}
+		f := strings.Fields(line)
+		if len(f) < 4 {
+			continue
+		}
+		pid, _ := strconv.Atoi(f[0])
+		cpuF, _ := strconv.ParseFloat(f[2], 64)
+		if cpuF > 100 {
+			cpuF = 100
+		}
+		rows = append(rows, ProcRow{
+			Pid: pid, Name: f[1], CPU: f[2], Mem: f[3], CPUPct: cpuF,
+		})
+	}
+	return rows
 }
 
 func humanBytes(n int64) string {
@@ -315,23 +366,30 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 	if cpuPct > 100 {
 		cpuPct = 100
 	}
-	v.CPU = Gauge{Label: "CPU", Pct: cpuPct, Level: level(cpuPct),
-		Detail: fmt.Sprintf("%.2f carga · %d núcleos", h.Load[0], h.Cores)}
+	cpuLv := level(cpuPct)
+	v.CPU = Gauge{Label: "CPU", Pct: cpuPct, Level: cpuLv,
+		Detail: fmt.Sprintf("%.2f carga · %d núcleos", h.Load[0], h.Cores),
+		Arc: float64(cpuPct) / 100.0 * 188.5, Color: gaugeColor(cpuLv)}
 
 	// RAM (meminfo viene en KB).
 	ramPct := 0
 	if h.Mem.TotalKB > 0 {
 		ramPct = int(h.Mem.UsedKB * 100 / h.Mem.TotalKB)
 	}
-	v.RAM = Gauge{Label: "RAM", Pct: ramPct, Level: level(ramPct),
-		Detail: fmt.Sprintf("%s / %s", humanBytes(h.Mem.UsedKB*1024), humanBytes(h.Mem.TotalKB*1024))}
+	ramLv := level(ramPct)
+	v.RAM = Gauge{Label: "RAM", Pct: ramPct, Level: ramLv,
+		Detail: fmt.Sprintf("%s / %s", humanBytes(h.Mem.UsedKB*1024), humanBytes(h.Mem.TotalKB*1024)),
+		Arc: float64(ramPct) / 100.0 * 188.5, Color: gaugeColor(ramLv)}
 
 	for _, d := range h.Disks {
+		lv := level(d.Pct)
 		v.Disks = append(v.Disks, Gauge{
-			Label: d.Mount, Pct: d.Pct, Level: level(d.Pct),
+			Label: d.Mount, Pct: d.Pct, Level: lv,
 			Detail: fmt.Sprintf("%s / %s", humanBytes(d.Used), humanBytes(d.Total)),
+			Arc: float64(d.Pct) / 100.0 * 188.5, Color: gaugeColor(lv),
 		})
 	}
 
+	v.TopProcs = readTopProcs()
 	return v
 }
