@@ -50,6 +50,7 @@ type BackupsView struct {
 	TimerNext      string // próxima ejecución, legible
 	TimerLast      string // última ejecución que el timer disparó, legible
 	HasBackupDisk  bool   // ya hay un disco con el marcador de warden — activar el timer no preguntará nada
+	DiskMounted    bool   // hay un disco de backup MONTADO ahora mismo
 
 	BackupRuns []BackupRun // cada corrida real (files+db juntos), para elegir cuál restaurar
 }
@@ -240,6 +241,14 @@ func (s *server) gatherBackupsView() BackupsView {
 			break
 		}
 	}
+	// ¿hay un disco de backup físicamente montado ahora mismo?
+	if out, err := exec.Command("findmnt", "-no", "SOURCE", v.BackupMount).Output(); err == nil {
+		if src := strings.TrimSpace(string(out)); src != "" {
+			if _, serr := os.Stat(v.BackupMount + "/" + backupMarker); serr == nil {
+				v.DiskMounted = true
+			}
+		}
+	}
 
 	repo := v.BackupMount + "/restic-repo"
 	passfile := resticPassFile()
@@ -406,3 +415,156 @@ func (s *server) handleRegisterTimer(w http.ResponseWriter, r *http.Request) {
 	}
 	render(w, "backups_fragment.html", data)
 }
+
+// --- Gestión de disco desde el panel ---
+
+func diskFirstPart(dev string) string {
+	for _, p := range []string{dev + "p1", dev + "1"} {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
+}
+
+func (s *server) handleDiskMount(w http.ResponseWriter, r *http.Request) {
+	dev := strings.TrimSpace(r.FormValue("dev"))
+	if dev == "" || !strings.HasPrefix(dev, "/dev/") {
+		s.renderBackupsErr(w, "Disco inválido.")
+		return
+	}
+	mount := backupMount()
+	if out, err := exec.Command("findmnt", "-no", "SOURCE", mount).Output(); err == nil {
+		if strings.TrimSpace(string(out)) != "" {
+			s.renderBackupsErr(w, "Ya hay un disco montado en "+mount+". Desmontalo primero.")
+			return
+		}
+	}
+	part := diskFirstPart(dev)
+	if part == "" {
+		s.renderBackupsErr(w, "No encontré partición en "+dev+". Preparalo primero.")
+		return
+	}
+	if err := os.MkdirAll(mount, 0755); err != nil {
+		s.renderBackupsErr(w, "No pude crear "+mount+": "+err.Error())
+		return
+	}
+	if out, err := exec.Command("mount", part, mount).CombinedOutput(); err != nil {
+		s.renderBackupsErr(w, "Error al montar: "+strings.TrimSpace(string(out)))
+		return
+	}
+	data := map[string]any{"B": s.gatherBackupsView(), "Msg": "Disco montado en " + mount + "."}
+	render(w, "backups_fragment.html", data)
+}
+
+func (s *server) handleDiskUnmount(w http.ResponseWriter, r *http.Request) {
+	mount := backupMount()
+	if out, err := exec.Command("umount", mount).CombinedOutput(); err != nil {
+		s.renderBackupsErr(w, "Error al desmontar: "+strings.TrimSpace(string(out)))
+		return
+	}
+	data := map[string]any{"B": s.gatherBackupsView(), "Msg": "Disco desmontado de " + mount + "."}
+	render(w, "backups_fragment.html", data)
+}
+
+// handleDiskPrepare corre en background porque parted+mkfs puede tardar
+// más que el WriteTimeout HTTP (30s) en un disco grande.
+func (s *server) handleDiskPrepare(w http.ResponseWriter, r *http.Request) {
+	dev := strings.TrimSpace(r.FormValue("dev"))
+	if dev == "" || !strings.HasPrefix(dev, "/dev/") {
+		s.renderBackupsErr(w, "Disco inválido.")
+		return
+	}
+	sysd := systemDiskName()
+	shortDev := dev[strings.LastIndex(dev, "/")+1:]
+	if shortDev == sysd {
+		s.renderBackupsErr(w, dev+" es el disco del sistema — no lo toco.")
+		return
+	}
+	if !s.diskPrep.start() {
+		render(w, "disk_prep_log.html", map[string]any{"Running": true})
+		return
+	}
+	ctx, cancel := bgCtx3min()
+	go func() {
+		defer cancel()
+		runDiskPrepare(ctx, &s.diskPrep, dev, backupMount(), resticPassFile())
+	}()
+	render(w, "disk_prep_log.html", map[string]any{"Running": true})
+}
+
+func (s *server) handleDiskPrepareLog(w http.ResponseWriter, r *http.Request) {
+	logText, running, done := s.diskPrep.snapshot()
+	render(w, "disk_prep_log.html", map[string]any{
+		"Log": logText, "Running": running, "Done": done,
+	})
+}
+
+func runDiskPrepare(ctx context.Context, proc *bgProcess, dev, mount, passfile string) {
+	logf := func(msg string) { proc.Write([]byte(msg + "\n")) } //nolint:errcheck
+
+	logf("Particionando " + dev + " (GPT)...")
+	if out, err := exec.CommandContext(ctx, "parted", "-s", dev, "mklabel", "gpt", "mkpart", "primary", "ext4", "0%", "100%").CombinedOutput(); err != nil {
+		logf("ERROR: " + strings.TrimSpace(string(out)) + " — " + err.Error())
+		proc.finish()
+		return
+	}
+	time.Sleep(time.Second) // esperar a que el kernel vea la nueva partición
+
+	part := diskFirstPart(dev)
+	if part == "" {
+		logf("ERROR: no apareció la partición en " + dev)
+		proc.finish()
+		return
+	}
+
+	logf("Formateando " + part + " como ext4...")
+	if out, err := exec.CommandContext(ctx, "mkfs.ext4", "-F", "-q", part).CombinedOutput(); err != nil {
+		logf("ERROR al formatear: " + strings.TrimSpace(string(out)))
+		proc.finish()
+		return
+	}
+
+	logf("Montando en " + mount + "...")
+	exec.CommandContext(ctx, "umount", mount).Run() //nolint:errcheck
+	if err := os.MkdirAll(mount, 0755); err != nil {
+		logf("ERROR: no pude crear " + mount)
+		proc.finish()
+		return
+	}
+	if out, err := exec.Command("mount", part, mount).CombinedOutput(); err != nil {
+		logf("ERROR al montar: " + strings.TrimSpace(string(out)))
+		proc.finish()
+		return
+	}
+
+	logf("Escribiendo marcador warden...")
+	uuidOut, _ := exec.Command("uuidgen").Output()
+	if len(strings.TrimSpace(string(uuidOut))) == 0 {
+		uuidOut, _ = os.ReadFile("/proc/sys/kernel/random/uuid")
+	}
+	os.WriteFile(mount+"/"+backupMarker, []byte(strings.TrimSpace(string(uuidOut))+"\n"), 0644) //nolint:errcheck
+	os.MkdirAll(mount+"/restic-repo", 0755)                                                     //nolint:errcheck
+
+	if _, err := os.Stat(passfile); err == nil {
+		logf("Clave restic existente en " + passfile + " — reutilizando.")
+	} else {
+		logf("Generando clave restic en " + passfile + "...")
+		out, err := exec.Command("openssl", "rand", "-base64", "32").Output()
+		if err != nil {
+			logf("ERROR al generar clave: " + err.Error())
+			proc.finish()
+			return
+		}
+		os.WriteFile(passfile, out, 0600) //nolint:errcheck
+		logf("IMPORTANTE: guardá la clave con 'warden secrets save' — sin ella no podés restaurar.")
+	}
+
+	logf("\nDisco listo. Activá el backup automático con el botón de arriba.")
+	proc.finish()
+}
+
+func (s *server) renderBackupsErr(w http.ResponseWriter, msg string) {
+	render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView(), "Err": msg})
+}
+

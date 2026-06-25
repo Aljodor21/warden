@@ -1,0 +1,10 @@
+{{define "disk_prep_log.html"}}
+<div id="disk-prep-log" {{if .Running}}hx-get="/backups/disk/prepare-log" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if .Running}}
+  <p class="muted">Preparando disco… (particionando y formateando)</p>
+  {{else if .Done}}
+  <div class="ok-msg">Listo. <a href="/backups">Recargá la página</a> para ver el estado actualizado.</div>
+  {{end}}
+  {{if .Log}}<pre style="max-height:240px;overflow-y:auto;white-space:pre-wrap">{{.Log}}</pre>{{end}}
+</div>
+{{end}}

@@ -1,5 +1,6 @@
 {{define "backups_fragment.html"}}
 {{if .Err}}<div class="err">{{.Err}}</div>{{end}}
+{{if .Msg}}<div class="ok-msg">{{.Msg}}</div>{{end}}
 {{if .Running}}<div class="ok-msg">Backup iniciado en segundo plano — puede tardar varios minutos (depende de cuántos datos haya). Recargá esta página más tarde para ver el snapshot nuevo.</div>{{end}}
 
 <div class="panel">
@@ -14,7 +15,34 @@
       <span class="label">{{.Name}} — {{.Size}}{{if .Model}} ({{.Model}}){{end}}</span>
       <div class="desc">{{.Detail}}</div>
     </div>
-    <span class="badge {{if eq .Role "BACKUP"}}on{{else if eq .Role "SYSTEM"}}off{{end}}">{{.Role}}</span>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <span class="badge {{if eq .Role "BACKUP"}}on{{else if eq .Role "SYSTEM"}}off{{end}}">{{.Role}}</span>
+      {{if eq .Role "BACKUP"}}
+        {{if $.B.DiskMounted}}
+        <form hx-post="/backups/disk/unmount" hx-target="#backups-content" hx-swap="innerHTML"
+              onsubmit="return confirm('¿Desmontar el disco de backup?')">
+          <button class="iconbtn" type="submit">Desmontar</button>
+        </form>
+        {{else}}
+        <form hx-post="/backups/disk/mount" hx-target="#backups-content" hx-swap="innerHTML">
+          <input type="hidden" name="dev" value="{{.Name}}">
+          <button class="iconbtn" type="submit">Montar</button>
+        </form>
+        {{end}}
+      {{else if eq .Role "EMPTY"}}
+        <form hx-post="/backups/disk/prepare" hx-target="#backups-content" hx-swap="innerHTML"
+              onsubmit="return confirm('¿Inicializar {{.Name}} como disco de backup? Esto lo formateará.')">
+          <input type="hidden" name="dev" value="{{.Name}}">
+          <button class="iconbtn" type="submit">Preparar</button>
+        </form>
+      {{else if eq .Role "OTHER"}}
+        <form hx-post="/backups/disk/prepare" hx-target="#backups-content" hx-swap="innerHTML"
+              onsubmit="return confirm('⚠ {{.Name}} TIENE DATOS. Prepararlo va a BORRAR TODO. ¿Estás seguro?')">
+          <input type="hidden" name="dev" value="{{.Name}}">
+          <button class="iconbtn" style="color:#f97316" type="submit">Preparar (borra datos)</button>
+        </form>
+      {{end}}
+    </div>
   </div>
   {{else}}
   <p class="muted">No se detectaron discos.</p>
@@ -129,5 +157,7 @@
   </div>
 </div>
 {{end}}
+{{end}}
+
 {{end}}
 {{end}}

@@ -79,6 +79,9 @@ type server struct {
 
 	// Estado de 'warden restore' en segundo plano.
 	restoreProc bgProcess
+
+	// Estado de preparación de disco (parted + mkfs) en segundo plano.
+	diskPrep bgProcess
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
@@ -159,6 +162,10 @@ func main() {
 	mux.HandleFunc("/files", s.handleFiles)
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
 	mux.HandleFunc("POST /backups/register-timer", s.requireAdmin("backups_fragment.html", withBackups, s.handleRegisterTimer))
+	mux.HandleFunc("POST /backups/disk/mount", s.requireAdmin("backups_fragment.html", withBackups, s.handleDiskMount))
+	mux.HandleFunc("POST /backups/disk/unmount", s.requireAdmin("backups_fragment.html", withBackups, s.handleDiskUnmount))
+	mux.HandleFunc("POST /backups/disk/prepare", s.requireAdmin("disk_prep_log.html", noExtra, s.handleDiskPrepare))
+	mux.HandleFunc("GET /backups/disk/prepare-log", s.handleDiskPrepareLog)
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 
 	srv := &http.Server{
