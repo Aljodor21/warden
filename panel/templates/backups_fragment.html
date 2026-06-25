@@ -106,11 +106,15 @@
     Esto guarda solo lo que CAMBIÓ desde el último backup (deduplicado) — por eso un backup
     manual extra no pesa casi nada si nada cambió.
   </p>
+  {{if .B.DiskMounted}}
   <form hx-post="/backups/now" hx-target="#backups-content" hx-swap="innerHTML">
     <button class="btn" type="submit" {{if .Running}}disabled{{end}}>
       {{if .Running}}Backup en progreso…{{else}}Hacer backup ahora{{end}}<span class="spinner"></span>
     </button>
   </form>
+  {{else}}
+  <p class="muted">Montá el disco de backup arriba para poder hacer un backup.</p>
+  {{end}}
 </div>
 
 {{if .B.HasBackupDisk}}
