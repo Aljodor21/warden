@@ -578,12 +578,41 @@ func (s *server) handleSetPassfile(w http.ResponseWriter, r *http.Request) {
 		s.renderBackupsErr(w, "La clave no puede estar vacía.")
 		return
 	}
+
+	// Validar contra el repo antes de guardar permanentemente.
+	repo := backupMount() + "/restic-repo"
+	if _, err := os.Stat(repo); err == nil {
+		tmp, err := os.CreateTemp("", "warden-pass-*")
+		if err == nil {
+			tmp.WriteString(pass + "\n")
+			tmp.Close()
+			defer os.Remove(tmp.Name())
+
+			ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+			defer cancel()
+			out, err := exec.CommandContext(ctx, "docker", "run", "--rm",
+				"-e", "RESTIC_PASSWORD_FILE=/pass",
+				"-v", tmp.Name()+":/pass:ro",
+				"-v", repo+":/repo:ro",
+				"restic/restic", "-r", "/repo", "snapshots", "--json").CombinedOutput()
+			if err != nil {
+				detail := strings.TrimSpace(string(out))
+				if strings.Contains(detail, "wrong password") || strings.Contains(detail, "MAC verification") {
+					s.renderBackupsErr(w, "Clave incorrecta — no coincide con la del repositorio. Revisá que la copiaste bien.")
+				} else {
+					s.renderBackupsErr(w, "No pude verificar la clave: "+detail)
+				}
+				return
+			}
+		}
+	}
+
 	pf := resticPassFile()
 	if err := os.WriteFile(pf, []byte(pass+"\n"), 0600); err != nil {
 		s.renderBackupsErr(w, "No pude guardar la clave en "+pf+": "+err.Error())
 		return
 	}
-	data := map[string]any{"B": s.gatherBackupsView(), "Msg": "Clave guardada en " + pf + ". Ya podés ver los snapshots."}
+	data := map[string]any{"B": s.gatherBackupsView(), "Msg": "Clave verificada y guardada. Ya podés ver los snapshots."}
 	render(w, "backups_fragment.html", data)
 }
 
