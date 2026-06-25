@@ -84,7 +84,17 @@
 
 <div class="panel" style="margin-top:1rem">
   <h2>Backup ({{.B.BackupMount}}{{if .B.RepoSize}} · {{.B.RepoSize}} usados{{end}})</h2>
-  {{if .B.SnapshotsErr}}
+  {{if .B.MissingPass}}
+  <div style="border:1px solid #f97316; border-radius:8px; padding:1rem; margin-bottom:1rem">
+    <p style="margin:0 0 0.5rem; color:#f97316; font-weight:600">Falta la clave de cifrado restic</p>
+    <p class="muted" style="margin:0 0 0.8rem">Este repo fue creado en otro server. Pegá la clave para poder leer los snapshots y restaurar.</p>
+    <form hx-post="/backups/set-passfile" hx-target="#backups-content" hx-swap="innerHTML" style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <input type="password" name="passphrase" placeholder="Clave de cifrado restic"
+             style="flex:1;min-width:200px;padding:0.4rem 0.7rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:0.9rem">
+      <button class="btn" type="submit">Guardar clave</button>
+    </form>
+  </div>
+  {{else if .B.SnapshotsErr}}
   <p class="muted">{{.B.SnapshotsErr}}</p>
   {{else if not .B.Snapshots}}
   <p class="muted">No hay ningún backup todavía en este disco.</p>

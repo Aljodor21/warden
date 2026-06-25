@@ -51,6 +51,7 @@ type BackupsView struct {
 	TimerLast      string // última ejecución que el timer disparó, legible
 	HasBackupDisk  bool   // ya hay un disco con el marcador de warden — activar el timer no preguntará nada
 	DiskMounted    bool   // hay un disco de backup MONTADO ahora mismo
+	MissingPass    bool   // el passfile de restic no existe — mostrar formulario para ingresarlo
 
 	BackupRuns []BackupRun // cada corrida real (files+db juntos), para elegir cuál restaurar
 }
@@ -257,7 +258,7 @@ func (s *server) gatherBackupsView() BackupsView {
 	}
 	v.RepoSize = repoSizeHuman(repo)
 	if _, err := os.Stat(passfile); err != nil {
-		v.SnapshotsErr = "Falta la contraseña restic (" + passfile + ")"
+		v.MissingPass = true
 		return v
 	}
 
@@ -557,11 +558,33 @@ func runDiskPrepare(ctx context.Context, proc *bgProcess, dev, mount, passfile s
 			return
 		}
 		os.WriteFile(passfile, out, 0600) //nolint:errcheck
-		logf("IMPORTANTE: guardá la clave con 'warden secrets save' — sin ella no podés restaurar.")
+		logf("")
+		logf("══════════════════════════════════════════")
+		logf("  CLAVE DE CIFRADO (guardala en un lugar seguro):")
+		logf("  " + strings.TrimSpace(string(out)))
+		logf("══════════════════════════════════════════")
+		logf("  Sin esta clave NO podés restaurar aunque tengas el disco.")
+		logf("  Guardala en un gestor de contraseñas o corré 'warden secrets save'.")
+		logf("")
 	}
 
 	logf("\nDisco listo. Activá el backup automático con el botón de arriba.")
 	proc.finish()
+}
+
+func (s *server) handleSetPassfile(w http.ResponseWriter, r *http.Request) {
+	pass := strings.TrimSpace(r.FormValue("passphrase"))
+	if pass == "" {
+		s.renderBackupsErr(w, "La clave no puede estar vacía.")
+		return
+	}
+	pf := resticPassFile()
+	if err := os.WriteFile(pf, []byte(pass+"\n"), 0600); err != nil {
+		s.renderBackupsErr(w, "No pude guardar la clave en "+pf+": "+err.Error())
+		return
+	}
+	data := map[string]any{"B": s.gatherBackupsView(), "Msg": "Clave guardada en " + pf + ". Ya podés ver los snapshots."}
+	render(w, "backups_fragment.html", data)
 }
 
 func (s *server) renderBackupsErr(w http.ResponseWriter, msg string) {
