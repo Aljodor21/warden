@@ -126,6 +126,7 @@
       {{if .Running}}Backup en progreso…{{else}}Hacer backup ahora{{end}}<span class="spinner"></span>
     </button>
   </form>
+  {{if .Running}}{{template "backup_log.html" (dict "Running" true "Log" "" "Done" false)}}{{end}}
   {{else}}
   <p class="muted">Montá el disco de backup arriba para poder hacer un backup.</p>
   {{end}}

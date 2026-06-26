@@ -381,26 +381,21 @@ func (s *server) handleBackupsPage(w http.ResponseWriter, r *http.Request) {
 // WriteTimeout del servidor HTTP (30s). Corre en segundo plano; el botón
 // solo lo dispara y avisa, sin bloquear la página.
 func (s *server) handleBackupNow(w http.ResponseWriter, r *http.Request) {
-	s.bmu.Lock()
-	if s.backupRunning {
-		s.bmu.Unlock()
-		data := map[string]any{"B": s.gatherBackupsView(), "Running": true}
-		render(w, "backups_fragment.html", data)
+	if !s.backupProc.start() {
+		render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView(), "Running": true})
 		return
 	}
-	s.backupRunning = true
-	s.bmu.Unlock()
-
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		_, _ = s.runWarden(ctx, "backup")
-		s.bmu.Lock()
-		s.backupRunning = false
-		s.bmu.Unlock()
+		runInBackground(ctx, &s.backupProc, "sudo", s.wardenBin, "backup")
 	}()
-
 	render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView(), "Running": true})
+}
+
+func (s *server) handleBackupNowLog(w http.ResponseWriter, r *http.Request) {
+	logText, running, done := s.backupProc.snapshot()
+	render(w, "backup_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
 }
 
 // Activar el timer es rápido y seguro de ejecutar sin TTY SOLO si ya hay un
