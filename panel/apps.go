@@ -53,6 +53,8 @@ func (s *server) buildAppView(containers []Container) (apps []AppCard, others []
 		}
 		link := ""
 		switch {
+		case c.Kind == "files":
+			// se sirve internamente a través del panel (/archivos), no por URL directa
 		case c.CFHost != "":
 			link = "https://" + c.CFHost
 		case c.CFPort != "":
