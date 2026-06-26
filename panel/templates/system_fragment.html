@@ -72,6 +72,7 @@
 <div class="panel">
   <h2>Credenciales y respaldo</h2>
 
+  {{if .Sys.CloudflareSet}}
   <div class="statusrow">
     <div>
       <div class="label">API Token de Cloudflare (DNS)</div>
@@ -95,6 +96,7 @@
       {{end}}
     </div>
   </div>
+  {{end}}
 
   <div class="statusrow">
     <div>
