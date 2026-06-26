@@ -30,6 +30,7 @@ type Health struct {
 type MemInfo struct {
 	TotalKB int64 `json:"total_kb"`
 	UsedKB  int64 `json:"used_kb"`
+	AvailKB int64 `json:"avail_kb"`
 }
 
 type DiskInfo struct {
@@ -126,6 +127,7 @@ func readMem() MemInfo {
 			avail = v
 		}
 	}
+	m.AvailKB = avail
 	m.UsedKB = total - avail
 	// Usar RAM física real (suma de regiones "System RAM" en /proc/iomem)
 	// en vez de MemTotal, que excluye lo que el kernel se reserva para sí mismo.
@@ -243,12 +245,15 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 // --- Vista para el dashboard (todo precalculado, el template solo imprime) ---
 
 type Gauge struct {
-	Label  string
-	Pct    int
-	Detail string
-	Level  string
-	Arc    float64 // stroke-dasharray para SVG donut (r=30, circ≈188.5)
-	Color  string  // hex del trazo según Level
+	Label    string
+	Pct      int
+	FreePct  int
+	Detail   string // valor principal (usado)
+	FreeStr  string // solo RAM: "X libres"
+	TotalStr string // solo RAM: "Y total"
+	Level    string
+	Arc      float64 // stroke-dasharray para SVG donut (r=30, circ≈188.5)
+	Color    string  // hex del trazo según Level
 }
 
 type ProcRow struct {
@@ -413,9 +418,17 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 		ramPct = int(h.Mem.UsedKB * 100 / h.Mem.TotalKB)
 	}
 	ramLv := level(ramPct)
-	v.RAM = Gauge{Label: "RAM", Pct: ramPct, Level: ramLv,
-		Detail: fmt.Sprintf("%s / %s", humanBytes(h.Mem.UsedKB*1024), humanBytes(h.Mem.TotalKB*1024)),
-		Arc: float64(ramPct) / 100.0 * 188.5, Color: gaugeColor(ramLv)}
+	freePct := 0
+	if h.Mem.TotalKB > 0 {
+		freePct = int(h.Mem.AvailKB * 100 / h.Mem.TotalKB)
+	}
+	v.RAM = Gauge{
+		Label: "RAM", Pct: ramPct, FreePct: freePct, Level: ramLv,
+		Detail:   humanBytes(h.Mem.UsedKB * 1024),
+		FreeStr:  humanBytes(h.Mem.AvailKB * 1024),
+		TotalStr: humanBytes(h.Mem.TotalKB * 1024),
+		Arc: float64(ramPct) / 100.0 * 188.5, Color: gaugeColor(ramLv),
+	}
 
 	for _, d := range h.Disks {
 		lv := level(d.Pct)

@@ -103,6 +103,18 @@
   .disk-detail { font-size: 0.72rem; color: var(--muted); text-align: center; max-width: 90px;
                  line-height: 1.4; }
 
+  /* barra RAM segmentada (usado / libre / kernel) */
+  .seg-bar { background: rgba(255,255,255,0.06); border-radius: 6px; height: 8px;
+             overflow: hidden; display: flex; margin-bottom: 0.55rem; }
+  .seg-used { background: var(--accent); border-radius: 6px 0 0 6px; }
+  .seg-free { background: var(--green); }
+  .seg-legend { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.75rem; }
+  .seg-used-lbl::before { content: ''; display: inline-block; width: 7px; height: 7px;
+    border-radius: 2px; background: var(--accent); margin-right: 0.3rem; vertical-align: 1px; }
+  .seg-free-lbl::before { content: ''; display: inline-block; width: 7px; height: 7px;
+    border-radius: 2px; background: var(--green); margin-right: 0.3rem; vertical-align: 1px; }
+  .seg-total-lbl { color: var(--muted); }
+
   /* process list */
   .proc-header { display: grid; grid-template-columns: 3.5rem 1fr 60px 3.2rem 3.2rem;
                  gap: 0.5rem; padding: 0.3rem 0 0.5rem;

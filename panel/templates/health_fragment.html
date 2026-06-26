@@ -40,8 +40,15 @@
           font-size="14" font-weight="700" font-family="-apple-system,system-ui,sans-serif">{{.RAM.Pct}}%</text>
       </svg>
       <div style="flex:1">
-        <div class="muted" style="font-size:0.82rem; margin-bottom:0.5rem">{{.RAM.Detail}}</div>
-        <div class="bar" style="height:5px"><span class="lvl-{{.RAM.Level}}" style="width:{{.RAM.Pct}}%"></span></div>
+        <div class="seg-bar">
+          <div class="seg-used" style="width:{{.RAM.Pct}}%"></div>
+          <div class="seg-free" style="width:{{.RAM.FreePct}}%"></div>
+        </div>
+        <div class="seg-legend">
+          <span class="seg-used-lbl">{{.RAM.Detail}} usados</span>
+          <span class="seg-free-lbl">{{.RAM.FreeStr}} libres</span>
+          <span class="seg-total-lbl">{{.RAM.TotalStr}} total</span>
+        </div>
       </div>
     </div>
   </div>
