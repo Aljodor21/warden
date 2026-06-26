@@ -167,7 +167,7 @@ func main() {
 	mux.HandleFunc("POST /backups/set-passfile", s.requireAdmin("backups_fragment.html", withBackups, s.handleSetPassfile))
 	mux.HandleFunc("POST /backups/disk/mount", s.requireAdmin("backups_fragment.html", withBackups, s.handleDiskMount))
 	mux.HandleFunc("POST /backups/disk/unmount", s.requireAdmin("backups_fragment.html", withBackups, s.handleDiskUnmount))
-	mux.HandleFunc("POST /backups/disk/prepare", s.requireAdmin("disk_prep_log.html", noExtra, s.handleDiskPrepare))
+	mux.HandleFunc("POST /backups/disk/prepare", s.requireAdmin("backups_fragment.html", withBackups, s.handleDiskPrepare))
 	mux.HandleFunc("GET /backups/disk/prepare-log", s.handleDiskPrepareLog)
 	mux.Handle("GET /static/", http.FileServer(http.FS(staticFS)))
 

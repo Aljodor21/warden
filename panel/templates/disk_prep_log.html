@@ -1,4 +1,5 @@
 {{define "disk_prep_log.html"}}
+{{if .Err}}<div class="err">{{.Err}}</div>{{end}}
 <div id="disk-prep-log" {{if .Running}}hx-get="/backups/disk/prepare-log" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
   {{if .Running}}
   <p class="muted">Preparando disco… (particionando y formateando)</p>
