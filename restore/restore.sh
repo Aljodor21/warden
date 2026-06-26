@@ -299,7 +299,21 @@ for t in "${toRestore[@]}"; do
   ok "'${COMP_NAME:-$t}' restaurada"
 done
 
-# --- 6. Dejar este disco como el destino permanente de los backups
+# --- 6. Reinstalar componentes sin datos (kind: none) que estén instalados ---
+# Son stateless — no hay nada que restaurar — pero pueden quedar con la imagen
+# corrupta tras el restore. Con --pull always quedan siempre limpios.
+while IFS='|' read -r t _ kind _; do
+  [ -n "$t" ] || continue
+  [ "$kind" = "none" ] || continue
+  catalog_load "$t" 2>/dev/null || continue
+  container="${COMP_CONTAINER:-}"
+  [ -n "$container" ] || continue
+  docker ps -a --format '{{.Names}}' | grep -qx "$container" || continue
+  log "Recreando imagen de '$COMP_NAME' ($t) — sin datos, imagen fresca"
+  warden_stack_install "$t" || warn "No pude recrear '$COMP_NAME'"
+done < <(catalog_each)
+
+# --- 7. Dejar este disco como el destino permanente de los backups
 #        automáticos (mismo disco, no uno nuevo — solo falta registrarlo) ---
 if [ "$bmount" = "$MOUNT" ]; then
   warden_register || warn "No pude registrar el disco automáticamente — corré 'warden register' a mano."
