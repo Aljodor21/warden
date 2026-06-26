@@ -11,7 +11,9 @@
 </head>
 <body>
   {{template "nav" .}}
-  <div id="backups-content">{{template "backups_fragment.html" (dict "B" .B)}}</div>
+  <div id="backups-content" hx-get="/backups/content" hx-trigger="load" hx-swap="innerHTML">
+    <p class="muted">Cargando…</p>
+  </div>
 </body>
 </html>
 {{end}}

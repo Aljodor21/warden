@@ -89,6 +89,14 @@ type server struct {
 
 	// Estado de 'warden reset' en segundo plano (mata todo, incluido este panel).
 	resetProc bgProcess
+
+	// Caché de restic snapshots: evita arrancar un contenedor Docker en cada
+	// carga de página o acción de backups. TTL 60s; se invalida tras cada backup.
+	snapMu       sync.Mutex
+	snapCached   []Snapshot
+	snapCacheErr string
+	snapCacheSize string
+	snapCacheAt  time.Time
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
@@ -165,6 +173,7 @@ func main() {
 	mux.HandleFunc("GET /system/reset-log", s.handleResetLog)
 	mux.HandleFunc("POST /system/timezone", s.requireAdmin("system_fragment.html", withSys, s.handleSetTimezone))
 	mux.HandleFunc("GET /system/mem", s.handleSystemMem)
+	mux.HandleFunc("GET /backups/content", s.handleBackupsContent)
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("GET /about", s.handleAbout)

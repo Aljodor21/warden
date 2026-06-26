@@ -267,25 +267,53 @@ func (s *server) gatherBackupsView() BackupsView {
 		return v
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	out, err := exec.CommandContext(ctx, "docker", "run", "--rm",
-		"-e", "RESTIC_PASSWORD_FILE=/pass",
-		"-v", passfile+":/pass:ro",
-		"-v", repo+":/repo",
-		"restic/restic", "-r", "/repo", "snapshots", "--json").Output()
-	if err != nil {
-		detail := err.Error()
-		if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
-			detail = strings.TrimSpace(string(ee.Stderr))
-		}
-		v.SnapshotsErr = "No pude leer los snapshots: " + detail
-		return v
-	}
+	const snapTTL = 60 * time.Second
+	s.snapMu.Lock()
+	cacheHit := time.Since(s.snapCacheAt) < snapTTL
+	cachedSnaps := s.snapCached
+	cachedErr := s.snapCacheErr
+	cachedSize := s.snapCacheSize
+	s.snapMu.Unlock()
+
 	var snaps []Snapshot
-	if err := json.Unmarshal(out, &snaps); err != nil {
-		return v
+	if cacheHit {
+		v.RepoSize = cachedSize
+		if cachedErr != "" {
+			v.SnapshotsErr = cachedErr
+			return v
+		}
+		snaps = cachedSnaps
+	} else {
+		v.RepoSize = repoSizeHuman(repo)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		out, err := exec.CommandContext(ctx, "docker", "run", "--rm",
+			"-e", "RESTIC_PASSWORD_FILE=/pass",
+			"-v", passfile+":/pass:ro",
+			"-v", repo+":/repo",
+			"restic/restic", "-r", "/repo", "snapshots", "--json").Output()
+		var snapErr string
+		if err != nil {
+			detail := err.Error()
+			if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
+				detail = strings.TrimSpace(string(ee.Stderr))
+			}
+			snapErr = "No pude leer los snapshots: " + detail
+		} else if err2 := json.Unmarshal(out, &snaps); err2 != nil {
+			snapErr = "Error al parsear snapshots."
+		}
+		s.snapMu.Lock()
+		s.snapCached = snaps
+		s.snapCacheErr = snapErr
+		s.snapCacheSize = v.RepoSize
+		s.snapCacheAt = time.Now()
+		s.snapMu.Unlock()
+		if snapErr != "" {
+			v.SnapshotsErr = snapErr
+			return v
+		}
 	}
+
 	for i, sn := range snaps {
 		t, perr := time.Parse(time.RFC3339Nano, sn.Time)
 		if perr == nil {
@@ -311,6 +339,12 @@ func (s *server) gatherBackupsView() BackupsView {
 	}
 	v.BackupRuns = groupBackupRuns(snaps)
 	return v
+}
+
+func (s *server) invalidateSnapCache() {
+	s.snapMu.Lock()
+	s.snapCacheAt = time.Time{}
+	s.snapMu.Unlock()
 }
 
 // groupBackupRuns empareja cada snapshot de "files" con el de "db" más
@@ -373,8 +407,12 @@ func groupBackupRuns(snaps []Snapshot) []BackupRun {
 
 func (s *server) handleBackupsPage(w http.ResponseWriter, r *http.Request) {
 	render(w, "backups.html", map[string]any{
-		"Page": "backups", "AdminUnlocked": s.isAdmin(r), "B": s.gatherBackupsView(),
+		"Page": "backups", "AdminUnlocked": s.isAdmin(r),
 	})
+}
+
+func (s *server) handleBackupsContent(w http.ResponseWriter, r *http.Request) {
+	render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView()})
 }
 
 // Un backup real puede tardar varios minutos — mucho más que el
@@ -389,6 +427,7 @@ func (s *server) handleBackupNow(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer cancel()
 		runInBackground(ctx, &s.backupProc, "sudo", s.wardenBin, "backup")
+		s.invalidateSnapCache()
 	}()
 	render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView(), "Running": true})
 }
@@ -485,6 +524,7 @@ func (s *server) handleDiskPrepare(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer cancel()
 		runDiskPrepare(ctx, &s.diskPrep, dev, backupMount(), resticPassFile())
+		s.invalidateSnapCache()
 	}()
 	render(w, "disk_prep_log.html", map[string]any{"Running": true})
 }
