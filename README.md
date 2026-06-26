@@ -274,6 +274,7 @@ Tu `site/` nunca se sube al repo; el programa se actualiza con `git pull`.
 - [ROADMAP.md](ROADMAP.md) — fases del proyecto.
 - [docs/CICD.md](docs/CICD.md) — despliegue continuo de tus apps.
 - [docs/PRUEBA-VM.md](docs/PRUEBA-VM.md) — probar warden en una máquina virtual.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — cómo contribuir: CI, dry-run, módulos nuevos.
 
 ## Licencia
 
