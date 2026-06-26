@@ -62,12 +62,15 @@ type server struct {
 	filesProxy     http.Handler // hacia el contenedor FileBrowser, ver files.go
 
 	// Para calcular tasas entre refrescos del dashboard.
-	mu          sync.Mutex
-	lastRx      int64
-	lastTx      int64
-	lastNetTime time.Time
-	prevCores   []CoreStat
-	prevCoreAt  time.Time
+	mu           sync.Mutex
+	lastRx       int64
+	lastTx       int64
+	lastNetTime  time.Time
+	prevCores    []CoreStat
+	prevCoreAt   time.Time
+	netHistory   [40]NetSample
+	netHistIdx   int
+	netHistFull  bool
 
 	// Estado del backup en segundo plano (puede tardar minutos).
 	backupProc bgProcess

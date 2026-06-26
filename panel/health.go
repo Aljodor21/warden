@@ -287,6 +287,7 @@ type HealthView struct {
 	Disks         []Gauge
 	DownRate      string
 	UpRate        string
+	NetHist       NetSparkline
 	TopProcs      []ProcRow
 	InstalledApps []AppCard
 	DeployedApps  []AppCard
@@ -417,6 +418,62 @@ func humanBytes(n int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(n)/float64(div), "KMGTPE"[exp])
 }
 
+type NetSample struct{ DownBps, UpBps float64 }
+
+type NetSparkline struct {
+	DownPoly string // puntos del polígono de relleno (bajada)
+	UpPoly   string // puntos del polígono de relleno (subida)
+	DownLine string // puntos de la línea (bajada)
+	UpLine   string // puntos de la línea (subida)
+	MaxLabel string // etiqueta del máximo visible
+}
+
+func computeSparkline(samples []NetSample) NetSparkline {
+	if len(samples) == 0 {
+		return NetSparkline{}
+	}
+	var maxBps float64
+	for _, s := range samples {
+		if s.DownBps > maxBps {
+			maxBps = s.DownBps
+		}
+		if s.UpBps > maxBps {
+			maxBps = s.UpBps
+		}
+	}
+	if maxBps == 0 {
+		maxBps = 1
+	}
+	const W, H = 400.0, 60.0
+	n := len(samples)
+	xStep := W / float64(max(n-1, 1))
+	yFor := func(bps float64) float64 { return H - (bps/maxBps)*H*0.92 }
+
+	var dl, ul, dp, up strings.Builder
+	fmt.Fprintf(&dp, "0.0,%.1f ", H)
+	fmt.Fprintf(&up, "0.0,%.1f ", H)
+	for i, s := range samples {
+		x := float64(i) * xStep
+		dy, uy := yFor(s.DownBps), yFor(s.UpBps)
+		if i > 0 {
+			dl.WriteByte(' ')
+			ul.WriteByte(' ')
+		}
+		fmt.Fprintf(&dl, "%.1f,%.1f", x, dy)
+		fmt.Fprintf(&ul, "%.1f,%.1f", x, uy)
+		fmt.Fprintf(&dp, "%.1f,%.1f ", x, dy)
+		fmt.Fprintf(&up, "%.1f,%.1f ", x, uy)
+	}
+	lastX := float64(n-1) * xStep
+	fmt.Fprintf(&dp, "%.1f,%.1f", lastX, H)
+	fmt.Fprintf(&up, "%.1f,%.1f", lastX, H)
+	return NetSparkline{
+		DownLine: dl.String(), UpLine: ul.String(),
+		DownPoly: dp.String(), UpPoly: up.String(),
+		MaxLabel: humanRate(maxBps),
+	}
+}
+
 func humanRate(bps float64) string {
 	switch {
 	case bps < 1024:
@@ -441,10 +498,29 @@ func humanUptime(s int64) string {
 }
 
 func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
+	// Registrar muestra y leer historial
+	s.mu.Lock()
+	s.netHistory[s.netHistIdx] = NetSample{DownBps: downBps, UpBps: upBps}
+	s.netHistIdx++
+	if s.netHistIdx >= 40 {
+		s.netHistIdx = 0
+		s.netHistFull = true
+	}
+	n, start := s.netHistIdx, 0
+	if s.netHistFull {
+		n, start = 40, s.netHistIdx
+	}
+	samples := make([]NetSample, n)
+	for i := 0; i < n; i++ {
+		samples[i] = s.netHistory[(start+i)%40]
+	}
+	s.mu.Unlock()
+
 	v := HealthView{
 		Hostname: h.Hostname, OS: h.OS, Cores: h.Cores,
 		Uptime:   humanUptime(h.UptimeSecs),
 		DownRate: humanRate(downBps), UpRate: humanRate(upBps),
+		NetHist:  computeSparkline(samples),
 	}
 	var apps []AppCard
 	apps, v.Others = s.buildAppView(h.Containers)
