@@ -128,6 +128,13 @@ warden_reset() {
     run "ufw --force reset >/dev/null 2>&1 || true"
   fi
 
+  log "Restaurando shell de usuarios que usan zsh a bash (zsh se va a desinstalar)"
+  while IFS=: read -r uname _ uid _ _ _ ushell; do
+    [ "$ushell" = "/bin/zsh" ] || [ "$ushell" = "/usr/bin/zsh" ] || continue
+    [ "$uid" -ge 1000 ] || [ "$uname" = "root" ] || continue
+    run "usermod -s /bin/bash '$uname'" || true
+  done < /etc/passwd
+
   log "Desinstalando los paquetes que warden instaló (Docker, Cockpit, cloudflared, tailscale, etc.) — el sistema queda como antes de instalar warden, no solo sin su configuración"
   case "${DISTRO:-unknown}" in
     debian)
