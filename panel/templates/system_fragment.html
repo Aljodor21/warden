@@ -46,7 +46,7 @@
     </div>
   </div>
 
-  <div class="statusrow">
+  <div class="statusrow" style="border-bottom:none">
     <div>
       <div class="label">Túnel de Cloudflare</div>
       <div class="desc">
@@ -55,7 +55,6 @@
         {{else}}Sin configurar. Al hacer click abre una URL para autorizar con tu cuenta de Cloudflare.
         {{end}}
       </div>
-      {{if not .Sys.CloudflareSet}}<div id="cf-log-container" style="margin-top:0.5rem"></div>{{end}}
     </div>
     <div class="acts">
       {{if .Sys.CloudflareSet}}
@@ -67,13 +66,18 @@
       {{end}}
     </div>
   </div>
+  {{if not .Sys.CloudflareSet}}<div id="cf-log-container" style="margin-top:0.5rem"></div>{{end}}
+</div>
 
-  <div class="statusrow" style="border-bottom:none">
+<div class="panel">
+  <h2>Credenciales y respaldo</h2>
+
+  <div class="statusrow">
     <div>
-      <div class="label">Borrar subdominios automáticamente</div>
+      <div class="label">API Token de Cloudflare (DNS)</div>
       <div class="desc">
         Opcional. Sin esto, al eliminar una app con subdominio el registro DNS queda en Cloudflare y hay que borrarlo a mano.
-        Con un API Token guardado acá, el botón "Eliminar aplicación" lo borra todo solo.
+        Con un token guardado acá, el botón "Eliminar aplicación" lo borra solo.
         {{if not .Sys.CloudflareTokenSet}}
         Generalo en <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare → API Tokens</a>
         → "Create Custom Token" → permiso <strong>Zone · DNS · Edit</strong> para tu dominio.
@@ -91,10 +95,6 @@
       {{end}}
     </div>
   </div>
-</div>
-
-<div class="panel">
-  <h2>Credenciales y respaldo</h2>
 
   <div class="statusrow">
     <div>

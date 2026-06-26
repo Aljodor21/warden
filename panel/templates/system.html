@@ -24,10 +24,7 @@
         <td style="text-align:right"><strong>{{.Sys.TotalMemAll}}</strong></td></tr>
     </table>
   </div>
-  <div class="panel">
-    <h2>VPN y credenciales</h2>
-    <div id="system-status">{{template "system_fragment.html" (dict "Sys" .Sys)}}</div>
-  </div>
+  <div id="system-status">{{template "system_fragment.html" (dict "Sys" .Sys)}}</div>
 </body>
 </html>
 {{end}}
