@@ -25,6 +25,8 @@ _cloudflared_install() {
 
 warden_cloudflare_init() {
   _cloudflared_install
+  # En dry-run cloudflared no se instala de verdad — no hay nada más que hacer.
+  has cloudflared || { warn "cloudflared no instalado (dry-run), salto configuración del túnel"; return 0; }
   run "mkdir -p /etc/cloudflared"
 
   if [ ! -f /etc/cloudflared/cert.pem ] && [ ! -f "$HOME/.cloudflared/cert.pem" ]; then
