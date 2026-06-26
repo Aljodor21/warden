@@ -83,6 +83,9 @@ type server struct {
 
 	// Estado de preparación de disco (parted + mkfs) en segundo plano.
 	diskPrep bgProcess
+
+	// Estado de 'warden reset' en segundo plano (mata todo, incluido este panel).
+	resetProc bgProcess
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site
@@ -155,6 +158,8 @@ func main() {
 	mux.HandleFunc("POST /system/cloudflare-init", s.requireAdmin("cloudflare_log.html", noExtra, s.handleCloudflareInitStart))
 	mux.HandleFunc("GET /system/cloudflare-log", s.handleCloudflareInitPoll)
 	mux.HandleFunc("POST /system/cloudflare-token", s.requireAdmin("system_fragment.html", withSys, s.handleSaveCloudflareToken))
+	mux.HandleFunc("POST /system/reset", s.requireAdmin("system_fragment.html", withSys, s.handleReset))
+	mux.HandleFunc("GET /system/reset-log", s.handleResetLog)
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("GET /about", s.handleAbout)

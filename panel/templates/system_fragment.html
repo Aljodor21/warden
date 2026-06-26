@@ -142,4 +142,45 @@
     </div>
   </div>
 </div>
+
+<div class="panel" style="margin-top:1rem;border-color:rgba(248,113,113,0.25)" x-data="{ open: false, confirm: '' }">
+  <h2 style="color:var(--red)">Zona de peligro</h2>
+  <div class="statusrow" style="border-bottom:none">
+    <div>
+      <div class="label">Eliminar sistema</div>
+      <div class="desc">
+        Borra TODO lo que warden instaló: contenedores, datos de apps, config, llave age, túnel de Cloudflare
+        (de tu cuenta), Tailscale, firewall y los paquetes instalados (Docker, Cockpit, etc.).
+        <strong>No toca el disco de backup ni tu site/.</strong> Usá esto para reinstalar desde cero.
+      </div>
+    </div>
+    <div class="acts">
+      <button class="btn" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,0.3)"
+              @click="open = true">Eliminar sistema</button>
+    </div>
+  </div>
+
+  <div x-show="open" x-cloak style="margin-top:1rem;padding:1rem;background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.25);border-radius:10px">
+    <p style="color:var(--red);font-weight:600;margin:0 0 0.5rem">Esta acción no se puede deshacer.</p>
+    <p class="muted" style="margin:0 0 0.8rem;font-size:0.88rem">
+      Se van a perder: fotos de Immich, archivos del NAS, bases de datos, config de Cloudflare y Tailscale.
+      <strong>Asegurate de tener un backup antes de continuar.</strong>
+    </p>
+    <p class="muted" style="margin:0 0 0.5rem;font-size:0.88rem">Escribí <strong style="color:var(--text)">BORRAR</strong> para habilitar el botón:</p>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">
+      <input type="text" x-model="confirm" placeholder="BORRAR"
+             style="font-size:0.9rem;letter-spacing:0.05em;max-width:140px">
+      <form hx-post="/system/reset" hx-target="#system-status" hx-swap="innerHTML">
+        <input type="hidden" name="confirm" value="BORRAR">
+        <button class="btn" type="submit"
+                style="background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,0.4)"
+                :disabled="confirm !== 'BORRAR'"
+                @click="open = false">
+          Confirmar y borrar todo<span class="spinner"></span>
+        </button>
+      </form>
+      <button class="btn secondary" @click="open = false; confirm = ''">Cancelar</button>
+    </div>
+  </div>
+</div>
 {{end}}

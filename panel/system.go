@@ -192,3 +192,25 @@ func (s *server) renderSystemAction(w http.ResponseWriter, out string, err error
 	}
 	render(w, "system_fragment.html", data)
 }
+
+func (s *server) handleReset(w http.ResponseWriter, r *http.Request) {
+	if r.FormValue("confirm") != "BORRAR" {
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "Confirmación incorrecta."})
+		return
+	}
+	if !s.resetProc.start() {
+		render(w, "reset_log.html", map[string]any{"Running": true})
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	go func() {
+		defer cancel()
+		runInBackground(ctx, &s.resetProc, "sudo", s.wardenBin, "reset")
+	}()
+	render(w, "reset_log.html", map[string]any{"Running": true})
+}
+
+func (s *server) handleResetLog(w http.ResponseWriter, r *http.Request) {
+	logText, running, done := s.resetProc.snapshot()
+	render(w, "reset_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
+}
