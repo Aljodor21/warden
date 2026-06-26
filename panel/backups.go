@@ -206,13 +206,29 @@ func parseTimerTime(raw string) string {
 		t := time.Unix(usec/1_000_000, (usec%1_000_000)*1000)
 		return t.Local().Format("02 Jan, 15:04")
 	}
-	// Caso 2: string formateado por systemctl ("Mon 2006-01-02 15:04:05 MST")
+	// Caso 2: string formateado por systemctl — puede traer el nombre del día
+	// en inglés ("Thu 2026-06-26 04:00:00 UTC") o en el idioma del sistema
+	// ("jue 2026-06-26 04:00:00 UTC"). Primero intentamos con nombre inglés;
+	// si falla, saltamos el primer campo (el nombre del día) y parseamos solo
+	// la fecha+hora+zona, que siempre viene en formato estándar.
 	for _, layout := range []string{
 		"Mon 2006-01-02 15:04:05 MST",
 		"Mon 2006-01-02 15:04:05 -0700",
 	} {
 		if t, err := time.Parse(layout, raw); err == nil {
 			return t.Local().Format("02 Jan, 15:04")
+		}
+	}
+	if fields := strings.Fields(raw); len(fields) >= 3 {
+		withoutDay := strings.Join(fields[1:], " ")
+		for _, layout := range []string{
+			"2006-01-02 15:04:05 MST",
+			"2006-01-02 15:04:05 -0700",
+			"2006-01-02 15:04:05",
+		} {
+			if t, err := time.Parse(layout, withoutDay); err == nil {
+				return t.Local().Format("02 Jan, 15:04")
+			}
 		}
 	}
 	return raw
