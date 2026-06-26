@@ -164,6 +164,7 @@ func main() {
 	withSys := func() map[string]any { return map[string]any{"Sys": s.gatherSystemView()} }
 	mux.HandleFunc("GET /system", s.handleSystem)
 	mux.HandleFunc("POST /system/vpn", s.requireAdmin("system_fragment.html", withSys, s.handleVPNInstall))
+	mux.HandleFunc("POST /system/vpn-exit-node", s.requireAdmin("system_fragment.html", withSys, s.handleVPNExitNode))
 	mux.HandleFunc("POST /system/vpn-subnet", s.requireAdmin("system_fragment.html", withSys, s.handleVPNSubnet))
 	mux.HandleFunc("POST /system/secrets-init", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsInit))
 	mux.HandleFunc("POST /system/secrets-save", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsSave))

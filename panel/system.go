@@ -17,8 +17,9 @@ type SystemView struct {
 	TailscaleInstalled      bool
 	TailscaleConnected      bool
 	TailscaleIP             string
-	TailscaleExitNode       bool
-	TailscaleSubnet         string
+	TailscaleExitNode        bool
+	TailscaleSubnetActive    bool
+	TailscaleSubnet          string
 	TailscaleSuggestedSubnet string
 
 	AgeKeyExists       bool
@@ -56,9 +57,12 @@ func (s *server) gatherSystemView() SystemView {
 		}
 	}
 	if v.TailscaleConnected {
+		if _, err := os.Stat("/etc/warden/tailscale-exitnode"); err == nil {
+			v.TailscaleExitNode = true
+		}
 		if b, err := os.ReadFile("/etc/warden/tailscale-subnet"); err == nil {
 			if s := strings.TrimSpace(string(b)); s != "" {
-				v.TailscaleExitNode = true
+				v.TailscaleSubnetActive = true
 				v.TailscaleSubnet = s
 			}
 		}
@@ -225,15 +229,37 @@ func (s *server) handleSystem(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *server) handleVPNSubnet(w http.ResponseWriter, r *http.Request) {
-	subnet := strings.TrimSpace(r.FormValue("subnet"))
-	if subnet == "" {
-		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "La subred no puede estar vacía."})
+func (s *server) handleVPNExitNode(w http.ResponseWriter, r *http.Request) {
+	action := r.FormValue("action") // "on" o "off"
+	if action != "on" && action != "off" {
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "Acción inválida."})
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	out, err := s.runWarden(ctx, "vpn", "subnet", subnet)
+	out, err := s.runWarden(ctx, "vpn", "exit-node", action)
+	s.renderSystemAction(w, out, err)
+}
+
+func (s *server) handleVPNSubnet(w http.ResponseWriter, r *http.Request) {
+	action := r.FormValue("action") // "on" o "off"
+	if action != "on" && action != "off" {
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "Acción inválida."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	if action == "on" {
+		subnet := strings.TrimSpace(r.FormValue("subnet"))
+		if subnet == "" {
+			render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "La subred no puede estar vacía."})
+			return
+		}
+		out, err := s.runWarden(ctx, "vpn", "subnet", "on", subnet)
+		s.renderSystemAction(w, out, err)
+		return
+	}
+	out, err := s.runWarden(ctx, "vpn", "subnet", "off")
 	s.renderSystemAction(w, out, err)
 }
 

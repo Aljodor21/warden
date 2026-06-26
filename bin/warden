@@ -20,8 +20,9 @@
 #   publish             [root] (Re)genera el ingress de Cloudflare desde el catálogo
 #   runner <url> <tok>  [root] Registra un self-hosted runner de GitHub Actions
 #   secrets <accion>    [root] Cifra/restaura secretos con age (init|save|restore)
-#   vpn                 [root] Instala y conecta Tailscale (VPN)
-#   vpn subnet [CIDR]   [root] Activa exit node + subnet router (detecta la subred si no se pasa)
+#   vpn                         [root] Instala y conecta Tailscale (VPN)
+#   vpn exit-node on|off        [root] Activa/desactiva este server como salida a internet
+#   vpn subnet on [CIDR] | off  [root] Activa/desactiva el router de subred local
 #   homepage            [root] Regenera la config de Homepage y la recarga
 #   panel               [root] Instala el panel web del catálogo (:7890)
 #   nas <accion> ...    [root] Usuarios del NAS (adduser|passwd|deluser|users)
@@ -220,9 +221,10 @@ case "${1:-menu}" in
   vpn)
     need_root
     case "${2:-}" in
-      subnet) warden_tailscale_subnet "${3:-}" ;;
-      "")     warden_tailscale_install ;;
-      *) echo "Uso: warden vpn [subnet [CIDR]]"; exit 1 ;;
+      exit-node) warden_tailscale_exitnode "${3:-}" ;;
+      subnet)    warden_tailscale_subnet "${3:-}" "${4:-}" ;;
+      "")        warden_tailscale_install ;;
+      *) echo "Uso: warden vpn [exit-node on|off] [subnet on [CIDR]|off]"; exit 1 ;;
     esac
     ;;
   homepage)    need_root; warden_homepage_config; docker restart homepage >/dev/null 2>&1 || true; ok "Homepage regenerado y recargado" ;;

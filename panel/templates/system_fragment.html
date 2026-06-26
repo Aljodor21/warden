@@ -92,30 +92,63 @@
   {{if .Sys.TailscaleConnected}}
   <div class="statusrow">
     <div>
-      <div class="label">Exit Node / Subnet Router</div>
+      <div class="label">Exit Node</div>
       <div class="desc">
-        {{if .Sys.TailscaleExitNode}}
-          Activo — subred <strong>{{.Sys.TailscaleSubnet}}</strong>. Este servidor enruta el
-          tráfico de tu red Tailscale hacia esa red local y funciona como salida a internet.
-          Recordá aprobar las rutas en el
-          <a href="https://login.tailscale.com/admin/machines" target="_blank">panel de Tailscale</a>.
-        {{else}}
-          Opcional. Convierte este servidor en el punto de salida a internet y expone tu red
-          local al resto de tus dispositivos Tailscale. Se detectó la subred del servidor automáticamente.
+        {{if .Sys.TailscaleExitNode}}Activo. El tráfico de internet de tus otros dispositivos Tailscale sale por este servidor (tu IP pública es la de acá).
+        {{else}}Desactivado. Activalo si querés que tus dispositivos Tailscale salgan a internet con la IP de este servidor.
         {{end}}
       </div>
     </div>
     <div class="acts">
+      {{if .Sys.TailscaleExitNode}}
+      <form hx-post="/system/vpn-exit-node" hx-target="#system-status" hx-swap="innerHTML">
+        <input type="hidden" name="action" value="off">
+        <button class="btn secondary" type="submit">Desactivar<span class="spinner"></span></button>
+      </form>
+      {{else}}
+      <form hx-post="/system/vpn-exit-node" hx-target="#system-status" hx-swap="innerHTML">
+        <input type="hidden" name="action" value="on">
+        <button class="btn" type="submit">Activar<span class="spinner"></span></button>
+      </form>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="statusrow">
+    <div>
+      <div class="label">Subnet Router</div>
+      <div class="desc">
+        {{if .Sys.TailscaleSubnetActive}}Activo — subred <strong>{{.Sys.TailscaleSubnet}}</strong>. Los dispositivos de tu red Tailscale pueden acceder a esa red local.
+          Recordá aprobar las rutas en el <a href="https://login.tailscale.com/admin/machines" target="_blank">panel de Tailscale</a>.
+        {{else}}Desactivado. Activalo para exponer tu red local (NAS, impresoras, etc.) al resto de tus dispositivos Tailscale.
+        {{end}}
+      </div>
+    </div>
+    <div class="acts">
+      {{if .Sys.TailscaleSubnetActive}}
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+        <form hx-post="/system/vpn-subnet" hx-target="#system-status" hx-swap="innerHTML"
+              style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+          <input type="hidden" name="action" value="on">
+          <input type="text" name="subnet" value="{{.Sys.TailscaleSubnet}}"
+                 style="max-width:155px;font-size:0.85rem">
+          <button class="btn secondary" type="submit">Cambiar<span class="spinner"></span></button>
+        </form>
+        <form hx-post="/system/vpn-subnet" hx-target="#system-status" hx-swap="innerHTML">
+          <input type="hidden" name="action" value="off">
+          <button class="btn secondary" type="submit">Desactivar<span class="spinner"></span></button>
+        </form>
+      </div>
+      {{else}}
       <form hx-post="/system/vpn-subnet" hx-target="#system-status" hx-swap="innerHTML"
             style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
-        <input type="text" name="subnet"
-               value="{{if .Sys.TailscaleExitNode}}{{.Sys.TailscaleSubnet}}{{else}}{{.Sys.TailscaleSuggestedSubnet}}{{end}}"
+        <input type="hidden" name="action" value="on">
+        <input type="text" name="subnet" value="{{.Sys.TailscaleSuggestedSubnet}}"
                placeholder="192.168.1.0/24"
-               style="max-width:160px;font-size:0.85rem">
-        <button class="btn{{if .Sys.TailscaleExitNode}} secondary{{end}}" type="submit">
-          {{if .Sys.TailscaleExitNode}}Cambiar{{else}}Activar{{end}}<span class="spinner"></span>
-        </button>
+               style="max-width:155px;font-size:0.85rem">
+        <button class="btn" type="submit">Activar<span class="spinner"></span></button>
       </form>
+      {{end}}
     </div>
   </div>
   {{end}}
