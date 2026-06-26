@@ -31,7 +31,7 @@ warden_panel_install() {
     ok "Ya hay una clave configurada para el panel (no la piso)"
   else
     local pass pass2
-    pass="$(ui_input 'Elegí una clave para el panel web' '')"
+    pass="$(ui_input 'Elegí una clave para el panel web' "${WARDEN_CI:+warden-ci-test}")"
     [ -n "$pass" ] || die "La clave no puede estar vacía"
     if [ "${WARDEN_DRY_RUN:-0}" = 1 ]; then
       echo "   [dry-run] guardaría el hash de la clave en $PANEL_PASSFILE"
