@@ -61,11 +61,13 @@ type server struct {
 	adminSess      *adminSessions
 	filesProxy     http.Handler // hacia el contenedor FileBrowser, ver files.go
 
-	// Para calcular la tasa de red entre refrescos del dashboard.
+	// Para calcular tasas entre refrescos del dashboard.
 	mu          sync.Mutex
 	lastRx      int64
 	lastTx      int64
 	lastNetTime time.Time
+	prevCores   []CoreStat
+	prevCoreAt  time.Time
 
 	// Estado del backup en segundo plano (puede tardar minutos).
 	bmu           sync.Mutex

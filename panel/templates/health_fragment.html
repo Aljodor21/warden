@@ -10,21 +10,22 @@
 
   <div class="panel">
     <h2>CPU</h2>
-    <div class="gauge-row">
-      <svg viewBox="0 0 80 80" width="72" height="72" style="flex-shrink:0">
-        <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
-        <circle cx="40" cy="40" r="30" fill="none"
-          stroke="{{.CPU.Color}}" stroke-width="7"
-          stroke-dasharray="{{printf "%.1f" .CPU.Arc}} 188.5"
-          stroke-linecap="round" transform="rotate(-90 40 40)"/>
-        <text x="40" y="45" text-anchor="middle" fill="#dde6f0"
-          font-size="14" font-weight="700" font-family="-apple-system,system-ui,sans-serif">{{.CPU.Pct}}%</text>
-      </svg>
-      <div style="flex:1">
-        <div class="muted" style="font-size:0.82rem; margin-bottom:0.5rem">{{.CPU.Detail}}</div>
-        <div class="bar" style="height:5px"><span class="lvl-{{.CPU.Level}}" style="width:{{.CPU.Pct}}%"></span></div>
+    {{if .CoreLoads}}
+    <div class="core-grid">
+      {{range .CoreLoads}}
+      <div class="core-row">
+        <span class="core-n">{{.N}}</span>
+        <div class="core-bar-wrap">
+          <div class="core-bar" style="width:{{.Pct}}%; background:{{.Color}}"></div>
+        </div>
+        <span class="core-pct">{{.Pct}}%</span>
       </div>
+      {{end}}
     </div>
+    {{else}}
+    <div class="bar"><span class="lvl-{{.CPU.Level}}" style="width:{{.CPU.Pct}}%"></span></div>
+    {{end}}
+    <div class="muted" style="font-size:0.8rem; margin-top:0.65rem">{{.CPU.Detail}}</div>
   </div>
 
   <div class="panel">

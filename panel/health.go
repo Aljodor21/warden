@@ -33,6 +33,11 @@ type MemInfo struct {
 	AvailKB int64 `json:"avail_kb"`
 }
 
+type CoreStat struct {
+	Idle  int64
+	Total int64
+}
+
 type DiskInfo struct {
 	Mount string `json:"mount"`
 	Total int64  `json:"total"`
@@ -256,6 +261,13 @@ type Gauge struct {
 	Color    string  // hex del trazo según Level
 }
 
+type CoreLoad struct {
+	N     int
+	Pct   int
+	Level string
+	Color string
+}
+
 type ProcRow struct {
 	Pid    int
 	Name   string
@@ -270,6 +282,7 @@ type HealthView struct {
 	Uptime        string
 	Cores         int
 	CPU           Gauge
+	CoreLoads     []CoreLoad
 	RAM           Gauge
 	Disks         []Gauge
 	DownRate      string
@@ -305,6 +318,61 @@ func gaugeColor(lv string) string {
 	default:
 		return "#38bdf8"
 	}
+}
+
+func readCoreStat() []CoreStat {
+	b, err := os.ReadFile("/proc/stat")
+	if err != nil {
+		return nil
+	}
+	var cores []CoreStat
+	for _, line := range strings.Split(string(b), "\n") {
+		if len(line) < 5 || !strings.HasPrefix(line, "cpu") || line[3] == ' ' {
+			continue // salta la línea agregada "cpu  ..."
+		}
+		f := strings.Fields(line)
+		if len(f) < 5 {
+			continue
+		}
+		var v [10]int64
+		for i := 1; i < len(f) && i <= 10; i++ {
+			v[i-1], _ = strconv.ParseInt(f[i], 10, 64)
+		}
+		idle := v[3] + v[4] // idle + iowait
+		total := v[0] + v[1] + v[2] + v[3] + v[4] + v[5] + v[6] + v[7]
+		cores = append(cores, CoreStat{Idle: idle, Total: total})
+	}
+	return cores
+}
+
+func (s *server) coreRates() []CoreLoad {
+	cur := readCoreStat()
+	now := time.Now()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var loads []CoreLoad
+	if len(s.prevCores) == len(cur) && !s.prevCoreAt.IsZero() {
+		for i, c := range cur {
+			p := s.prevCores[i]
+			dTotal := c.Total - p.Total
+			dIdle := c.Idle - p.Idle
+			pct := 0
+			if dTotal > 0 {
+				pct = int((dTotal - dIdle) * 100 / dTotal)
+				if pct < 0 {
+					pct = 0
+				}
+				if pct > 100 {
+					pct = 100
+				}
+			}
+			lv := level(pct)
+			loads = append(loads, CoreLoad{N: i, Pct: pct, Level: lv, Color: gaugeColor(lv)})
+		}
+	}
+	s.prevCores = cur
+	s.prevCoreAt = now
+	return loads
 }
 
 func readTopProcs() []ProcRow {
@@ -439,6 +507,7 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 		})
 	}
 
+	v.CoreLoads = s.coreRates()
 	v.TopProcs = readTopProcs()
 	return v
 }
