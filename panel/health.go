@@ -497,7 +497,7 @@ func humanUptime(s int64) string {
 	}
 }
 
-func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
+func (s *server) buildHealthView(h Health, downBps, upBps float64, reqHost ...string) HealthView {
 	// Registrar muestra y leer historial
 	s.mu.Lock()
 	s.netHistory[s.netHistIdx] = NetSample{DownBps: downBps, UpBps: upBps}
@@ -524,7 +524,11 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 	}
 	var apps []AppCard
 	apps, v.Others = s.buildAppView(h.Containers)
-	v.Tools = gatherTools(h.Containers, h.Hostname)
+	toolHost := h.Hostname
+	if len(reqHost) > 0 && reqHost[0] != "" {
+		toolHost = reqHost[0]
+	}
+	v.Tools = gatherTools(h.Containers, toolHost)
 	for _, a := range apps {
 		v.TotalCount++
 		if a.Up {

@@ -66,9 +66,9 @@ warden_stack_install() {
 
   log "Instalando $COMP_NAME ($tag)…"
   if [ -n "$envfile" ]; then
-    run "_compose --env-file '$envfile' -f '$compose' $extra up -d" || { warn "$COMP_NAME falló al levantar"; return 1; }
+    run "_compose --env-file '$envfile' -f '$compose' $extra up -d --pull always" || { warn "$COMP_NAME falló al levantar"; return 1; }
   else
-    run "_compose -f '$compose' $extra up -d" || { warn "$COMP_NAME falló al levantar"; return 1; }
+    run "_compose -f '$compose' $extra up -d --pull always" || { warn "$COMP_NAME falló al levantar"; return 1; }
   fi
   ok "$COMP_NAME arriba"
 
