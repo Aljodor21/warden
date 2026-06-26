@@ -547,9 +547,7 @@ func runDiskPrepare(ctx context.Context, proc *bgProcess, dev, mount, passfile s
 	os.WriteFile(mount+"/"+backupMarker, []byte(strings.TrimSpace(string(uuidOut))+"\n"), 0644) //nolint:errcheck
 	os.MkdirAll(mount+"/restic-repo", 0755)                                                     //nolint:errcheck
 
-	if _, err := os.Stat(passfile); err == nil {
-		logf("Clave restic existente en " + passfile + " — reutilizando.")
-	} else {
+	if _, err := os.Stat(passfile); err != nil {
 		logf("Generando clave restic en " + passfile + "...")
 		out, err := exec.Command("openssl", "rand", "-base64", "32").Output()
 		if err != nil {
@@ -558,17 +556,23 @@ func runDiskPrepare(ctx context.Context, proc *bgProcess, dev, mount, passfile s
 			return
 		}
 		os.WriteFile(passfile, out, 0600) //nolint:errcheck
-		logf("")
-		logf("══════════════════════════════════════════")
-		logf("  CLAVE DE CIFRADO (guardala en un lugar seguro):")
-		logf("  " + strings.TrimSpace(string(out)))
-		logf("══════════════════════════════════════════")
-		logf("  Sin esta clave NO podés restaurar aunque tengas el disco.")
-		logf("  Guardala en un gestor de contraseñas o corré 'warden secrets save'.")
-		logf("")
 	}
 
-	logf("\nDisco listo. Activá el backup automático con el botón de arriba.")
+	pass, err := os.ReadFile(passfile)
+	if err != nil {
+		logf("ERROR: no pude leer la clave en " + passfile + ": " + err.Error())
+		proc.finish()
+		return
+	}
+	logf("")
+	logf("══════════════════════════════════════════")
+	logf("  CLAVE DE CIFRADO DEL BACKUP:")
+	logf("  " + strings.TrimSpace(string(pass)))
+	logf("══════════════════════════════════════════")
+	logf("  Sin esta clave NO podés restaurar aunque tengas el disco.")
+	logf("  Guardala en un gestor de contraseñas.")
+	logf("")
+	logf("Disco listo. Activá el backup automático con el botón de arriba.")
 	proc.finish()
 }
 
