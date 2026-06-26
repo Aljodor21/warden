@@ -113,10 +113,15 @@ fi
 
 echo
 # --- Modo de instalación: preset (combo) o a la carta ---
-MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
-  'básico — dashboard (Cockpit + panel propio) + NAS' \
-  'completo — básico + Backrest + ntfy + Immich + Docmost + Excalidraw' \
-  'a la carta — elegir manual, uno por uno')"
+# WARDEN_PRESET se puede fijar antes de correr (ej: CI o invocación directa).
+if [ -n "${WARDEN_PRESET:-}" ]; then
+  MODE="$WARDEN_PRESET"
+else
+  MODE="$(ui_menu '¿Qué tipo de server querés montar?' \
+    'básico — dashboard (Cockpit + panel propio) + NAS' \
+    'completo — básico + Backrest + ntfy + Immich + Docmost + Excalidraw' \
+    'a la carta — elegir manual, uno por uno')"
+fi
 
 case "$MODE" in
   básico*|basico*) warden_preset_install basico ;;

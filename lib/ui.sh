@@ -29,6 +29,7 @@ ui_banner() {
 
 # ui_confirm "pregunta"  -> retorna 0 (sí) / 1 (no)
 ui_confirm() {
+  [ "${WARDEN_CI:-0}" = 1 ] && return 0
   if has gum; then gum confirm "$1"; else
     read -rp "$1 [s/N] " r; [ "$r" = s ] || [ "$r" = S ]
   fi
@@ -36,6 +37,7 @@ ui_confirm() {
 
 # ui_input "etiqueta" "valor_por_defecto" -> imprime lo escrito
 ui_input() {
+  [ "${WARDEN_CI:-0}" = 1 ] && { echo "${2:-}"; return 0; }
   if has gum; then gum input --placeholder "$1" --value "${2:-}"; else
     read -rp "$1 [${2:-}]: " r; echo "${r:-${2:-}}"
   fi
@@ -58,6 +60,8 @@ ui_choose_multi() {
 # ui_menu "Título" op1 op2 ...  -> imprime UNA opción elegida
 ui_menu() {
   local title="$1"; shift
+  # En CI devuelve la primera opción sin interacción.
+  [ "${WARDEN_CI:-0}" = 1 ] && { echo "$1"; return 0; }
   if has gum; then
     printf '%s\n' "$@" | gum choose --header "$title"
   else
