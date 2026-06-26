@@ -1,0 +1,12 @@
+{{define "system_mem.html"}}
+<table style="width:100%;border-collapse:collapse">
+  <tr><td>warden-panel</td><td style="text-align:right">{{.PanelMem}}</td></tr>
+  {{range .Containers}}
+  <tr><td style="padding:0.15rem 0">{{.Name}}</td><td style="text-align:right">{{.Mem}}</td></tr>
+  {{end}}
+  <tr style="border-top:1px solid #334155;padding-top:0.3rem">
+    <td style="padding-top:0.35rem"><strong>Total (panel + contenedores)</strong></td>
+    <td style="text-align:right;padding-top:0.35rem"><strong>{{.TotalMemAll}}</strong></td>
+  </tr>
+</table>
+{{end}}

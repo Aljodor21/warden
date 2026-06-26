@@ -26,10 +26,6 @@ type SystemView struct {
 	CloudflareTokenSet bool   // hay un API Token guardado (para borrar registros DNS)
 	Runners            []RunnerInfo
 
-	PanelMem    string         // RAM del propio proceso warden-panel
-	Containers  []ContainerMem // uno por contenedor corriendo, RAM usada
-	TotalMemAll string         // panel + todos los contenedores, para responder "cuánto pesa todo esto"
-
 	Timezone string // zona horaria activa del sistema (IANA)
 }
 
@@ -73,18 +69,23 @@ func (s *server) gatherSystemView() SystemView {
 		v.SecretsExist = v.SecretsCount > 0
 	}
 
-	panelBytes := panelMemBytes()
-	v.PanelMem = humanBytes(panelBytes)
-	v.Containers = containerMemStats()
-	total := panelBytes
-	for _, c := range v.Containers {
-		total += c.bytes
-	}
-	v.TotalMemAll = humanBytes(total)
-
 	v.Timezone = systemTimezone()
 
 	return v
+}
+
+func (s *server) handleSystemMem(w http.ResponseWriter, r *http.Request) {
+	panelBytes := panelMemBytes()
+	containers := containerMemStats()
+	total := panelBytes
+	for _, c := range containers {
+		total += c.bytes
+	}
+	render(w, "system_mem.html", map[string]any{
+		"PanelMem":    humanBytes(panelBytes),
+		"Containers":  containers,
+		"TotalMemAll": humanBytes(total),
+	})
 }
 
 func systemTimezone() string {

@@ -11,20 +11,15 @@
 </head>
 <body>
   {{template "nav" .}}
-  <div class="panel">
+  <div class="panel" style="margin-bottom:1rem">
     <h2>Consumo de RAM</h2>
-    <p class="muted" style="margin-top:-0.5rem">Lo que ya se ve en el Dashboard es el total del sistema —
-      esto es el desglose de quién usa qué, para saber cuánto le suma cada cosa.</p>
-    <table style="width:100%; border-collapse:collapse">
-      <tr><td>warden-panel</td><td style="text-align:right">{{.Sys.PanelMem}}</td></tr>
-      {{range .Sys.Containers}}
-      <tr><td>{{.Name}}</td><td style="text-align:right">{{.Mem}}</td></tr>
-      {{end}}
-      <tr style="border-top:1px solid #334155"><td><strong>Total (panel + contenedores)</strong></td>
-        <td style="text-align:right"><strong>{{.Sys.TotalMemAll}}</strong></td></tr>
-    </table>
+    <p class="muted" style="margin-top:-0.5rem;margin-bottom:0.8rem">Lo que se ve en el Dashboard es el total del sistema —
+      esto es el desglose de quién usa qué.</p>
+    <div hx-get="/system/mem" hx-trigger="load" hx-swap="outerHTML">
+      <p class="muted" style="font-size:0.85rem">Calculando…</p>
+    </div>
   </div>
-  <div id="system-status">{{template "system_fragment.html" (dict "Sys" .Sys)}}</div>
+  <div id="system-status" style="margin-top:1rem">{{template "system_fragment.html" (dict "Sys" .Sys)}}</div>
 </body>
 </html>
 {{end}}
