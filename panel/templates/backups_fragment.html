@@ -131,28 +131,12 @@
   {{end}}
 </div>
 
-{{if .B.HasBackupDisk}}
-<div class="panel" style="margin-top:1rem">
-  <h2>Restaurar</h2>
-  <p class="muted">Mira QUÉ hay realmente en el backup (no una lista fija): si encuentra datos de una
-    app que no está instalada, la instala sola con su receta del catálogo antes de restaurarle los
-    datos — sin preguntar, si hay un backup de algo es porque hay que restaurarlo. Las apps de CI/CD
-    (su propio repo) no se pueden instalar solas, quedan avisadas para hacerlo después. Al terminar,
-    deja este mismo disco anotado para que el backup automático siga usándolo.</p>
-  <form hx-post="/backups/restore" hx-target="#restore-result" hx-swap="innerHTML"
-        onsubmit="return confirm('¿Restaurar ahora? Puede instalar apps que falten y detener brevemente las afectadas mientras carga sus datos.')">
-    <button class="btn" type="submit">Restaurar ahora<span class="spinner"></span></button>
-  </form>
-  <div id="restore-result" style="margin-top:0.8rem"></div>
-</div>
-
 {{if .B.BackupRuns}}
 <div class="panel" style="margin-top:1rem">
-  <h2>Restaurar desde una corrida específica</h2>
-  <p class="muted">"Restaurar ahora" siempre usa la corrida más reciente — pero si el backup automático
-    corrió justo después de reinstalar algo (sin datos reales todavía aún), esa corrida puede estar casi
-    vacía. Elegí una de abajo en vez de asumir que la última es la buena (mirá el tamaño: si dice "0 B" o
-    es chico comparado con las demás, probablemente esa no tiene contenido real).</p>
+  <h2>Restaurar</h2>
+  <p class="muted">Elegí la corrida desde la que querés restaurar. Mirá el tamaño — si dice "0 B" o
+    es muy chico comparado con las demás, probablemente no tiene contenido real (backup corrió justo
+    después de reinstalar, antes de que hubiera datos).</p>
   <div class="clist">
     {{range .B.BackupRuns}}
     <div class="citem" style="align-items:flex-start; flex-direction:column; gap:0.3rem; padding:0.5rem 0; border-bottom:1px solid #0f172a">
@@ -173,7 +157,7 @@
     </div>
     {{end}}
   </div>
+  <div id="restore-result" style="margin-top:0.8rem"></div>
 </div>
-{{end}}
 {{end}}
 {{end}}
