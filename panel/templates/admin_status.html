@@ -1,8 +1,8 @@
 {{define "admin_status.html"}}
 {{if .Unlocked}}
-<button class="adminbtn unlocked" hx-post="/admin/lock" hx-target="this" hx-swap="outerHTML">🔓 Admin (click para bloquear)</button>
+<button class="adminbtn unlocked" hx-post="/admin/lock" hx-target="this" hx-swap="outerHTML"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="vertical-align:-1px"><rect x="1.5" y="5.5" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4 5.5V4a2.5 2.5 0 0 1 5 0v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/><circle cx="6.5" cy="9" r="1" fill="var(--surface)"/></svg> Admin</button>
 {{else}}
-<button class="adminbtn locked" onclick="document.getElementById('admin-modal').showModal()">🔒 Admin</button>
+<button class="adminbtn locked" onclick="document.getElementById('admin-modal').showModal()"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="vertical-align:-1px"><rect x="1.5" y="5.5" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4 5.5V4a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/><circle cx="6.5" cy="9" r="1" fill="var(--surface)"/></svg> Admin</button>
 {{if .Err}}<span class="adminerr">{{.Err}}</span>{{end}}
 {{end}}
 {{end}}
