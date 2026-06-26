@@ -10,12 +10,12 @@ type ToolLink struct {
 	URL  string
 }
 
-func gatherTools(containers []Container, _ string) []ToolLink {
+func gatherTools(containers []Container, host string) []ToolLink {
 	var tools []ToolLink
 
 	out, err := exec.Command("systemctl", "is-active", "cockpit.socket").Output()
 	if err == nil && string(out) != "" {
-		tools = append(tools, ToolLink{Name: "Cockpit", URL: "https://localhost:9090"})
+		tools = append(tools, ToolLink{Name: "Cockpit", URL: "https://" + host + ":9090"})
 	}
 
 	up := map[string]bool{}
@@ -23,10 +23,10 @@ func gatherTools(containers []Container, _ string) []ToolLink {
 		up[c.Name] = c.Up
 	}
 	if up["backrest"] {
-		tools = append(tools, ToolLink{Name: "Backrest", URL: "http://localhost:9898"})
+		tools = append(tools, ToolLink{Name: "Backrest", URL: "http://" + host + ":9898"})
 	}
 	if up["ntfy"] {
-		tools = append(tools, ToolLink{Name: "ntfy", URL: "http://localhost:8080"})
+		tools = append(tools, ToolLink{Name: "ntfy", URL: "http://" + host + ":8080"})
 	}
 	return tools
 }
