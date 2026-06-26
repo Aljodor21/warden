@@ -234,13 +234,13 @@
   [x-cloak] { display: none !important; }
 
   /* página Sistema */
-  .statusrow { display: flex; align-items: center; gap: 0.6rem; padding: 0.8rem 0;
+  .statusrow { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem 0;
                border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .statusrow:last-child { border-bottom: none; }
-  .statusrow > div:first-child { flex: 1; min-width: 200px; }
-  .statusrow .label { font-weight: 600; font-size: 0.9rem; }
-  .statusrow .desc { color: var(--muted); font-size: 0.81rem; margin-top: 0.15rem; }
-  .statusrow .acts { margin-left: auto; }
+  .statusrow > div:first-child { flex: 1; min-width: 220px; }
+  .statusrow .label { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .statusrow .desc { color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+  .statusrow .acts { padding-top: 0.1rem; }
   .badge { font-size: 0.74rem; padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 500; }
   .badge.on  { background: var(--green-bg); color: var(--green); }
   .badge.off { background: var(--red-bg);   color: var(--red); }

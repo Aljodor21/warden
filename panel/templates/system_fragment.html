@@ -2,130 +2,142 @@
 {{if .Err}}<div class="err">{{.Err}}</div>{{end}}
 {{if .Output}}<div class="ok-msg" style="white-space:pre-wrap">{{.Output}}</div>{{end}}
 
-<div class="statusrow">
-  <div>
-    <div class="label">Credenciales de GitHub (runners)</div>
-    <div class="desc">
-      Warden NO guarda ningún token de GitHub permanente — el token que pegás al registrar un runner se usa
-      UNA SOLA VEZ (vence en minutos) para autorizarlo; después, el runner queda con sus propias credenciales
-      internas y ya no necesita ese token nunca más. Esta lista son los runners reales que quedaron activos:
-      {{if .Sys.Runners}}
-      <ul style="margin:0.4rem 0 0 1rem">
-        {{range .Sys.Runners}}<li>{{.Service}} — {{if .Active}}corriendo{{else}}detenido{{end}}</li>{{end}}
-      </ul>
-      {{else}}Ninguno todavía — se registran desde el Catálogo, al agregar un proyecto de CI/CD.
-      {{end}}
+<div class="panel" style="margin-bottom:1rem">
+  <h2>GitHub Runners</h2>
+  <div class="statusrow" style="border-bottom:none">
+    <div>
+      <div class="label">Credenciales de runners</div>
+      <div class="desc">
+        Warden NO guarda ningún token de GitHub permanente — el token que pegás al registrar un runner se usa
+        UNA SOLA VEZ para autorizarlo; después el runner queda con sus propias credenciales internas.
+        {{if .Sys.Runners}}
+        <ul style="margin:0.5rem 0 0 1.1rem; display:flex; flex-direction:column; gap:0.25rem">
+          {{range .Sys.Runners}}<li>{{.Service}} — {{if .Active}}<span style="color:var(--green)">corriendo</span>{{else}}<span style="color:var(--muted)">detenido</span>{{end}}</li>{{end}}
+        </ul>
+        {{else}}
+        <span style="color:var(--muted); display:block; margin-top:0.3rem">Ninguno todavía — se registran desde el Catálogo al agregar un proyecto de CI/CD.</span>
+        {{end}}
+      </div>
     </div>
   </div>
 </div>
 
-<div class="statusrow">
-  <div>
-    <div class="label">VPN (Tailscale)</div>
-    <div class="desc">
-      {{if .Sys.TailscaleConnected}}Conectada — IP {{.Sys.TailscaleIP}}. Acceso remoto seguro, sin abrir puertos.
-      {{else if .Sys.TailscaleInstalled}}Instalada pero sin conectar todavía. Al hacer click te va a pedir abrir
-        una URL en el navegador para autorizar este server con tu cuenta.
-      {{else}}No instalada. Te deja entrar a este server desde afuera de tu red (celular, otra casa), de forma
-        segura, sin abrir puertos del router. Al hacer click instala y después te pide loguearte (abre una URL).
+<div class="panel" style="margin-bottom:1rem">
+  <h2>Conectividad</h2>
+
+  <div class="statusrow">
+    <div>
+      <div class="label">VPN (Tailscale)</div>
+      <div class="desc">
+        {{if .Sys.TailscaleConnected}}Conectada — IP {{.Sys.TailscaleIP}}. Acceso remoto seguro sin abrir puertos.
+        {{else if .Sys.TailscaleInstalled}}Instalada pero sin conectar. Al hacer click te va a pedir abrir una URL para autorizar este server.
+        {{else}}No instalada. Te deja entrar desde afuera de tu red (celular, otra casa) sin abrir puertos del router.
+        {{end}}
+      </div>
+    </div>
+    <div class="acts">
+      {{if .Sys.TailscaleConnected}}
+      <span class="badge on">conectada</span>
+      {{else}}
+      <form hx-post="/system/vpn" hx-target="#system-status" hx-swap="innerHTML">
+        <button class="btn" type="submit">{{if .Sys.TailscaleInstalled}}Conectar{{else}}Instalar{{end}}<span class="spinner"></span></button>
+      </form>
       {{end}}
     </div>
   </div>
-  {{if .Sys.TailscaleConnected}}
-  <span class="badge on">conectada</span>
-  {{else}}
-  <form class="acts" hx-post="/system/vpn" hx-target="#system-status" hx-swap="innerHTML">
-    <button class="btn" type="submit">{{if .Sys.TailscaleInstalled}}Conectar{{else}}Instalar{{end}}<span class="spinner"></span></button>
-  </form>
-  {{end}}
-</div>
 
-<div class="statusrow">
-  <div>
-    <div class="label">Túnel de Cloudflare</div>
-    <div class="desc">
-      Esto es OPCIONAL — solo hace falta si querés que alguna app sea accesible desde fuera de tu red
-      (internet), con un subdominio propio. Si todo lo que usás queda dentro de tu casa/oficina, no es necesario.
-      {{if .Sys.CloudflareSet}}Configurado{{if .Sys.CloudflareID}} — ID {{.Sys.CloudflareID}}{{end}}.
-      {{else}}Sin configurar todavía. Al hacer click te va a pedir abrir una URL para autorizar este server con
-        tu cuenta de Cloudflare, y elegir tu dominio.
+  <div class="statusrow">
+    <div>
+      <div class="label">Túnel de Cloudflare</div>
+      <div class="desc">
+        Opcional — solo necesario si querés que alguna app sea accesible desde internet con subdominio propio.
+        {{if .Sys.CloudflareSet}}Configurado{{if .Sys.CloudflareID}} — ID {{.Sys.CloudflareID}}{{end}}.
+        {{else}}Sin configurar. Al hacer click abre una URL para autorizar con tu cuenta de Cloudflare.
+        {{end}}
+      </div>
+      {{if not .Sys.CloudflareSet}}<div id="cf-log-container" style="margin-top:0.5rem"></div>{{end}}
+    </div>
+    <div class="acts">
+      {{if .Sys.CloudflareSet}}
+      <span class="badge on">configurado</span>
+      {{else}}
+      <form hx-post="/system/cloudflare-init" hx-target="#cf-log-container" hx-swap="innerHTML">
+        <button class="btn" type="submit">Configurar<span class="spinner"></span></button>
+      </form>
       {{end}}
     </div>
   </div>
-  {{if .Sys.CloudflareSet}}
-  <span class="badge on">configurado</span>
-  {{else}}
-  <form class="acts" hx-post="/system/cloudflare-init" hx-target="#cf-log-container" hx-swap="innerHTML">
-    <button class="btn" type="submit">Configurar<span class="spinner"></span></button>
-  </form>
-  {{end}}
-</div>
-{{if not .Sys.CloudflareSet}}<div id="cf-log-container" style="margin-top:0.5rem"></div>{{end}}
 
-<div class="statusrow">
-  <div>
-    <div class="label">Borrar subdominios automáticamente</div>
-    <div class="desc">
-      También opcional. Sin esto, al eliminar una app con subdominio el registro DNS queda en tu cuenta de
-      Cloudflare (inofensivo, solo deja de responder) y hay que borrarlo a mano si querés. Con un API Token
-      guardado acá, el botón "Eliminar aplicación" lo borra todo solo, sin que tengas que volver a Cloudflare.
-      {{if .Sys.CloudflareTokenSet}}Token guardado.
-      {{else}}Generalo en
-        <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare → Mi perfil → API Tokens</a>
+  <div class="statusrow" style="border-bottom:none">
+    <div>
+      <div class="label">Borrar subdominios automáticamente</div>
+      <div class="desc">
+        Opcional. Sin esto, al eliminar una app con subdominio el registro DNS queda en Cloudflare y hay que borrarlo a mano.
+        Con un API Token guardado acá, el botón "Eliminar aplicación" lo borra todo solo.
+        {{if not .Sys.CloudflareTokenSet}}
+        Generalo en <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare → API Tokens</a>
         → "Create Custom Token" → permiso <strong>Zone · DNS · Edit</strong> para tu dominio.
+        {{end}}
+      </div>
+    </div>
+    <div class="acts">
+      {{if .Sys.CloudflareTokenSet}}
+      <span class="badge on">listo</span>
+      {{else}}
+      <form hx-post="/system/cloudflare-token" hx-target="#system-status" hx-swap="innerHTML" style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        <input type="password" name="token" placeholder="Pegá el token aquí" style="max-width:200px">
+        <button class="btn" type="submit">Guardar<span class="spinner"></span></button>
+      </form>
       {{end}}
     </div>
   </div>
-  {{if .Sys.CloudflareTokenSet}}
-  <span class="badge on">listo</span>
-  {{else}}
-  <form class="acts" hx-post="/system/cloudflare-token" hx-target="#system-status" hx-swap="innerHTML" style="display:flex; gap:0.4rem">
-    <input type="password" name="token" placeholder="Pegá el token aquí" style="max-width:220px">
-    <button class="btn" type="submit">Guardar<span class="spinner"></span></button>
-  </form>
-  {{end}}
 </div>
 
-<div class="statusrow">
-  <div>
-    <div class="label">Llave de cifrado (age)</div>
-    <div class="desc">
-      {{if .Sys.AgeKeyExists}}Generada — copiala FUERA de este server (USB, gestor de contraseñas). Sin ella,
-        si este disco se daña, el respaldo cifrado de abajo queda inútil para siempre.
-      {{else}}Sin generar todavía. Es la llave que protege el respaldo de credenciales — generala antes de
-        crear ese respaldo.
-      {{end}}
-    </div>
-  </div>
-  {{if .Sys.AgeKeyExists}}
-  <span class="badge on">lista</span>
-  {{else}}
-  <form class="acts" hx-post="/system/secrets-init" hx-target="#system-status" hx-swap="innerHTML">
-    <button class="btn" type="submit">Generar<span class="spinner"></span></button>
-  </form>
-  {{end}}
-</div>
+<div class="panel">
+  <h2>Credenciales y respaldo</h2>
 
-<div class="statusrow">
-  <div>
-    <div class="label">Respaldo cifrado de credenciales</div>
-    <div class="desc">
-      Esto NO es tu backup de datos (eso está en la página Backups) — es una copia cifrada de las
-      credenciales del túnel de Cloudflare, para no tener que recrearlo desde cero si este server se pierde.
-      {{if .Sys.SecretsExist}}{{.Sys.SecretsCount}} archivo(s) cifrado(s) guardados en site/secrets. No se
-        actualiza solo — volvé aquí después de cambios importantes en Cloudflare.
-      {{else}}Sin respaldo todavía{{if not .Sys.CloudflareSet}} (no hay túnel de Cloudflare configurado aún){{end}}.
+  <div class="statusrow">
+    <div>
+      <div class="label">Llave de cifrado (age)</div>
+      <div class="desc">
+        {{if .Sys.AgeKeyExists}}Generada. Copiala FUERA de este server (USB, gestor de contraseñas) — sin ella, si este disco se daña, el respaldo de abajo queda inútil para siempre.
+        {{else}}Sin generar todavía. Es la llave que protege el respaldo de credenciales — generala antes de crear ese respaldo.
+        {{end}}
+      </div>
+    </div>
+    <div class="acts">
+      {{if .Sys.AgeKeyExists}}
+      <span class="badge on">lista</span>
+      {{else}}
+      <form hx-post="/system/secrets-init" hx-target="#system-status" hx-swap="innerHTML">
+        <button class="btn" type="submit">Generar<span class="spinner"></span></button>
+      </form>
       {{end}}
     </div>
   </div>
-  {{if .Sys.AgeKeyExists}}
-  <form class="acts" hx-post="/system/secrets-save" hx-target="#system-status" hx-swap="innerHTML">
-    <button class="btn {{if .Sys.SecretsExist}}secondary{{end}}" type="submit">
-      {{if .Sys.SecretsExist}}Actualizar respaldo{{else}}Crear respaldo{{end}}<span class="spinner"></span>
-    </button>
-  </form>
-  {{else}}
-  <span class="badge off">generá la llave primero</span>
-  {{end}}
+
+  <div class="statusrow" style="border-bottom:none">
+    <div>
+      <div class="label">Respaldo cifrado de credenciales</div>
+      <div class="desc">
+        Esto NO es el backup de datos (eso está en Backups) — es una copia cifrada de las credenciales del
+        túnel de Cloudflare, para no recrearlo desde cero si este server se pierde.
+        {{if .Sys.SecretsExist}}{{.Sys.SecretsCount}} archivo(s) guardados en site/secrets. No se actualiza solo — volvé aquí después de cambios en Cloudflare.
+        {{else}}Sin respaldo todavía{{if not .Sys.CloudflareSet}} (no hay túnel configurado aún){{end}}.
+        {{end}}
+      </div>
+    </div>
+    <div class="acts">
+      {{if .Sys.AgeKeyExists}}
+      <form hx-post="/system/secrets-save" hx-target="#system-status" hx-swap="innerHTML">
+        <button class="btn {{if .Sys.SecretsExist}}secondary{{end}}" type="submit">
+          {{if .Sys.SecretsExist}}Actualizar{{else}}Crear respaldo{{end}}<span class="spinner"></span>
+        </button>
+      </form>
+      {{else}}
+      <span class="badge off">generá la llave primero</span>
+      {{end}}
+    </div>
+  </div>
 </div>
 {{end}}
