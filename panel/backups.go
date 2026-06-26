@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -187,12 +188,34 @@ func timerInfo() (installed, active bool, next, last string) {
 	}
 	installed = props["LoadState"] == "loaded"
 	active = props["ActiveState"] == "active"
-	next = props["NextElapseUSecRealtime"]
-	last = props["LastTriggerUSec"]
-	if last == "n/a" {
-		last = ""
-	}
+	next = parseTimerTime(props["NextElapseUSecRealtime"])
+	last = parseTimerTime(props["LastTriggerUSec"])
 	return
+}
+
+// parseTimerTime convierte el valor de NextElapseUSecRealtime/LastTriggerUSec
+// a hora local. systemctl puede devolver microsegundos desde epoch O una
+// cadena formateada en UTC ("Thu 2026-06-26 04:00:00 UTC") — los dos casos
+// se manejan explícitamente para mostrar siempre la hora del servidor.
+func parseTimerTime(raw string) string {
+	if raw == "" || raw == "n/a" {
+		return ""
+	}
+	// Caso 1: microsegundos desde epoch (entero)
+	if usec, err := strconv.ParseInt(raw, 10, 64); err == nil && usec > 0 {
+		t := time.Unix(usec/1_000_000, (usec%1_000_000)*1000)
+		return t.Local().Format("02 Jan, 15:04")
+	}
+	// Caso 2: string formateado por systemctl ("Mon 2006-01-02 15:04:05 MST")
+	for _, layout := range []string{
+		"Mon 2006-01-02 15:04:05 MST",
+		"Mon 2006-01-02 15:04:05 -0700",
+	} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t.Local().Format("02 Jan, 15:04")
+		}
+	}
+	return raw
 }
 
 func repoSizeHuman(repo string) string {
