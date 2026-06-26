@@ -45,6 +45,9 @@ _reset_down() {  # <archivo compose> [override] [envfile] [contenedor]
 }
 
 warden_reset() {
+  local auto_yes=0
+  for a in "$@"; do [ "$a" = "--yes" ] && auto_yes=1; done
+
   echo "Esto va a BORRAR TODO lo que warden instaló o configuró:"
   echo "  - Todos los contenedores/datos de apps instaladas por warden (catálogo + dashboard)"
   echo "  - ${WARDEN_DATA:-/srv/warden} (datos de Immich/NAS/etc.)"
@@ -58,7 +61,7 @@ warden_reset() {
   echo "No toca: el disco de backup externo, tu site/, ni el repo de GitHub de tus apps."
   echo
 
-  if [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
+  if [ "$auto_yes" != 1 ] && [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
     read -rp "Escribí exactamente BORRAR para continuar: " ok
     [ "$ok" = "BORRAR" ] || { echo "Cancelado."; return 1; }
   fi

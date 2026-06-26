@@ -226,7 +226,7 @@ func (s *server) handleReset(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	go func() {
 		defer cancel()
-		runInBackground(ctx, &s.resetProc, "sudo", s.wardenBin, "reset")
+		runInBackground(ctx, &s.resetProc, "sudo", s.wardenBin, "reset", "--yes")
 	}()
 	render(w, "reset_log.html", map[string]any{"Running": true})
 }

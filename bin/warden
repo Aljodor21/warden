@@ -231,7 +231,7 @@ case "${1:-menu}" in
     esac
     ;;
   motd)        need_root; warden_motd_install ;;
-  reset)       need_root; warden_reset ;;
+  reset)       need_root; warden_reset "${@:2}" ;;
   init-disk)   need_root; warden_init_disk "${2:-}" ;;
   disk)
     case "${2:-menu}" in
