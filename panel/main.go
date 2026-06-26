@@ -163,6 +163,7 @@ func main() {
 	mux.HandleFunc("POST /system/cloudflare-token", s.requireAdmin("system_fragment.html", withSys, s.handleSaveCloudflareToken))
 	mux.HandleFunc("POST /system/reset", s.requireAdmin("system_fragment.html", withSys, s.handleReset))
 	mux.HandleFunc("GET /system/reset-log", s.handleResetLog)
+	mux.HandleFunc("POST /system/timezone", s.requireAdmin("system_fragment.html", withSys, s.handleSetTimezone))
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
 	mux.HandleFunc("GET /backups", s.handleBackupsPage)
 	mux.HandleFunc("GET /about", s.handleAbout)

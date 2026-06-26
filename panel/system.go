@@ -29,6 +29,8 @@ type SystemView struct {
 	PanelMem    string         // RAM del propio proceso warden-panel
 	Containers  []ContainerMem // uno por contenedor corriendo, RAM usada
 	TotalMemAll string         // panel + todos los contenedores, para responder "cuánto pesa todo esto"
+
+	Timezone string // zona horaria activa del sistema (IANA)
 }
 
 // ContainerMem: una fila de 'docker stats' — cuánta RAM usa un contenedor
@@ -80,7 +82,25 @@ func (s *server) gatherSystemView() SystemView {
 	}
 	v.TotalMemAll = humanBytes(total)
 
+	v.Timezone = systemTimezone()
+
 	return v
+}
+
+func systemTimezone() string {
+	b, err := os.ReadFile("/etc/timezone")
+	if err == nil {
+		if tz := strings.TrimSpace(string(b)); tz != "" {
+			return tz
+		}
+	}
+	out, err := exec.Command("timedatectl", "show", "--value", "-p", "Timezone").Output()
+	if err == nil {
+		if tz := strings.TrimSpace(string(out)); tz != "" {
+			return tz
+		}
+	}
+	return "UTC"
 }
 
 // panelMemBytes: RAM (RSS) del propio proceso warden-panel — vive nativo en
@@ -213,4 +233,19 @@ func (s *server) handleReset(w http.ResponseWriter, r *http.Request) {
 func (s *server) handleResetLog(w http.ResponseWriter, r *http.Request) {
 	logText, running, done := s.resetProc.snapshot()
 	render(w, "reset_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
+}
+
+func (s *server) handleSetTimezone(w http.ResponseWriter, r *http.Request) {
+	tz := strings.TrimSpace(r.FormValue("tz"))
+	loc, err := time.LoadLocation(tz)
+	if err != nil || tz == "" {
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "Zona horaria inválida: " + tz})
+		return
+	}
+	if out, err := exec.Command("sudo", "timedatectl", "set-timezone", tz).CombinedOutput(); err != nil {
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "Error al cambiar zona: " + strings.TrimSpace(string(out))})
+		return
+	}
+	time.Local = loc
+	render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Output": "Zona horaria cambiada a " + tz})
 }

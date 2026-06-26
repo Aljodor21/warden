@@ -27,6 +27,49 @@
 
   <div class="statusrow">
     <div>
+      <div class="label">Zona horaria</div>
+      <div class="desc">Afecta las marcas de tiempo de backups, logs y timers. Zona actual: <strong>{{.Sys.Timezone}}</strong></div>
+    </div>
+    <div class="acts">
+      <form hx-post="/system/timezone" hx-target="#system-status" hx-swap="innerHTML" style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+        <select name="tz" style="padding:0.35rem 0.6rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:0.85rem">
+          <optgroup label="— América Latina —">
+            <option value="America/Bogota" {{if eq .Sys.Timezone "America/Bogota"}}selected{{end}}>Colombia (America/Bogota)</option>
+            <option value="America/Lima" {{if eq .Sys.Timezone "America/Lima"}}selected{{end}}>Perú (America/Lima)</option>
+            <option value="America/Caracas" {{if eq .Sys.Timezone "America/Caracas"}}selected{{end}}>Venezuela (America/Caracas)</option>
+            <option value="America/Santiago" {{if eq .Sys.Timezone "America/Santiago"}}selected{{end}}>Chile (America/Santiago)</option>
+            <option value="America/Argentina/Buenos_Aires" {{if eq .Sys.Timezone "America/Argentina/Buenos_Aires"}}selected{{end}}>Argentina (America/Buenos_Aires)</option>
+            <option value="America/Sao_Paulo" {{if eq .Sys.Timezone "America/Sao_Paulo"}}selected{{end}}>Brasil (America/Sao_Paulo)</option>
+            <option value="America/Mexico_City" {{if eq .Sys.Timezone "America/Mexico_City"}}selected{{end}}>México (America/Mexico_City)</option>
+            <option value="America/Panama" {{if eq .Sys.Timezone "America/Panama"}}selected{{end}}>Panamá/CA (America/Panama)</option>
+          </optgroup>
+          <optgroup label="— Norteamérica —">
+            <option value="America/New_York" {{if eq .Sys.Timezone "America/New_York"}}selected{{end}}>Eastern (America/New_York)</option>
+            <option value="America/Chicago" {{if eq .Sys.Timezone "America/Chicago"}}selected{{end}}>Central (America/Chicago)</option>
+            <option value="America/Denver" {{if eq .Sys.Timezone "America/Denver"}}selected{{end}}>Mountain (America/Denver)</option>
+            <option value="America/Los_Angeles" {{if eq .Sys.Timezone "America/Los_Angeles"}}selected{{end}}>Pacific (America/Los_Angeles)</option>
+          </optgroup>
+          <optgroup label="— Europa —">
+            <option value="Europe/Madrid" {{if eq .Sys.Timezone "Europe/Madrid"}}selected{{end}}>España (Europe/Madrid)</option>
+            <option value="Europe/London" {{if eq .Sys.Timezone "Europe/London"}}selected{{end}}>UK (Europe/London)</option>
+            <option value="Europe/Paris" {{if eq .Sys.Timezone "Europe/Paris"}}selected{{end}}>Francia (Europe/Paris)</option>
+            <option value="Europe/Berlin" {{if eq .Sys.Timezone "Europe/Berlin"}}selected{{end}}>Alemania (Europe/Berlin)</option>
+          </optgroup>
+          <optgroup label="— Otros —">
+            <option value="UTC" {{if eq .Sys.Timezone "UTC"}}selected{{end}}>UTC</option>
+            <option value="Asia/Dubai" {{if eq .Sys.Timezone "Asia/Dubai"}}selected{{end}}>Dubai (Asia/Dubai)</option>
+            <option value="Asia/Kolkata" {{if eq .Sys.Timezone "Asia/Kolkata"}}selected{{end}}>India (Asia/Kolkata)</option>
+            <option value="Asia/Tokyo" {{if eq .Sys.Timezone "Asia/Tokyo"}}selected{{end}}>Japón (Asia/Tokyo)</option>
+            <option value="Australia/Sydney" {{if eq .Sys.Timezone "Australia/Sydney"}}selected{{end}}>Sydney (Australia/Sydney)</option>
+          </optgroup>
+        </select>
+        <button class="btn" type="submit">Aplicar<span class="spinner"></span></button>
+      </form>
+    </div>
+  </div>
+
+  <div class="statusrow">
+    <div>
       <div class="label">VPN (Tailscale)</div>
       <div class="desc">
         {{if .Sys.TailscaleConnected}}Conectada — IP {{.Sys.TailscaleIP}}. Acceso remoto seguro sin abrir puertos.
