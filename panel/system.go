@@ -14,9 +14,12 @@ import (
 const ageKeyPath = "/etc/warden/age.key"
 
 type SystemView struct {
-	TailscaleInstalled bool
-	TailscaleConnected bool
-	TailscaleIP        string
+	TailscaleInstalled      bool
+	TailscaleConnected      bool
+	TailscaleIP             string
+	TailscaleExitNode       bool
+	TailscaleSubnet         string
+	TailscaleSuggestedSubnet string
 
 	AgeKeyExists       bool
 	SecretsExist       bool // hay al menos un *.tar.age guardado
@@ -51,6 +54,15 @@ func (s *server) gatherSystemView() SystemView {
 				v.TailscaleIP = ip
 			}
 		}
+	}
+	if v.TailscaleConnected {
+		if b, err := os.ReadFile("/etc/warden/tailscale-subnet"); err == nil {
+			if s := strings.TrimSpace(string(b)); s != "" {
+				v.TailscaleExitNode = true
+				v.TailscaleSubnet = s
+			}
+		}
+		v.TailscaleSuggestedSubnet = detectLocalSubnet()
 	}
 
 	if _, err := os.Stat(ageKeyPath); err == nil {
@@ -175,6 +187,34 @@ func parseDockerMem(s string) int64 {
 	return 0
 }
 
+func detectLocalSubnet() string {
+	out, err := exec.Command("ip", "route", "show", "scope", "link").Output()
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		skip := false
+		for _, bad := range []string{"lo ", "docker", "br-", "veth", "tailscale", "169."} {
+			if strings.Contains(line, bad) {
+				skip = true
+				break
+			}
+		}
+		if skip {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) > 0 && strings.Contains(fields[0], "/") {
+			return fields[0]
+		}
+	}
+	return ""
+}
+
 func (s *server) siteSecretsDir() string {
 	return s.root + "/site/secrets" // modules/secrets.sh: SECRETS_DIR = $WARDEN_ROOT/site/secrets
 }
@@ -183,6 +223,18 @@ func (s *server) handleSystem(w http.ResponseWriter, r *http.Request) {
 	render(w, "system.html", map[string]any{
 		"Page": "system", "AdminUnlocked": s.isAdmin(r), "Sys": s.gatherSystemView(),
 	})
+}
+
+func (s *server) handleVPNSubnet(w http.ResponseWriter, r *http.Request) {
+	subnet := strings.TrimSpace(r.FormValue("subnet"))
+	if subnet == "" {
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView(), "Err": "La subred no puede estar vacía."})
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	out, err := s.runWarden(ctx, "vpn", "subnet", subnet)
+	s.renderSystemAction(w, out, err)
 }
 
 func (s *server) handleVPNInstall(w http.ResponseWriter, r *http.Request) {

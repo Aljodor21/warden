@@ -89,6 +89,37 @@
     </div>
   </div>
 
+  {{if .Sys.TailscaleConnected}}
+  <div class="statusrow">
+    <div>
+      <div class="label">Exit Node / Subnet Router</div>
+      <div class="desc">
+        {{if .Sys.TailscaleExitNode}}
+          Activo — subred <strong>{{.Sys.TailscaleSubnet}}</strong>. Este servidor enruta el
+          tráfico de tu red Tailscale hacia esa red local y funciona como salida a internet.
+          Recordá aprobar las rutas en el
+          <a href="https://login.tailscale.com/admin/machines" target="_blank">panel de Tailscale</a>.
+        {{else}}
+          Opcional. Convierte este servidor en el punto de salida a internet y expone tu red
+          local al resto de tus dispositivos Tailscale. Se detectó la subred del servidor automáticamente.
+        {{end}}
+      </div>
+    </div>
+    <div class="acts">
+      <form hx-post="/system/vpn-subnet" hx-target="#system-status" hx-swap="innerHTML"
+            style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+        <input type="text" name="subnet"
+               value="{{if .Sys.TailscaleExitNode}}{{.Sys.TailscaleSubnet}}{{else}}{{.Sys.TailscaleSuggestedSubnet}}{{end}}"
+               placeholder="192.168.1.0/24"
+               style="max-width:160px;font-size:0.85rem">
+        <button class="btn{{if .Sys.TailscaleExitNode}} secondary{{end}}" type="submit">
+          {{if .Sys.TailscaleExitNode}}Cambiar{{else}}Activar{{end}}<span class="spinner"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+  {{end}}
+
   <div class="statusrow" style="border-bottom:none">
     <div>
       <div class="label">Túnel de Cloudflare</div>
