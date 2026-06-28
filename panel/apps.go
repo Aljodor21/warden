@@ -58,7 +58,7 @@ func (s *server) buildAppView(containers []Container) (apps []AppCard, others []
 		case c.CFHost != "":
 			link = "https://" + c.CFHost
 		case c.CFPort != "":
-			link = "http://" + host + ".local:" + c.CFPort
+			link = "http://" + host + ":" + c.CFPort
 		}
 		apps = append(apps, AppCard{
 			Tag: c.Tag, Name: c.Name, Up: upByName[container] || hasAnyRunning(containers, c.Tag+"-"),

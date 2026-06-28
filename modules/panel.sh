@@ -74,5 +74,5 @@ warden_panel_install() {
     fi
   fi
 
-  ok "Panel listo. Desde tu LAN/Tailscale: http://$(hostname).local:7890"
+  ok "Panel listo. Desde tu LAN/Tailscale: http://$(hostname):7890"
 }
