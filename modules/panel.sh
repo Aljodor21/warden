@@ -49,7 +49,7 @@ warden_panel_install() {
     echo "After=network.target"
     echo
     echo "[Service]"
-    echo "ExecStart=$PANEL_BIN -addr 0.0.0.0:7890 -root $WARDEN_ROOT -warden /usr/local/bin/warden -passfile $PANEL_PASSFILE"
+    echo "ExecStart=$PANEL_BIN -addr 0.0.0.0:80 -root $WARDEN_ROOT -warden /usr/local/bin/warden -passfile $PANEL_PASSFILE"
     echo "Restart=on-failure"
     echo "User=root"
     echo
@@ -68,11 +68,11 @@ warden_panel_install() {
   # activo, asegurar la regla de este puerto puntual, ahora mismo.
   if has ufw && ufw status 2>/dev/null | grep -q "Status: active"; then
     if [ -n "${WARDEN_LAN:-}" ]; then
-      run "ufw allow from '$WARDEN_LAN' to any port 7890 proto tcp comment 'warden panel'"
+      run "ufw allow from '$WARDEN_LAN' to any port 80 proto tcp comment 'warden panel'"
     else
-      warn "ufw está activo pero no hay WARDEN_LAN definido — el panel puede no ser alcanzable. Agregá la regla a mano: ufw allow <TU_LAN> to any port 7890 proto tcp"
+      warn "ufw está activo pero no hay WARDEN_LAN definido — el panel puede no ser alcanzable. Agregá la regla a mano: ufw allow <TU_LAN> to any port 80 proto tcp"
     fi
   fi
 
-  ok "Panel listo. Desde tu LAN/Tailscale: http://$(hostname):7890"
+  ok "Panel listo. Desde tu LAN/Tailscale: http://$(hostname)"
 }
