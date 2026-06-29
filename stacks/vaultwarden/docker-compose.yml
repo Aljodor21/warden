@@ -1,0 +1,24 @@
+# Vaultwarden — gestor de contraseñas compatible con Bitwarden (servidor
+# liviano en Rust). Guarda TODO (base SQLite, adjuntos, llaves de cifrado)
+# dentro de /data, así que respaldar esa única carpeta respalda la bóveda
+# entera.
+name: vaultwarden
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+      - "${VAULTWARDEN_PORT:-8222}:80"
+    environment:
+      TZ: "${TZ:-UTC}"
+      # Registro abierto SOLO para crear tu primera cuenta. Después entrá al
+      # panel /admin (con el token de abajo) y ponelo en false para que
+      # nadie más se registre.
+      SIGNUPS_ALLOWED: "true"
+      # Token del panel de administración (/admin). Lo genera warden y vive
+      # en /etc/warden/secrets/vaultwarden.env — nunca en texto plano acá.
+      ADMIN_TOKEN: "${VAULTWARDEN_ADMIN_TOKEN}"
+    volumes:
+      - "${WARDEN_DATA:-/srv/warden}/vaultwarden:/data"

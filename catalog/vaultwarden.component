@@ -1,0 +1,15 @@
+# Vaultwarden — gestor de contraseñas (compatible con Bitwarden), genérico.
+# Arranca vacío: creás tu cuenta en el primer ingreso.
+COMP_NAME="Vaultwarden (contraseñas)"
+COMP_TAG="vaultwarden"
+COMP_KIND="files"
+COMP_PATHS=( "${WARDEN_DATA:-/srv/warden}/vaultwarden" )
+COMP_EXCLUDES=()
+COMP_DB_TYPE=""
+COMP_INSTALL="stacks/vaultwarden/docker-compose.yml"
+COMP_CONTAINER="vaultwarden"
+COMP_SECRETS=( "VAULTWARDEN_ADMIN_TOKEN" )
+COMP_ICON="vaultwarden"
+COMP_CF_HOST=""
+COMP_CF_PORT="8222"
+COMP_NOTE="Bóveda de contraseñas. Todo (base SQLite, adjuntos, llaves) vive en una sola carpeta — respaldarla respalda la bóveda entera. Para uso real exponela con HTTPS (túnel de Cloudflare), nunca http plano. Tras crear tu cuenta, entrá a /admin y desactivá el registro."
