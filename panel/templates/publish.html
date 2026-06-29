@@ -1,14 +1,19 @@
 {{define "publish.html"}}
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><title>warden — publish</title>{{template "_style"}}</head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>warden — publicar</title>
+  {{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+</head>
 <body>
   <div class="top">
-    <h1>Resultado de 'warden publish'</h1>
-    <a class="btn secondary" href="/catalog">&larr; Volver</a>
+    <h1>Publicar (Cloudflare + Homepage)</h1>
+    <a class="btn secondary" href="/catalog">&larr; Volver al catálogo</a>
   </div>
-  <p><strong>{{.Status}}</strong></p>
-  <pre>{{.Output}}</pre>
+  {{template "publish_log.html" .}}
 </body>
 </html>
 {{end}}

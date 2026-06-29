@@ -90,6 +90,10 @@ type server struct {
 	// Estado de 'warden reset' en segundo plano (mata todo, incluido este panel).
 	resetProc bgProcess
 
+	// Estado de 'warden publish' en segundo plano — regenera túnel + Homepage,
+	// puede tardar más que el WriteTimeout del server si se corre síncrono.
+	publishProc bgProcess
+
 	// Caché de restic snapshots: evita arrancar un contenedor Docker en cada
 	// carga de página o acción de backups. TTL 60s; se invalida tras cada backup.
 	snapMu        sync.Mutex
@@ -153,6 +157,7 @@ func main() {
 	mux.HandleFunc("POST /backups/restore-from", s.requireAdmin("restore_log.html", noExtra, s.handleRestoreFromSnapshot))
 	mux.HandleFunc("GET /backups/restore-log", s.handleRestorePoll)
 	mux.HandleFunc("POST /publish", s.handlePublish)
+	mux.HandleFunc("GET /publish-log", s.handlePublishPoll)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	mux.HandleFunc("GET /nas", s.handleNAS)
 	mux.HandleFunc("POST /nas/add", s.requireAdmin("nas_fragment.html", withUsers, s.handleNASAdd))
@@ -448,16 +453,25 @@ func (s *server) handleEditSave(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/catalog", http.StatusSeeOther)
 }
 
+// handlePublish lanza 'warden publish' en segundo plano y muestra su log con
+// polling. Antes corría síncrono y un publish lento (reinicio de cloudflared,
+// regeneración de Homepage) pasaba el WriteTimeout del server → la conexión se
+// cortaba y el navegador mostraba ERR_EMPTY_RESPONSE.
 func (s *server) handlePublish(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "sudo", s.wardenBin, "publish")
-	out, err := cmd.CombinedOutput()
-	status := "OK"
-	if err != nil {
-		status = "ERROR: " + err.Error()
+	if s.publishProc.start() {
+		go func() {
+			ctx, cancel := bgCtx3min()
+			defer cancel()
+			runInBackground(ctx, &s.publishProc, "sudo", s.wardenBin, "publish")
+		}()
 	}
-	render(w, "publish.html", map[string]any{"Output": string(out), "Status": status})
+	logText, running, done := s.publishProc.snapshot()
+	render(w, "publish.html", map[string]any{"Log": logText, "Running": running, "Done": done})
+}
+
+func (s *server) handlePublishPoll(w http.ResponseWriter, r *http.Request) {
+	logText, running, done := s.publishProc.snapshot()
+	render(w, "publish_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
 }
 
 // handleDeleteApp decide QUÉ hacer al pedir borrar una app. Solo se puede

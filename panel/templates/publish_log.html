@@ -1,0 +1,10 @@
+{{define "publish_log.html"}}
+<div id="publish-box" {{if .Running}}hx-get="/publish-log" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{if .Running}}
+  <p class="muted">Regenerando el túnel de Cloudflare y Homepage… puede tardar unos segundos.</p>
+  {{else if .Done}}
+  <div class="ok-msg">Listo. <a href="/catalog">Volver al catálogo</a></div>
+  {{end}}
+  {{if .Log}}<pre style="max-height:320px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+</div>
+{{end}}
