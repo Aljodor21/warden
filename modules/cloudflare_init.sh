@@ -37,8 +37,20 @@ warden_cloudflare_init() {
     ok "Ya hay una sesión de Cloudflare autorizada en este server"
   fi
 
-  local name
-  name="$(ui_input 'Nombre para este túnel (identifica este server en Cloudflare)' "$(hostname)")"
+  # Nombre del túnel. Prioridad: argumento explícito > pregunta interactiva
+  # (solo si hay terminal real) > hostname. Desde el panel NO hay TTY, así que
+  # gum no puede preguntar — sin este guardia el nombre volvía vacío y
+  # 'cloudflared tunnel create' fallaba con "tunnel name required".
+  local name="${1:-}"
+  if [ -z "$name" ]; then
+    if [ -t 0 ]; then
+      name="$(ui_input 'Nombre para este túnel (identifica este server en Cloudflare)' "$(hostname)")"
+    else
+      name="$(hostname)"
+      log "Sin terminal interactiva — nombro el túnel como el hostname: $name"
+    fi
+  fi
+  [ -n "$name" ] || name="$(hostname)"
 
   if cloudflared tunnel list 2>/dev/null | awk '{print $2}' | grep -qx "$name"; then
     ok "Ya existe un túnel llamado '$name', lo reuso"
@@ -63,7 +75,9 @@ warden_cloudflare_init() {
       ok "$CF_CONFIG ya usa este túnel, no lo toco (corré 'warden publish' para agregar apps)"
     else
       warn "Este server ya estaba usando OTRO túnel ($cur_tid)."
-      if ui_confirm "¿Cambiar este server para que use el túnel '$name' ($tid) en vez del anterior?"; then
+      # Sin terminal (panel) no se puede preguntar — por seguridad NO piso el
+      # túnel existente; el nuevo queda creado en Cloudflare para usarlo luego.
+      if [ -t 0 ] && ui_confirm "¿Cambiar este server para que use el túnel '$name' ($tid) en vez del anterior?"; then
         backup_file "$CF_CONFIG"
         {
           echo "tunnel: $tid"
