@@ -169,6 +169,7 @@ func main() {
 	mux.HandleFunc("POST /system/secrets-init", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsInit))
 	mux.HandleFunc("POST /system/secrets-save", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsSave))
 	mux.HandleFunc("POST /system/cloudflare-init", s.requireAdmin("cloudflare_log.html", noExtra, s.handleCloudflareInitStart))
+	mux.HandleFunc("POST /system/cloudflare-reset", s.requireAdmin("system_fragment.html", withSys, s.handleCloudflareReset))
 	mux.HandleFunc("GET /system/cloudflare-log", s.handleCloudflareInitPoll)
 	mux.HandleFunc("POST /system/cloudflare-token", s.requireAdmin("system_fragment.html", withSys, s.handleSaveCloudflareToken))
 	mux.HandleFunc("POST /system/reset", s.requireAdmin("system_fragment.html", withSys, s.handleReset))

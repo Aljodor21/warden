@@ -18,6 +18,7 @@
 #   verify              [root] restic check (integridad del repo)
 #   register            [root] Fija el disco en fstab + activa los timers
 #   cloudflare-init [nombre]  [root] Crea un túnel de Cloudflare desde cero (una vez)
+#   cloudflare-reset      [root] Borra el túnel y la sesión para reconfigurar de cero
 #   publish             [root] (Re)genera el ingress de Cloudflare desde el catálogo
 #   runner <url> <tok>  [root] Registra un self-hosted runner de GitHub Actions
 #   secrets <accion>    [root] Cifra/restaura secretos con age (init|save|restore)
@@ -218,6 +219,7 @@ case "${1:-menu}" in
   verify)      need_root; warden_verify ;;
   register)    need_root; warden_register ;;
   cloudflare-init) need_root; warden_cloudflare_init "${2:-}" ;;
+  cloudflare-reset) need_root; warden_cloudflare_reset ;;
   publish)     need_root; warden_publish ;;
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
   vpn)

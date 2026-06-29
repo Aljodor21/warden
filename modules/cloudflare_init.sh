@@ -104,3 +104,32 @@ warden_cloudflare_init() {
   run "systemctl enable --now cloudflared"
   ok "Túnel '$name' ($tid) listo. Ahora: agregá COMP_CF_HOST a tu app en el catálogo y corré 'warden publish'."
 }
+
+# warden_cloudflare_reset — borra el túnel actual y la sesión local para
+# reconfigurar DESDE CERO (re-login y elegir el dominio bien). Destructivo:
+# el túnel deja de existir en Cloudflare. Después correr 'cloudflare-init'
+# (o el botón "Configurar" del panel) para autorizar de nuevo.
+warden_cloudflare_reset() {
+  has cloudflared || die "cloudflared no está instalado"
+
+  local tid
+  tid="$(awk '/^tunnel:/{print $2; exit}' "$CF_CONFIG" 2>/dev/null)"
+
+  log "Deteniendo el servicio cloudflared"
+  run "systemctl stop cloudflared 2>/dev/null || true"
+  run "systemctl disable cloudflared 2>/dev/null || true"
+
+  if [ -n "$tid" ]; then
+    log "Cerrando conexiones y borrando el túnel ($tid) en Cloudflare"
+    run "cloudflared tunnel cleanup '$tid' 2>/dev/null || true"
+    run "cloudflared tunnel delete -f '$tid' 2>/dev/null || true"
+    run "rm -f '/etc/cloudflared/${tid}.json'"
+  fi
+
+  log "Limpiando config y sesión local (cert.pem) para autorizar de cero"
+  run "rm -f '$CF_CONFIG'"
+  run "rm -f /etc/cloudflared/cert.pem /root/.cloudflared/cert.pem"
+  [ -n "${HOME:-}" ] && run "rm -f '$HOME/.cloudflared/cert.pem'"
+
+  ok "Túnel reiniciado. Ahora 'Configurar' (panel) o 'warden cloudflare-init' (consola) para autorizar de nuevo y ELEGIR el dominio."
+}

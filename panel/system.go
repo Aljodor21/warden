@@ -272,6 +272,13 @@ func (s *server) handleVPNSubnet(w http.ResponseWriter, r *http.Request) {
 	s.renderSystemAction(w, out, err)
 }
 
+func (s *server) handleCloudflareReset(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second) // delete+cleanup tarda un poco
+	defer cancel()
+	out, err := s.runWarden(ctx, "cloudflare-reset")
+	s.renderSystemAction(w, out, err)
+}
+
 func (s *server) handleVPNInstall(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second) // tailscale up puede tardar
 	defer cancel()

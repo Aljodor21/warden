@@ -190,7 +190,13 @@
     </div>
     <div class="acts">
       {{if .Sys.CloudflareSet}}
-      <span class="badge on">configurado</span>
+      <div style="display:flex; flex-direction:column; gap:0.4rem; align-items:flex-end">
+        <span class="badge on">configurado</span>
+        <form hx-post="/system/cloudflare-reset" hx-target="#system-status" hx-swap="innerHTML"
+              onsubmit="return confirm('¿Borrar este túnel y la sesión de Cloudflare? El túnel deja de existir y vas a tener que volver a autorizar y ELEGIR el dominio desde cero.')">
+          <button class="btn secondary" type="submit" style="color:var(--red)">Reiniciar túnel<span class="spinner"></span></button>
+        </form>
+      </div>
       {{else}}
       <form hx-post="/system/cloudflare-init" hx-target="#cf-log-container" hx-swap="innerHTML">
         <button class="btn" type="submit">Configurar<span class="spinner"></span></button>
