@@ -4,6 +4,18 @@
 #   rutas de archivos. Luego respalda todo con restic (en Docker), montando
 #   cada ruta tal cual para guardar la ruta REAL (restaurar en sitio).
 
+# Lista de componentes que el usuario excluyó del backup automático (un tag
+# por línea). La togglean el panel y 'warden backup-toggle'. Mismo patrón que
+# los toggles de la VPN (/etc/warden/tailscale-*): estado en un archivo simple
+# que sobrevive a 'git pull' y no toca el catálogo.
+BACKUP_DISABLED_FILE="/etc/warden/backup-disabled"
+
+# ¿Este tag está excluido del backup?
+_backup_is_disabled() {
+  [ -f "$BACKUP_DISABLED_FILE" ] || return 1
+  grep -qxF "$1" "$BACKUP_DISABLED_FILE"
+}
+
 warden_backup() {
   local mount repo dumps passfile dry
   mount="${WARDEN_BACKUP_MOUNT:-/mnt/warden-backup}"
@@ -25,6 +37,11 @@ warden_backup() {
     # automático a propósito — ya tienen suficiente configuración separada
     # (túnel, runner); si necesitan respaldo, se agrega a mano.
     is_deployed_install "${COMP_INSTALL:-}" && continue
+    # Excluido a mano por el usuario (desde el panel o 'warden backup-toggle').
+    if _backup_is_disabled "$tag"; then
+      log "Saltando '$tag' (excluido del backup por el usuario)"
+      continue
+    fi
     for p in "${COMP_PATHS[@]:-}"; do
       [ -n "$p" ] && [ -e "$p" ] && file_paths+=("$p")
     done
@@ -93,4 +110,31 @@ warden_verify() {
   docker run --rm -e RESTIC_PASSWORD_FILE=/pass \
     -v "$passfile:/pass:ro" -v "$repo:/repo" restic/restic -r /repo check
   ok "Repositorio íntegro"
+}
+
+# warden_backup_toggle <tag> <on|off> — incluye (on) o excluye (off) un
+# componente del backup automático. El estado vive en BACKUP_DISABLED_FILE;
+# 'off' agrega el tag a la lista, 'on' lo saca.
+warden_backup_toggle() {
+  local tag="$1" action="$2"
+  [ -n "$tag" ] || die "Falta el tag. Uso: warden backup-toggle <tag> on|off"
+  catalog_load "$tag" || die "El componente '$tag' no está en el catálogo"
+  mkdir -p /etc/warden
+  case "$action" in
+    on)
+      # Incluir = sacarlo de la lista de excluidos (si estaba).
+      if [ -f "$BACKUP_DISABLED_FILE" ]; then
+        grep -vxF "$tag" "$BACKUP_DISABLED_FILE" > "$BACKUP_DISABLED_FILE.tmp" || true
+        mv "$BACKUP_DISABLED_FILE.tmp" "$BACKUP_DISABLED_FILE"
+      fi
+      ok "'$tag' se INCLUYE en el backup automático"
+      ;;
+    off)
+      # Excluir = agregarlo a la lista (si no estaba ya).
+      touch "$BACKUP_DISABLED_FILE"
+      grep -qxF "$tag" "$BACKUP_DISABLED_FILE" || echo "$tag" >> "$BACKUP_DISABLED_FILE"
+      ok "'$tag' se EXCLUYE del backup automático"
+      ;;
+    *) die "Uso: warden backup-toggle <tag> on|off" ;;
+  esac
 }
