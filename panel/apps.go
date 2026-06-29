@@ -53,10 +53,13 @@ func (s *server) buildAppView(containers []Container) (apps []AppCard, others []
 		}
 		link := ""
 		switch {
+		case c.CFHost != "":
+			// con subdominio propio (túnel de Cloudflare) → link HTTPS directo,
+			// incluso si es kind=files. Vaultwarden, por ejemplo, EXIGE HTTPS:
+			// sin esto quedaba sin link aunque tuviera su subdominio.
+			link = "https://" + c.CFHost
 		case c.Kind == "files":
 			// se sirve internamente a través del panel (/archivos), no por URL directa
-		case c.CFHost != "":
-			link = "https://" + c.CFHost
 		case c.CFPort != "":
 			link = "http://" + host + ":" + c.CFPort
 		}
