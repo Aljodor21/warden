@@ -1,10 +1,31 @@
 name: CI
 
-on: [push, pull_request]
+# ───────────────────────── Cuándo corre ─────────────────────────
+# push a main/dev  → valida lo ya integrado y lo que estás probando en dev
+# pull_request     → la compuerta: nada se mergea a main sin pasar esto
+# (no ponemos push a TODAS las ramas para no correr el CI dos veces en un PR
+#  ni gastar minutos en ramas de trabajo sueltas; cuando querés validar una,
+#  la pusheás a dev o abrís el PR).
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+# Si llegan commits nuevos mientras una corrida sigue en curso, cancela la
+# vieja: no tiene sentido validar un commit que ya quedó atrás.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Mínimo privilegio: el CI solo lee el código. El token por defecto trae
+# permisos de escritura que ningún job de acá necesita — se los quitamos.
+permissions:
+  contents: read
 
 jobs:
+  # ─────────────────── 1. Scripts de shell ───────────────────
   shell:
-    name: Revisar scripts (bash -n + shellcheck)
+    name: Scripts (bash -n + shellcheck)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +41,50 @@ jobs:
           shellcheck --severity=error \
             bin/warden bootstrap.sh lib/*.sh modules/*.sh restore/*.sh
 
+  # ─────────────────── 2. Panel web (Go) ───────────────────
+  # Antes este job NO existía: el panel viajaba a producción sin que nadie
+  # comprobara siquiera que compila. Estas 4 verificaciones son la red.
+  go:
+    name: Panel Go (fmt + vet + build + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: panel   # todos los 'run' de este job corren en panel/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: panel/go.mod  # misma versión de Go que declara el módulo
+          cache: false                   # el panel es solo stdlib: no hay deps que cachear
+
+      # gofmt = el formato canónico de Go. Si algo no está formateado, falla y
+      # te dice qué archivo — así el estilo nunca se discute en un PR.
+      - name: Formato (gofmt)
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Estos archivos no pasaron gofmt:"; echo "$unformatted"
+            echo "Arreglalo con: (cd panel && gofmt -w .)"
+            exit 1
+          fi
+
+      # go vet = análisis estático: caza bugs que compilan pero están mal
+      # (ej. un Printf con el verbo equivocado, locks copiados por valor).
+      - name: Análisis estático (go vet)
+        run: go vet ./...
+
+      # ¿Compila? Lo mínimo no negociable.
+      - name: Compilar (go build)
+        run: go build ./...
+
+      # -race monta el binario con el detector de carreras: si dos goroutines
+      # tocan el mismo dato sin candado, el test revienta. El panel usa mutexes
+      # y procesos en segundo plano, así que esto importa de verdad acá.
+      - name: Tests (go test -race)
+        run: go test -race ./...
+
+  # ─────────────────── 3. Instalador en seco ───────────────────
   dry-run:
     name: Bootstrap en seco (Ubuntu 24.04)
     runs-on: ubuntu-latest

@@ -2,11 +2,13 @@
 
 ## CI automático
 
-Cada push o PR dispara dos jobs en GitHub Actions (`.github/workflows/ci.yml`):
+Cada push a `main`/`dev` o PR dispara tres jobs en GitHub Actions
+(`.github/workflows/ci.yml`):
 
 | Job | Qué hace |
 |---|---|
 | `shell` | `bash -n` + `shellcheck --severity=error` en todos los `.sh` |
+| `go` | `gofmt` + `go vet` + `go build` + `go test -race` del panel (`panel/`) |
 | `dry-run` | Corre `bootstrap.sh` completo en Ubuntu 24.04 sin instalar nada de verdad |
 
 Si alguno falla, el PR no se puede mergear hasta que se corrija.
@@ -46,6 +48,14 @@ WARDEN_PRESET=completo ./bootstrap.sh
 # Sintaxis y shellcheck
 bash -n bootstrap.sh lib/*.sh modules/*.sh
 shellcheck --severity=error bootstrap.sh lib/*.sh modules/*.sh
+
+# Panel Go (mismo orden que el CI)
+cd panel
+gofmt -l .          # vacío = todo formateado; si lista algo: gofmt -w .
+go vet ./...
+go build ./...
+go test -race ./...
+cd ..
 
 # Dry-run completo (necesita sudo)
 WARDEN_DRY_RUN=1 WARDEN_CI=1 WARDEN_PRESET=basico sudo ./bootstrap.sh

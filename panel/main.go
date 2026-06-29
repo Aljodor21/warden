@@ -62,15 +62,15 @@ type server struct {
 	filesProxy     http.Handler // hacia el contenedor FileBrowser, ver files.go
 
 	// Para calcular tasas entre refrescos del dashboard.
-	mu           sync.Mutex
-	lastRx       int64
-	lastTx       int64
-	lastNetTime  time.Time
-	prevCores    []CoreStat
-	prevCoreAt   time.Time
-	netHistory   [40]NetSample
-	netHistIdx   int
-	netHistFull  bool
+	mu          sync.Mutex
+	lastRx      int64
+	lastTx      int64
+	lastNetTime time.Time
+	prevCores   []CoreStat
+	prevCoreAt  time.Time
+	netHistory  [40]NetSample
+	netHistIdx  int
+	netHistFull bool
 
 	// Estado del backup en segundo plano (puede tardar minutos).
 	backupProc bgProcess
@@ -92,11 +92,11 @@ type server struct {
 
 	// Caché de restic snapshots: evita arrancar un contenedor Docker en cada
 	// carga de página o acción de backups. TTL 60s; se invalida tras cada backup.
-	snapMu       sync.Mutex
-	snapCached   []Snapshot
-	snapCacheErr string
+	snapMu        sync.Mutex
+	snapCached    []Snapshot
+	snapCacheErr  string
 	snapCacheSize string
-	snapCacheAt  time.Time
+	snapCacheAt   time.Time
 }
 
 // catalogDirs: orden de prioridad igual a lib/catalog.sh (repo primero, site

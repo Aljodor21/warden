@@ -14,9 +14,9 @@ import (
 const ageKeyPath = "/etc/warden/age.key"
 
 type SystemView struct {
-	TailscaleInstalled      bool
-	TailscaleConnected      bool
-	TailscaleIP             string
+	TailscaleInstalled       bool
+	TailscaleConnected       bool
+	TailscaleIP              string
 	TailscaleExitNode        bool
 	TailscaleSubnetActive    bool
 	TailscaleSubnet          string

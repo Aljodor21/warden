@@ -697,4 +697,3 @@ func (s *server) handleSetPassfile(w http.ResponseWriter, r *http.Request) {
 func (s *server) renderBackupsErr(w http.ResponseWriter, msg string) {
 	render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView(), "Err": msg})
 }
-

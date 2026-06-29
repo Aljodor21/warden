@@ -520,7 +520,7 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 		Hostname: h.Hostname, OS: h.OS, Cores: h.Cores,
 		Uptime:   humanUptime(h.UptimeSecs),
 		DownRate: humanRate(downBps), UpRate: humanRate(upBps),
-		NetHist:  computeSparkline(samples),
+		NetHist: computeSparkline(samples),
 	}
 	var apps []AppCard
 	apps, v.Others = s.buildAppView(h.Containers)
@@ -554,7 +554,7 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 	cpuLv := level(cpuPct)
 	v.CPU = Gauge{Label: "CPU", Pct: cpuPct, Level: cpuLv,
 		Detail: fmt.Sprintf("%.2f carga · %d núcleos", h.Load[0], h.Cores),
-		Arc: float64(cpuPct) / 100.0 * 188.5, Color: gaugeColor(cpuLv)}
+		Arc:    float64(cpuPct) / 100.0 * 188.5, Color: gaugeColor(cpuLv)}
 
 	// RAM (meminfo viene en KB).
 	ramPct := 0
@@ -571,7 +571,7 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 		Detail:   humanBytes(h.Mem.UsedKB * 1024),
 		FreeStr:  humanBytes(h.Mem.AvailKB * 1024),
 		TotalStr: humanBytes(h.Mem.TotalKB * 1024),
-		Arc: float64(ramPct) / 100.0 * 188.5, Color: gaugeColor(ramLv),
+		Arc:      float64(ramPct) / 100.0 * 188.5, Color: gaugeColor(ramLv),
 	}
 
 	for _, d := range h.Disks {
@@ -579,7 +579,7 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 		v.Disks = append(v.Disks, Gauge{
 			Label: d.Mount, Pct: d.Pct, Level: lv,
 			Detail: fmt.Sprintf("%s / %s", humanBytes(d.Used), humanBytes(d.Total)),
-			Arc: float64(d.Pct) / 100.0 * 188.5, Color: gaugeColor(lv),
+			Arc:    float64(d.Pct) / 100.0 * 188.5, Color: gaugeColor(lv),
 		})
 	}
 
