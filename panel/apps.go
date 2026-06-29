@@ -58,8 +58,12 @@ func (s *server) buildAppView(containers []Container) (apps []AppCard, others []
 			// incluso si es kind=files. Vaultwarden, por ejemplo, EXIGE HTTPS:
 			// sin esto quedaba sin link aunque tuviera su subdominio.
 			link = "https://" + c.CFHost
-		case c.Kind == "files":
-			// se sirve internamente a través del panel (/archivos), no por URL directa
+		case c.Tag == "filebrowser":
+			// FileBrowser se sirve DENTRO del panel (pestaña Archivos), atado a
+			// loopback — no tiene URL directa propia. Antes este caso era
+			// 'kind == files', que dejaba SIN link a toda app con datos (ej.
+			// Uptime Kuma, las importadas): son webs normales y deben ser
+			// clickeables por su puerto.
 		case c.CFPort != "":
 			link = "http://" + host + ":" + c.CFPort
 		}
