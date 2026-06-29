@@ -182,6 +182,7 @@ func main() {
 	mux.HandleFunc("/files/app/", s.handleFilesApp)
 	mux.HandleFunc("/files/", s.handleFiles)
 	mux.HandleFunc("/files", s.handleFiles)
+	mux.HandleFunc("POST /backups/toggle", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupToggle))
 	mux.HandleFunc("POST /backups/now", s.requireAdmin("backups_fragment.html", withBackups, s.handleBackupNow))
 	mux.HandleFunc("GET /backups/now-log", s.handleBackupNowLog)
 	mux.HandleFunc("POST /backups/register-timer", s.requireAdmin("backups_fragment.html", withBackups, s.handleRegisterTimer))

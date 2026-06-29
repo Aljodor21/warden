@@ -55,6 +55,37 @@ type BackupsView struct {
 	MissingPass    bool   // el passfile de restic no existe — mostrar formulario para ingresarlo
 
 	BackupRuns []BackupRun // cada corrida real (files+db juntos), para elegir cuál restaurar
+
+	Apps []BackupAppRow // qué apps respalda el backup automático (con su toggle)
+}
+
+// BackupAppRow: una app del catálogo en la sección "Qué se respalda".
+type BackupAppRow struct {
+	Tag       string
+	Name      string
+	Initial   string
+	PathCount int
+	HasDB     bool
+	BacksUp   bool // tiene rutas o BD que respaldar; false = kind:none (no aplica)
+	Included  bool // entra al backup automático (no fue excluida a mano)
+	WarnData  bool // excluida PERO respaldaría datos → mostrar aviso ⚠
+}
+
+// backupDisabledTags lee /etc/warden/backup-disabled (un tag por línea): los
+// componentes que el usuario sacó del backup automático. Mismo archivo que
+// lee modules/backup.sh.
+func backupDisabledTags() map[string]bool {
+	out := map[string]bool{}
+	b, err := os.ReadFile("/etc/warden/backup-disabled")
+	if err != nil {
+		return out
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		if t := strings.TrimSpace(line); t != "" {
+			out[t] = true
+		}
+	}
+	return out
 }
 
 // BackupRun: una corrida real de 'warden backup' — agrupa el snapshot de
@@ -275,6 +306,25 @@ func humanAgo(t time.Time) string {
 func (s *server) gatherBackupsView() BackupsView {
 	v := BackupsView{Disks: listDisks(), BackupMount: backupMount()}
 	v.TimerInstalled, v.TimerActive, v.TimerNext, v.TimerLast = timerInfo()
+
+	// Qué apps respalda el backup automático (con el estado de su toggle).
+	// Se arma siempre, aunque no haya disco/repo todavía.
+	disabled := backupDisabledTags()
+	if comps, err := listComponentsMerged(s.catalogDirs()); err == nil {
+		for _, c := range comps {
+			if c.IsDeployed() {
+				continue // las apps CI/CD quedan fuera del backup automático (igual que backup.sh)
+			}
+			backsUp := len(c.Paths) > 0 || c.DBType != ""
+			included := !disabled[c.Tag]
+			v.Apps = append(v.Apps, BackupAppRow{
+				Tag: c.Tag, Name: c.Name, Initial: firstLetter(c.Name),
+				PathCount: len(c.Paths), HasDB: c.DBType != "",
+				BacksUp: backsUp, Included: included,
+				WarnData: backsUp && !included,
+			})
+		}
+	}
 	for _, d := range v.Disks {
 		if d.Role == "BACKUP" {
 			v.HasBackupDisk = true
@@ -452,6 +502,29 @@ func (s *server) handleBackupsPage(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleBackupsContent(w http.ResponseWriter, r *http.Request) {
 	render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView()})
+}
+
+// handleBackupToggle invierte el estado de backup de una app: si está
+// incluida la excluye y viceversa. Delega en 'warden backup-toggle' para
+// no duplicar la lógica del archivo de estado.
+func (s *server) handleBackupToggle(w http.ResponseWriter, r *http.Request) {
+	tag := strings.TrimSpace(r.FormValue("tag"))
+	if tag == "" {
+		render(w, "backups_fragment.html", map[string]any{"B": s.gatherBackupsView(), "Err": "Falta el tag."})
+		return
+	}
+	action := "off" // por defecto excluir; si ya estaba excluida, la incluimos
+	if backupDisabledTags()[tag] {
+		action = "on"
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	out, err := s.runWarden(ctx, "backup-toggle", tag, action)
+	data := map[string]any{"B": s.gatherBackupsView()}
+	if err != nil {
+		data["Err"] = "No pude cambiar el backup de '" + tag + "': " + strings.TrimSpace(out)
+	}
+	render(w, "backups_fragment.html", data)
 }
 
 // Un backup real puede tardar varios minutos — mucho más que el

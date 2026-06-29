@@ -83,6 +83,46 @@
 </div>
 
 <div class="panel" style="margin-top:1rem">
+  <h2>Qué se respalda</h2>
+  <p class="muted" style="margin-top:-0.6rem; margin-bottom:0.8rem">
+    Cada app que warden administra. Apagá el switch para sacarla del backup automático —
+    por ejemplo si la respaldás por otro lado, o si son datos que no te importa perder.
+  </p>
+  {{range .B.Apps}}
+  <div class="statusrow">
+    <div style="display:flex; align-items:center; gap:0.7rem">
+      <span class="avatar">{{.Initial}}</span>
+      <div>
+        <div class="label">{{.Name}}</div>
+        <div class="desc">
+          {{if .BacksUp}}
+            {{if .PathCount}}📁 {{.PathCount}} carpeta{{if ne .PathCount 1}}s{{end}}{{end}}{{if and .PathCount .HasDB}} · {{end}}{{if .HasDB}}🗄 base de datos{{end}}
+            {{if .WarnData}}<div style="color:var(--red); margin-top:0.25rem">⚠ tiene datos y NO se está respaldando</div>{{end}}
+          {{else}}
+            <span style="color:var(--muted)">sin datos que respaldar</span>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    <div class="acts">
+      {{if .BacksUp}}
+      <label class="switch" title="{{if .Included}}Sacar del backup{{else}}Incluir en el backup{{end}}">
+        <input type="checkbox" {{if .Included}}checked{{end}}
+               hx-post="/backups/toggle" hx-vals='{"tag": "{{.Tag}}"}'
+               hx-target="#backups-content" hx-swap="innerHTML" hx-trigger="change">
+        <span class="slider"></span>
+      </label>
+      {{else}}
+      <span class="badge off">no aplica</span>
+      {{end}}
+    </div>
+  </div>
+  {{else}}
+  <p class="muted">No hay apps administradas por warden todavía.</p>
+  {{end}}
+</div>
+
+<div class="panel" style="margin-top:1rem">
   <h2>Backup ({{.B.BackupMount}}{{if .B.RepoSize}} · {{.B.RepoSize}} usados{{end}})</h2>
   {{if .B.MissingPass}}
   <div style="border:1px solid #f97316; border-radius:8px; padding:1rem; margin-bottom:1rem">
