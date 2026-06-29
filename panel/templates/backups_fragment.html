@@ -96,10 +96,10 @@
         <div class="label">{{.Name}}</div>
         <div class="desc">
           {{if .BacksUp}}
-            {{if .PathCount}}📁 {{.PathCount}} carpeta{{if ne .PathCount 1}}s{{end}}{{end}}{{if and .PathCount .HasDB}} · {{end}}{{if .HasDB}}🗄 base de datos{{end}}
-            {{if .WarnData}}<div style="color:var(--red); margin-top:0.25rem">⚠ tiene datos y NO se está respaldando</div>{{end}}
+            Respalda {{if .PathCount}}{{.PathCount}} carpeta{{if ne .PathCount 1}}s{{end}}{{end}}{{if and .PathCount .HasDB}} y {{end}}{{if .HasDB}}su base de datos{{end}}.
+            {{if .WarnData}}<div style="color:var(--red); margin-top:0.25rem">⚠ Tiene datos y no se está respaldando.</div>{{end}}
           {{else}}
-            <span style="color:var(--muted)">sin datos que respaldar</span>
+            <span style="color:var(--muted)">No guarda datos — no hay nada que respaldar.</span>
           {{end}}
         </div>
       </div>
