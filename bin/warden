@@ -15,6 +15,7 @@
 #   backup              [root] Respalda todo el catálogo (restic)
 #   backup-toggle <tag> on|off  [root] Incluye/excluye un componente del backup automático
 #   install-component <tag> [root] Instala UN componente del catálogo (ej. filebrowser)
+#   import <url|archivo> [tag] [root] Importa una app externa (docker-compose) al formato warden
 #   verify              [root] restic check (integridad del repo)
 #   register            [root] Fija el disco en fstab + activa los timers
 #   cloudflare-init [nombre]  [root] Crea un túnel de Cloudflare desde cero (una vez)
@@ -60,6 +61,8 @@ source "$HERE/lib/core.sh"
 source "$HERE/lib/ui.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/stacks.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/import.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/backup.sh"
 # shellcheck source=/dev/null
@@ -216,6 +219,7 @@ case "${1:-menu}" in
   backup)      need_root; warden_backup ;;
   backup-toggle) need_root; warden_backup_toggle "${2:-}" "${3:-}" ;;
   install-component) need_root; warden_stack_install "${2:-}" ;;
+  import)      need_root; warden_import "${2:-}" "${3:-}" ;;
   verify)      need_root; warden_verify ;;
   register)    need_root; warden_register ;;
   cloudflare-init) need_root; warden_cloudflare_init "${2:-}" ;;
