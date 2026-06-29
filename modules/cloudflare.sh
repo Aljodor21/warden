@@ -46,12 +46,20 @@ warden_publish() {
   backup_file "$CF_CONFIG"
   install -m 644 "$tmp" "$CF_CONFIG"; rm -f "$tmp"
 
-  # Crear las rutas DNS de cada hostname (idempotente).
+  # Crear las rutas DNS de cada hostname (idempotente). Si una falla — el caso
+  # típico es que el túnel NO esté autorizado para ESE dominio (un túnel solo
+  # cubre el dominio que elegiste en el login) — lo AVISAMOS en vez de tragarlo
+  # en silencio; antes parecía que se creaba y después el subdominio no resolvía.
   while IFS='|' read -r tag _ _ _; do
     ( catalog_load "$tag" || exit 0
       [ -n "${COMP_CF_HOST:-}" ] || exit 0
       log "Ruta DNS: $COMP_CF_HOST"
-      cloudflared tunnel route dns "$tid" "$COMP_CF_HOST" >/dev/null 2>&1 || true )
+      if ! out="$(cloudflared tunnel route dns "$tid" "$COMP_CF_HOST" 2>&1)"; then
+        case "$out" in
+          *"already exists"*|*"already configured"*) : ;;  # ya existía, todo bien
+          *) warn "No pude rutear '$COMP_CF_HOST' — ¿el túnel está autorizado para ese dominio? Solo cubre el que elegiste en el login. ($out)" ;;
+        esac
+      fi )
   done < <(catalog_each)
 
   run "systemctl restart cloudflared"
