@@ -254,6 +254,17 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// Tags que viven en TU site/catalog. Estas se muestran SIEMPRE, corran o
+	// no su contenedor — si no, una receta tuya cuyo contenedor está caído
+	// queda "fantasma": invisible en el panel pero igual publicándose, sin
+	// forma de borrarla desde la interfaz (el botón Eliminar vive en Editar,
+	// y a Editar solo se llega desde esta lista). Bug real visto en vivo.
+	siteTags := map[string]bool{}
+	if siteComps, err := listComponentsOne(s.siteCatalogDir); err == nil {
+		for _, c := range siteComps {
+			siteTags[c.Tag] = true
+		}
+	}
 	running := runningContainers()
 	type row struct {
 		*Component
@@ -262,11 +273,10 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 	var installed, deployed []row
 	for _, c := range comps {
 		isRunning := c.Container != "" && running[c.Container]
-		if !isRunning {
-			// El catálogo (la receta) sobrevive a un 'warden reset' a propósito
-			// (para no tener que redescribir cada app al reinstalar) — pero acá
-			// solo mostramos lo que está REALMENTE instalado ahora, no recetas
-			// de algo que ya no corre.
+		// Mostramos lo que corre + lo que es tuyo (site/catalog) aunque no
+		// corra. Ocultamos solo las recetas genéricas del repo que no están
+		// instaladas (esas se ofrecen para instalar en otro lado, no acá).
+		if !isRunning && !siteTags[c.Tag] {
 			continue
 		}
 		rw := row{c, isRunning}
