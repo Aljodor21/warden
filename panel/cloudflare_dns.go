@@ -81,6 +81,29 @@ type cfRecordList struct {
 // rootDomain extrae el dominio de 2 niveles (ej. "servelejo.site" de
 // "clicks.servelejo.site"). No maneja TLDs compuestos (.co.uk) — suficiente
 // para el caso real de uso, y si falla, el error de la API lo deja claro.
+
+// cloudflareZones lista los dominios (zonas) que el API token guardado puede
+// ver en tu cuenta de Cloudflare. Responde "¿qué dominios tengo para elegir?"
+// al ponerle un subdominio a una app. Sin token o si la API falla, devuelve
+// nil — es info opcional, no crítica.
+func cloudflareZones() []string {
+	token, err := readCloudflareToken()
+	if err != nil {
+		return nil
+	}
+	var zones cfZoneList
+	if err := cfAPIRequest("GET", cfAPIBaseURL+"/zones?per_page=50", token, &zones); err != nil || !zones.Success {
+		return nil
+	}
+	var out []string
+	for _, z := range zones.Result {
+		if z.Name != "" {
+			out = append(out, z.Name)
+		}
+	}
+	return out
+}
+
 func rootDomain(hostname string) string {
 	parts := strings.Split(hostname, ".")
 	if len(parts) < 2 {

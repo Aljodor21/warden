@@ -28,6 +28,7 @@ type SystemView struct {
 	CloudflareSet      bool     // /etc/cloudflared/config.yml existe (hay túnel)
 	CloudflareID       string   // ID del túnel configurado, si hay uno
 	CloudflareHosts    []string // hostnames que el túnel sirve (vault.midominio.com, ...)
+	CloudflareZones    []string // dominios de tu cuenta (vía API token) para elegir subdominio
 	CloudflareTokenSet bool     // hay un API Token guardado (para borrar registros DNS)
 	Runners            []RunnerInfo
 
@@ -77,6 +78,12 @@ func (s *server) gatherSystemView() SystemView {
 	v.CloudflareID = cloudflareTunnelID()
 	v.CloudflareHosts = cloudflareIngressHosts()
 	v.CloudflareTokenSet = cloudflareTokenExists()
+	// Solo consultamos la API (red) si hay túnel y token — y solo aporta
+	// cuando el túnel aún no expone apps (ahí el usuario necesita saber qué
+	// dominios tiene para elegir). Si ya hay hosts, el dominio ya se ve.
+	if v.CloudflareSet && v.CloudflareTokenSet && len(v.CloudflareHosts) == 0 {
+		v.CloudflareZones = cloudflareZones()
+	}
 	v.Runners = listRunners()
 	if entries, err := os.ReadDir(s.siteSecretsDir()); err == nil {
 		for _, e := range entries {

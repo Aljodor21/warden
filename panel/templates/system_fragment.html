@@ -170,6 +170,18 @@
           <div style="margin-top:0.4rem; color:var(--muted)">
             El túnel existe pero todavía no expone ninguna app. El dominio aparece acá cuando le pongas
             un subdominio a una app (Catálogo → editar → subdominio).
+            {{if .Sys.CloudflareZones}}
+            <div style="margin-top:0.5rem">
+              <span style="color:var(--text)">Tus dominios en Cloudflare</span> (elegí un subdominio bajo uno de estos):
+              <ul style="margin:0.3rem 0 0 1.1rem; display:flex; flex-direction:column; gap:0.2rem">
+                {{range .Sys.CloudflareZones}}<li><code>app.{{.}}</code></li>{{end}}
+              </ul>
+              <span style="display:block; margin-top:0.3rem; font-size:0.78rem">
+                Ojo: el túnel se autorizó con UN dominio (el que elegiste en el login de Cloudflare).
+                Si un subdominio no resuelve, es porque el túnel se autorizó con otro — volvé a correr el login y elegí ese.
+              </span>
+            </div>
+            {{end}}
           </div>
           {{end}}
         {{else}}Sin configurar. Al hacer click abre una URL para autorizar con tu cuenta de Cloudflare.
