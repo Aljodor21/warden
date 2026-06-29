@@ -25,9 +25,10 @@ type SystemView struct {
 	AgeKeyExists       bool
 	SecretsExist       bool // hay al menos un *.tar.age guardado
 	SecretsCount       int
-	CloudflareSet      bool   // /etc/cloudflared/config.yml existe (hay túnel)
-	CloudflareID       string // ID del túnel configurado, si hay uno
-	CloudflareTokenSet bool   // hay un API Token guardado (para borrar registros DNS)
+	CloudflareSet      bool     // /etc/cloudflared/config.yml existe (hay túnel)
+	CloudflareID       string   // ID del túnel configurado, si hay uno
+	CloudflareHosts    []string // hostnames que el túnel sirve (vault.midominio.com, ...)
+	CloudflareTokenSet bool     // hay un API Token guardado (para borrar registros DNS)
 	Runners            []RunnerInfo
 
 	Timezone string // zona horaria activa del sistema (IANA)
@@ -74,6 +75,7 @@ func (s *server) gatherSystemView() SystemView {
 	}
 	v.CloudflareSet = cloudflareConfigured()
 	v.CloudflareID = cloudflareTunnelID()
+	v.CloudflareHosts = cloudflareIngressHosts()
 	v.CloudflareTokenSet = cloudflareTokenExists()
 	v.Runners = listRunners()
 	if entries, err := os.ReadDir(s.siteSecretsDir()); err == nil {

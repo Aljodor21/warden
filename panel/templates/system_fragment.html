@@ -159,6 +159,19 @@
       <div class="desc">
         Opcional — solo necesario si querés que alguna app sea accesible desde internet con subdominio propio.
         {{if .Sys.CloudflareSet}}Configurado{{if .Sys.CloudflareID}} — ID {{.Sys.CloudflareID}}{{end}}.
+          {{if .Sys.CloudflareHosts}}
+          <div style="margin-top:0.4rem">
+            <span style="color:var(--text)">Dominios que sirve este túnel:</span>
+            <ul style="margin:0.3rem 0 0 1.1rem; display:flex; flex-direction:column; gap:0.2rem">
+              {{range .Sys.CloudflareHosts}}<li><a href="https://{{.}}" target="_blank" rel="noopener">{{.}}</a></li>{{end}}
+            </ul>
+          </div>
+          {{else}}
+          <div style="margin-top:0.4rem; color:var(--muted)">
+            El túnel existe pero todavía no expone ninguna app. El dominio aparece acá cuando le pongas
+            un subdominio a una app (Catálogo → editar → subdominio).
+          </div>
+          {{end}}
         {{else}}Sin configurar. Al hacer click abre una URL para autorizar con tu cuenta de Cloudflare.
         {{end}}
       </div>

@@ -96,3 +96,24 @@ func cloudflareTunnelID() string {
 	}
 	return ""
 }
+
+// cloudflareIngressHosts devuelve los hostnames que este túnel está sirviendo
+// (las reglas 'ingress' de config.yml, ej. vault.midominio.com). Responde
+// "¿qué dominio usa este túnel?" — un mismo túnel puede servir varios. Si no
+// hay ninguno todavía, el túnel existe pero aún no expone ninguna app.
+func cloudflareIngressHosts() []string {
+	b, err := os.ReadFile("/etc/cloudflared/config.yml")
+	if err != nil {
+		return nil
+	}
+	var hosts []string
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "- hostname:") {
+			if h := strings.TrimSpace(strings.TrimPrefix(line, "- hostname:")); h != "" {
+				hosts = append(hosts, h)
+			}
+		}
+	}
+	return hosts
+}
