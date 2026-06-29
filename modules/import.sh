@@ -14,7 +14,7 @@ _import_port_in_use() {
   local port="$1"
   grep -rhoE 'COMP_CF_PORT="[0-9]+"' "$WARDEN_ROOT/catalog" "$WARDEN_ROOT/site/catalog" 2>/dev/null \
     | grep -q "\"$port\"" && return 0
-  ss -tlnH 2>/dev/null | grep -qE "[:.]$port[[:space:]]" && return 0
+  ss -tlnH 2>/dev/null | grep -qE "[:.]${port}[[:space:]]" && return 0
   docker ps --format '{{.Ports}}' 2>/dev/null | grep -qE "(^|[^0-9:])$port->" && return 0
   return 1
 }
