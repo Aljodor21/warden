@@ -33,36 +33,41 @@
   {{if .FetchErr}}
   <div class="err">{{.FetchErr}}</div>
   {{else}}
-  <div x-data="{ q: '' }">
-    <input x-model="q" placeholder="Buscar app… (nombre o categoría)"
+  <div x-data="{ q:'', page:0, per:40, total:{{len .Apps}}, get lastPage(){ return Math.max(0, Math.ceil(this.total/this.per)-1); } }">
+    <input x-model="q" @input="page=0" placeholder="Buscar app… (nombre o categoría)"
            style="width:100%; max-width:420px; box-sizing:border-box; padding:0.5rem 0.8rem; margin-bottom:1rem;
                   background:#0f172a; border:1px solid #334155; border-radius:8px; color:#e2e8f0">
     <div class="storegrid">
-      {{range .Apps}}
-      <div class="storecard" data-search="{{.Search}}"
-           x-show="q==='' || $el.dataset.search.includes(q.toLowerCase())">
+      {{range $i, $a := .Apps}}
+      <div class="storecard" data-search="{{$a.Search}}"
+           x-show="q!=='' ? $el.dataset.search.includes(q.toLowerCase()) : ({{$i}} >= page*per && {{$i}} < (page+1)*per)">
         <div class="storecard-head">
-          {{if .Logo}}<img class="storelogo" src="{{.Logo}}" alt="" loading="lazy"
+          {{if $a.Logo}}<img class="storelogo" src="{{$a.Logo}}" alt="" loading="lazy"
                onerror="this.style.display='none'">{{end}}
           <div style="min-width:0">
-            <div class="storecard-title">{{.Title}}</div>
-            {{if .Category}}<div class="storecard-cat">{{.Category}}</div>{{end}}
+            <div class="storecard-title">{{$a.Title}}</div>
+            {{if $a.Category}}<div class="storecard-cat">{{$a.Category}}</div>{{end}}
           </div>
         </div>
-        <div class="storecard-desc">{{.Description}}</div>
-        {{if .Installed}}
+        <div class="storecard-desc">{{$a.Description}}</div>
+        {{if $a.Installed}}
         <div style="margin-top:auto">
           <span class="badge on" style="display:block; text-align:center; padding:0.4rem">Instalada</span>
         </div>
         {{else}}
         <form hx-post="/tienda/install" hx-target="#tienda-log" hx-swap="innerHTML"
               style="margin-top:auto">
-          <input type="hidden" name="tag" value="{{.Tag}}">
+          <input type="hidden" name="tag" value="{{$a.Tag}}">
           <button class="btn" type="submit" style="width:100%">Instalar<span class="spinner"></span></button>
         </form>
         {{end}}
       </div>
       {{end}}
+    </div>
+    <div x-show="q===''" style="display:flex; gap:0.9rem; align-items:center; justify-content:center; margin-top:1.3rem">
+      <button class="btn secondary" @click="if(page>0)page--" :disabled="page===0">‹ Anterior</button>
+      <span class="muted" x-text="'Página ' + (page+1) + ' de ' + (lastPage+1)"></span>
+      <button class="btn secondary" @click="if(page<lastPage)page++" :disabled="page>=lastPage">Siguiente ›</button>
     </div>
   </div>
   {{end}}
