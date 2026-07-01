@@ -325,6 +325,7 @@
         <div id="ntfy-log-box"></div>
       </div>
     </div>
+    {{if .AdminUnlocked}}
     <div class="acts" style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end">
       {{if .Sys.NtfyURL}}
         <form hx-post="/system/ntfy-test" hx-target="#system-status" hx-swap="innerHTML">
@@ -344,6 +345,7 @@
         </form>
       {{end}}
     </div>
+    {{end}}
   </div>
 </div>
 

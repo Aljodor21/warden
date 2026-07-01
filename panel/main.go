@@ -200,7 +200,7 @@ func main() {
 	mux.HandleFunc("POST /system/local-toggle", s.requireAdmin("system_fragment.html", withSys, s.handleLocalToggle))
 	mux.HandleFunc("POST /system/ntfy-url", s.requireAdmin("system_fragment.html", withSys, s.handleNtfyURLSave))
 	mux.HandleFunc("POST /system/ntfy-test", s.requireAdmin("system_fragment.html", withSys, s.handleNtfyTest))
-	mux.HandleFunc("POST /system/ntfy-install", s.requireAdmin("system_fragment.html", withSys, s.handleNtfyInstall))
+	mux.HandleFunc("POST /system/ntfy-install", s.requireAdmin("err_inline.html", noExtra, s.handleNtfyInstall))
 	mux.HandleFunc("GET /system/ntfy-install-log", s.handleNtfyInstallLog)
 	mux.HandleFunc("GET /system/mem", s.handleSystemMem)
 	mux.HandleFunc("GET /backups/content", s.handleBackupsContent)
