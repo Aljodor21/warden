@@ -58,7 +58,7 @@ warden_reset() {
   echo "  - Las apps desplegadas vía CI/CD (sus contenedores en este server) y el runner registrado"
   echo "  - El firewall (ufw vuelve a desactivado, sin reglas)"
   echo "  - Los paquetes que warden instaló (Docker, Cockpit, avahi, zsh, age, cloudflared, tailscale, Go)"
-  echo "No toca: el disco de backup externo, tu site/, ni el repo de GitHub de tus apps."
+  echo "No toca: el disco de backup externo, site/secrets/ (tus backups cifrados), ni el repo de GitHub de tus apps."
   echo
 
   if [ "$auto_yes" != 1 ] && [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
@@ -108,6 +108,16 @@ warden_reset() {
 
   log "Borrando config de warden (incluida la llave age)"
   run "rm -rf /etc/warden"
+
+  # site/catalog y site/stacks se reconstruyen solos al reinstalar apps —
+  # no tiene sentido conservarlos en un reset limpio.
+  # site/secrets contiene los backups cifrados con age: esos NO se tocan
+  # porque no se reconstruyen solos (son los backups reales del usuario).
+  log "Limpiando apps importadas de site/ (catalog y stacks)"
+  run "rm -rf '$WARDEN_ROOT/site/catalog' '$WARDEN_ROOT/site/stacks'"
+  if [ -d "$WARDEN_ROOT/site/secrets" ]; then
+    warn "Se conserva site/secrets/ — ahí están tus backups cifrados. Borrala a mano si querés empezar de cero del todo."
+  fi
 
   if has cloudflared && [ -f /etc/cloudflared/config.yml ]; then
     log "Borrando el túnel de Cloudflare (de tu cuenta, no solo local)"
