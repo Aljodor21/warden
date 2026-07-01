@@ -33,6 +33,15 @@ func (s *server) handleTiendaInstall(w http.ResponseWriter, r *http.Request) {
 		render(w, "tienda_log.html", map[string]any{"Err": "No encontré esa app en la tienda."})
 		return
 	}
+	// Si el tag ya tiene una receta (catálogo base o importada antes), no
+	// reimportar — solo instalar. Evita el error "Ya existe una app con el tag"
+	// para apps curadas (vaultwarden, immich…) o restauradas desde backup.
+	for _, dir := range s.catalogDirs() {
+		if _, err := os.Stat(dir + "/" + tag + ".component"); err == nil {
+			s.doInstallOnly(w, tag)
+			return
+		}
+	}
 	s.doImportInstall(w, composeFromTemplate(*t, tag), "", tag)
 }
 
@@ -50,6 +59,22 @@ func (s *server) handleTiendaImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.doImportInstall(w, compose, url, tag)
+}
+
+// doInstallOnly corre solo 'install-component' cuando la receta ya existe.
+func (s *server) doInstallOnly(w http.ResponseWriter, tag string) {
+	if s.tiendaProc.start() {
+		go func() {
+			defer s.tiendaProc.finish()
+			ctx, cancel := bgCtx3min()
+			defer cancel()
+			ins := exec.CommandContext(ctx, "sudo", s.wardenBin, "install-component", tag)
+			ins.Stdout, ins.Stderr = &s.tiendaProc, &s.tiendaProc
+			_ = ins.Run()
+		}()
+	}
+	logText, running, done := s.tiendaProc.snapshot()
+	render(w, "tienda_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
 }
 
 // doImportInstall corre 'warden import' y, si sale bien, 'install-component' en
