@@ -35,6 +35,9 @@ type SystemView struct {
 
 	Timezone string // zona horaria activa del sistema (IANA)
 	UseLocal bool   // los links del dashboard usan hostname.local (modo LAN/mDNS)
+
+	NtfyURL     string // URL del servidor ntfy configurado (vacío = sin alertas)
+	NtfyRunning bool   // el contenedor ntfy está corriendo en este server
 }
 
 // ContainerMem: una fila de 'docker stats' — cuánta RAM usa un contenedor
@@ -107,7 +110,77 @@ func (s *server) gatherSystemView() SystemView {
 	v.Timezone = systemTimezone()
 	v.UseLocal = useLocalSuffix()
 
+	v.NtfyURL = ntfyConfiguredURL()
+	v.NtfyRunning = ntfyContainerRunning()
+
 	return v
+}
+
+const ntfyURLFile = "/etc/warden/ntfy-url"
+
+func ntfyConfiguredURL() string {
+	b, err := os.ReadFile(ntfyURLFile)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+func ntfyContainerRunning() bool {
+	out, err := exec.Command("docker", "inspect", "--format", "{{.State.Status}}", "ntfy").Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) == "running"
+}
+
+func (s *server) handleNtfyURLSave(w http.ResponseWriter, r *http.Request) {
+	url := strings.TrimSpace(r.FormValue("ntfy_url"))
+	if url == "" {
+		_ = os.Remove(ntfyURLFile)
+	} else {
+		_ = os.MkdirAll("/etc/warden", 0o755)
+		_ = os.WriteFile(ntfyURLFile, []byte(url+"\n"), 0o644)
+	}
+	withSys := func() map[string]any { return map[string]any{"Sys": s.gatherSystemView()} }
+	render(w, "system_fragment.html", withSys())
+}
+
+func (s *server) handleNtfyTest(w http.ResponseWriter, r *http.Request) {
+	url := ntfyConfiguredURL()
+	msg := "Sin URL configurada."
+	if url != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		req, err := newNtfyRequest(ctx, url, "warden — prueba", "Las alertas push están funcionando correctamente.")
+		if err == nil {
+			resp, err2 := (&http.Client{}).Do(req)
+			if err2 == nil {
+				resp.Body.Close()
+				msg = "Notificación enviada a " + url + "/warden"
+			} else {
+				msg = "Error al enviar: " + err2.Error()
+			}
+		}
+	}
+	withSys := func() map[string]any {
+		d := map[string]any{"Sys": s.gatherSystemView()}
+		d["NtfyMsg"] = msg
+		return d
+	}
+	render(w, "system_fragment.html", withSys())
+}
+
+// newNtfyRequest arma la petición HTTP para ntfy sin dependencia externa.
+func newNtfyRequest(ctx context.Context, serverURL, title, body string) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+"/warden", strings.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Title", title)
+	req.Header.Set("Priority", "default")
+	req.Header.Set("Tags", "bell")
+	return req, nil
 }
 
 // handleLocalToggle activa/desactiva el modo ".local" en los links del

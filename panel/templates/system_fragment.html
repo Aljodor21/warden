@@ -304,6 +304,44 @@
       {{end}}
     </div>
   </div>
+
+  <div class="statusrow" style="border-bottom:none">
+    <div>
+      <div class="label">Alertas push (ntfy)</div>
+      <div class="desc">
+        Recibí notificaciones en tu celular cuando un backup falla, un contenedor se cae o la verificación nocturna detecta errores.
+        {{if .Sys.NtfyURL}}
+          Configurado: <code>{{.Sys.NtfyURL}}/warden</code>.
+          {{if .Sys.NtfyRunning}}<span style="color:var(--green)">ntfy corriendo en este server.</span>
+          {{else}}ntfy externo (o no instalado en este server).{{end}}
+        {{else}}
+          Sin configurar.
+          {{if .Sys.NtfyRunning}}
+            ntfy está corriendo en este server — guardá su URL para activar las alertas.
+          {{else}}
+            Instalá ntfy desde la Tienda o apuntá a un servidor ntfy propio.
+          {{end}}
+        {{end}}
+        {{if .NtfyMsg}}<div style="margin-top:0.4rem; color:var(--accent)">{{.NtfyMsg}}</div>{{end}}
+      </div>
+    </div>
+    <div class="acts" style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end">
+      <form hx-post="/system/ntfy-url" hx-target="#system-status" hx-swap="innerHTML" style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        <input name="ntfy_url" value="{{.Sys.NtfyURL}}"
+               placeholder="http://IP:8080"
+               style="width:16rem"
+               {{if .Sys.NtfyRunning}}{{if not .Sys.NtfyURL}}autofocus{{end}}{{end}}>
+        <button class="btn {{if .Sys.NtfyURL}}secondary{{end}}" type="submit">
+          {{if .Sys.NtfyURL}}Actualizar{{else}}Guardar{{end}}<span class="spinner"></span>
+        </button>
+      </form>
+      {{if .Sys.NtfyURL}}
+      <form hx-post="/system/ntfy-test" hx-target="#system-status" hx-swap="innerHTML">
+        <button class="btn secondary" type="submit">Probar<span class="spinner"></span></button>
+      </form>
+      {{end}}
+    </div>
+  </div>
 </div>
 
 <div class="panel" style="margin-top:1rem;border-color:rgba(248,113,113,0.25)" x-data="{ open: false, confirm: '' }">
