@@ -309,30 +309,48 @@
     <div>
       <div class="label">Alertas push (ntfy)</div>
       <div class="desc">
-        Recibí notificaciones en tu celular cuando un backup falla, un contenedor se cae o la verificación nocturna detecta errores.
         {{if .Sys.NtfyURL}}
-          <span style="color:var(--green)">Activo</span> — topic <code>{{.Sys.NtfyURL}}/warden</code>.
-          Instalá la app ntfy en tu celular y suscribite a ese topic.
+          <span style="color:var(--green)">Activo.</span>
+          Abrí la app ntfy en tu celular, agregá el servidor <code>{{.Sys.NtfyURL}}</code>
+          y suscribite al topic <strong>warden</strong>.
+          <div style="margin-top:0.4rem; font-size:0.85rem; color:var(--muted)">
+            Alertas: backup fallido · contenedor caído · verify con errores.
+            Confirmaciones de éxito llegan silenciosas (sin sonido).
+          </div>
+        {{else if .NtfyInstalling}}
+          Instalando ntfy…
+        {{else if .NtfyInstallDone}}
+          <span style="color:var(--green)">ntfy instalado.</span>
+          Las alertas están activas — suscribite al topic <strong>warden</strong> en la app del celular.
         {{else}}
-          Sin configurar. Instalá ntfy desde la Tienda o apuntá a un servidor ntfy propio.
+          Sin configurar. ntfy no está instalado en este servidor.
+          Instalalo acá con un click, o poné la URL de un servidor ntfy propio.
         {{end}}
         {{if .NtfyMsg}}<div style="margin-top:0.4rem; color:var(--accent)">{{.NtfyMsg}}</div>{{end}}
+        {{if .NtfyInstallLog}}
+        <pre style="margin-top:0.6rem; font-size:0.78rem; max-height:10rem; overflow-y:auto;
+                    background:var(--surface2); padding:0.5rem; border-radius:6px"
+             {{if .NtfyInstalling}}hx-get="/system/ntfy-install-log" hx-trigger="every 1s" hx-swap="outerHTML"{{end}}>{{.NtfyInstallLog}}</pre>
+        {{end}}
       </div>
     </div>
     <div class="acts" style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end">
-      <form hx-post="/system/ntfy-url" hx-target="#system-status" hx-swap="innerHTML" style="display:flex;gap:0.4rem;flex-wrap:wrap">
-        <input name="ntfy_url" value="{{.Sys.NtfyURL}}"
-               placeholder="http://IP:8080"
-               style="width:16rem"
-               {{if .Sys.NtfyRunning}}{{if not .Sys.NtfyURL}}autofocus{{end}}{{end}}>
-        <button class="btn {{if .Sys.NtfyURL}}secondary{{end}}" type="submit">
-          {{if .Sys.NtfyURL}}Actualizar{{else}}Guardar{{end}}<span class="spinner"></span>
-        </button>
-      </form>
       {{if .Sys.NtfyURL}}
-      <form hx-post="/system/ntfy-test" hx-target="#system-status" hx-swap="innerHTML">
-        <button class="btn secondary" type="submit">Probar<span class="spinner"></span></button>
-      </form>
+        <form hx-post="/system/ntfy-test" hx-target="#system-status" hx-swap="innerHTML">
+          <button class="btn secondary" type="submit">Probar<span class="spinner"></span></button>
+        </form>
+        <form hx-post="/system/ntfy-url" hx-target="#system-status" hx-swap="innerHTML" style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <input name="ntfy_url" value="{{.Sys.NtfyURL}}" placeholder="http://IP:8080" style="width:14rem">
+          <button class="btn secondary" type="submit">Cambiar<span class="spinner"></span></button>
+        </form>
+      {{else if not .NtfyInstalling}}
+        <form hx-post="/system/ntfy-install" hx-target="#system-status" hx-swap="innerHTML">
+          <button class="btn" type="submit">Instalar ntfy<span class="spinner"></span></button>
+        </form>
+        <form hx-post="/system/ntfy-url" hx-target="#system-status" hx-swap="innerHTML" style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <input name="ntfy_url" placeholder="O pegá tu URL: http://IP:8080" style="width:16rem">
+          <button class="btn secondary" type="submit">Usar esta<span class="spinner"></span></button>
+        </form>
       {{end}}
     </div>
   </div>

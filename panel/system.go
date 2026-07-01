@@ -196,6 +196,30 @@ func (s *server) handleNtfyTest(w http.ResponseWriter, r *http.Request) {
 	render(w, "system_fragment.html", withSys())
 }
 
+func (s *server) handleNtfyInstall(w http.ResponseWriter, r *http.Request) {
+	if s.ntfyProc.start() {
+		go func() {
+			defer s.ntfyProc.finish()
+			ctx, cancel := bgCtx3min()
+			defer cancel()
+			runInBackground(ctx, &s.ntfyProc, "sudo", s.wardenBin, "install-component", "ntfy")
+		}()
+	}
+	s.renderNtfyLog(w)
+}
+
+func (s *server) handleNtfyInstallLog(w http.ResponseWriter, r *http.Request) {
+	s.renderNtfyLog(w)
+}
+
+func (s *server) renderNtfyLog(w http.ResponseWriter) {
+	logText, running, done := s.ntfyProc.snapshot()
+	sys := s.gatherSystemView()
+	render(w, "system_fragment.html", map[string]any{
+		"Sys": sys, "NtfyInstalling": running, "NtfyInstallDone": done, "NtfyInstallLog": logText,
+	})
+}
+
 // newNtfyRequest arma la petición HTTP para ntfy sin dependencia externa.
 func newNtfyRequest(ctx context.Context, serverURL, title, body string) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+"/warden", strings.NewReader(body))

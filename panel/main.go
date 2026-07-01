@@ -97,6 +97,9 @@ type server struct {
 	// Estado de la tienda: 'warden import' + 'install-component' en segundo plano.
 	tiendaProc bgProcess
 
+	// Instalación de ntfy desde Sistema.
+	ntfyProc bgProcess
+
 	// Caché de las plantillas de la tienda (Portainer) — se bajan una vez y se
 	// reusan 1h, para no golpear la red en cada carga de la página.
 	storeMu        sync.Mutex
@@ -197,6 +200,8 @@ func main() {
 	mux.HandleFunc("POST /system/local-toggle", s.requireAdmin("system_fragment.html", withSys, s.handleLocalToggle))
 	mux.HandleFunc("POST /system/ntfy-url", s.requireAdmin("system_fragment.html", withSys, s.handleNtfyURLSave))
 	mux.HandleFunc("POST /system/ntfy-test", s.requireAdmin("system_fragment.html", withSys, s.handleNtfyTest))
+	mux.HandleFunc("POST /system/ntfy-install", s.requireAdmin("system_fragment.html", withSys, s.handleNtfyInstall))
+	mux.HandleFunc("GET /system/ntfy-install-log", s.handleNtfyInstallLog)
 	mux.HandleFunc("GET /system/mem", s.handleSystemMem)
 	mux.HandleFunc("GET /backups/content", s.handleBackupsContent)
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }
