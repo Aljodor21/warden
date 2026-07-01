@@ -309,11 +309,28 @@ func (s *server) gatherBackupsView() BackupsView {
 
 	// Qué apps respalda el backup automático (con el estado de su toggle).
 	// Se arma siempre, aunque no haya disco/repo todavía.
+	// Solo se muestran apps realmente instaladas (con contenedor en Docker),
+	// igual que la vista de Catálogo — evita mostrar apps del catálogo-base
+	// que nunca fueron instaladas en este servidor.
 	disabled := backupDisabledTags()
+	containers := readContainers()
+	existsByName := map[string]bool{}
+	for _, c := range containers {
+		existsByName[c.Name] = true
+	}
 	if comps, err := listComponentsMerged(s.catalogDirs()); err == nil {
 		for _, c := range comps {
 			if c.IsDeployed() {
 				continue // las apps CI/CD quedan fuera del backup automático (igual que backup.sh)
+			}
+			// Solo apps cuyo contenedor existe (running o stopped).
+			// Las que están en el catálogo-base pero nunca se instalaron no aparecen.
+			cname := c.Container
+			if cname == "" {
+				cname = c.Tag
+			}
+			if !existsByName[cname] && !hasAnyPrefixed(containers, c.Tag+"-") {
+				continue
 			}
 			backsUp := len(c.Paths) > 0 || c.DBType != ""
 			included := !disabled[c.Tag]
