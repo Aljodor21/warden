@@ -110,8 +110,16 @@ func (s *server) gatherSystemView() SystemView {
 	v.Timezone = systemTimezone()
 	v.UseLocal = useLocalSuffix()
 
-	v.NtfyURL = ntfyConfiguredURL()
 	v.NtfyRunning = ntfyContainerRunning()
+	v.NtfyURL = ntfyConfiguredURL()
+	// Si ntfy está corriendo y todavía no hay URL guardada, auto-detectar y guardar.
+	if v.NtfyRunning && v.NtfyURL == "" {
+		if detected := ntfyDetectURL(); detected != "" {
+			_ = os.MkdirAll("/etc/warden", 0o755)
+			_ = os.WriteFile(ntfyURLFile, []byte(detected+"\n"), 0o644)
+			v.NtfyURL = detected
+		}
+	}
 
 	return v
 }
@@ -132,6 +140,23 @@ func ntfyContainerRunning() bool {
 		return false
 	}
 	return strings.TrimSpace(string(out)) == "running"
+}
+
+// ntfyDetectURL lee el puerto publicado del contenedor ntfy y devuelve
+// la URL local. Sin esto, el usuario tendría que escribir la URL a mano
+// aunque ntfy ya esté corriendo en el mismo server.
+func ntfyDetectURL() string {
+	out, err := exec.Command("docker", "inspect", "--format",
+		`{{range $p, $b := .NetworkSettings.Ports}}{{if $b}}{{(index $b 0).HostPort}}{{end}}{{end}}`,
+		"ntfy").Output()
+	if err != nil {
+		return ""
+	}
+	port := strings.TrimSpace(string(out))
+	if port == "" {
+		return ""
+	}
+	return "http://localhost:" + port
 }
 
 func (s *server) handleNtfyURLSave(w http.ResponseWriter, r *http.Request) {

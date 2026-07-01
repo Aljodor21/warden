@@ -311,16 +311,10 @@
       <div class="desc">
         Recibí notificaciones en tu celular cuando un backup falla, un contenedor se cae o la verificación nocturna detecta errores.
         {{if .Sys.NtfyURL}}
-          Configurado: <code>{{.Sys.NtfyURL}}/warden</code>.
-          {{if .Sys.NtfyRunning}}<span style="color:var(--green)">ntfy corriendo en este server.</span>
-          {{else}}ntfy externo (o no instalado en este server).{{end}}
+          <span style="color:var(--green)">Activo</span> — topic <code>{{.Sys.NtfyURL}}/warden</code>.
+          Instalá la app ntfy en tu celular y suscribite a ese topic.
         {{else}}
-          Sin configurar.
-          {{if .Sys.NtfyRunning}}
-            ntfy está corriendo en este server — guardá su URL para activar las alertas.
-          {{else}}
-            Instalá ntfy desde la Tienda o apuntá a un servidor ntfy propio.
-          {{end}}
+          Sin configurar. Instalá ntfy desde la Tienda o apuntá a un servidor ntfy propio.
         {{end}}
         {{if .NtfyMsg}}<div style="margin-top:0.4rem; color:var(--accent)">{{.NtfyMsg}}</div>{{end}}
       </div>
