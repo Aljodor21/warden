@@ -26,6 +26,16 @@ _import_free_port() {
   echo "$p"
 }
 
+# Rango "web" de un puerto de contenedor: menor = más probable que sea la UI
+# web. Se usa para elegir a qué puerto apunta el link del dashboard.
+_import_web_rank() {
+  case "$1" in
+    80) echo 0 ;; 3000) echo 1 ;; 8080) echo 2 ;; 8000) echo 3 ;;
+    8096) echo 4 ;; 5000) echo 5 ;; 9000) echo 6 ;; 443) echo 7 ;; 8443) echo 8 ;;
+    *) echo 100 ;;
+  esac
+}
+
 # sanitiza un texto para usarlo como tag: minúsculas y solo [a-z0-9-]
 _import_slug() {
   echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
@@ -80,11 +90,9 @@ warden_import() {
   fi
 
   # 5. Imagen + puerto del servicio principal
-  local image cport hport
+  local image
   image="$(echo "$json" | jq -r --arg s "$svc" '.services[$s].image // empty')"
   [ -n "$image" ] || { rm -rf "$workdir"; die "El servicio '$svc' no define 'image' (¿usa build?). No soportado en v1."; }
-  cport="$(echo "$json" | jq -r --arg s "$svc" '.services[$s].ports[0].target // empty')"
-  hport="$(echo "$json" | jq -r --arg s "$svc" '.services[$s].ports[0].published // empty')"
 
   # 6. Volúmenes de datos (sus targets), saltando montajes de sistema
   local -a targets=()
@@ -100,9 +108,32 @@ warden_import() {
     targets+=("$t")
   done < <(echo "$json" | jq -r --arg s "$svc" '.services[$s].volumes[]?.target // empty')
 
-  # 7. Puerto libre (si la app expone uno)
-  local port=""
-  [ -n "$hport" ] && port="$(_import_free_port "$hport")"
+  # 7. Puertos: publicar TODOS los que declara la app, cada uno con un puerto de
+  #    host libre. Los pares tcp/udp del MISMO puerto de contenedor comparten
+  #    host (ej. 54->53/tcp y 54->53/udp). Elegir el "web" para el link.
+  local ports_block="" port="" all_ports=""
+  local -a cp_order=()
+  local -A CP_PROTOS CP_PUB
+  local pub cport proto
+  while IFS='|' read -r pub cport proto; do
+    [ -n "$cport" ] || continue
+    if [ -z "${CP_PROTOS[$cport]:-}" ]; then cp_order+=("$cport"); CP_PUB[$cport]="${pub:-$cport}"; fi
+    CP_PROTOS[$cport]="${CP_PROTOS[$cport]:-} $proto"
+  done < <(echo "$json" | jq -r --arg s "$svc" '.services[$s].ports[]? | "\(.published // "")|\(.target)|\(.protocol // "tcp")"')
+
+  local assigned=" " link_rank=999 free rank pr
+  for cport in "${cp_order[@]}"; do
+    free="${CP_PUB[$cport]}"
+    while _import_port_in_use "$free" || [[ "$assigned" == *" $free "* ]]; do free=$((free + 1)); done
+    assigned="$assigned$free "
+    for pr in ${CP_PROTOS[$cport]}; do
+      if [ "$pr" = udp ]; then ports_block+="      - \"$free:$cport/udp\"\n"; else ports_block+="      - \"$free:$cport\"\n"; fi
+    done
+    all_ports="$all_ports $free→$cport"
+    rank="$(_import_web_rank "$cport")"
+    if [ "$rank" -lt "$link_rank" ]; then link_rank="$rank"; port="$free"; fi
+  done
+  [ -n "$ports_block" ] && ports_block=$'    ports:\n'"$ports_block"
 
   # 8. KIND
   local kind="none"
@@ -114,10 +145,8 @@ warden_import() {
     *vaultwarden*|*bitwarden*|*keycloak*|*authelia*) needs_https=1 ;;
   esac
 
-  # --- Generar las partes dinámicas del compose -------------------------------
-  local envname; envname="$(_import_envname "$tag")"
-  local ports_block="" vols_block="" paths_str="" bn hostpath
-  [ -n "$cport" ] && ports_block=$'    ports:\n      - "${'"$envname"'_PORT:-'"$port"'}:'"$cport"$'"\n'
+  # --- Generar las partes dinámicas del compose (ports_block ya se armó arriba) -
+  local vols_block="" paths_str="" bn hostpath t
   if [ "${#targets[@]}" -gt 0 ]; then
     vols_block=$'    volumes:\n'
     for t in "${targets[@]}"; do
@@ -178,7 +207,8 @@ warden_import() {
   ok "Importada '$name' (tag: $tag)"
   echo "   Imagen:    $image"
   echo "   Tipo:      $kind$([ "$kind" = none ] && echo ' (sin datos que respaldar)')"
-  [ -n "$port" ] && echo "   Puerto:    $port$([ -n "$hport" ] && [ "$port" != "$hport" ] && echo " (el original $hport estaba ocupado)")"
+  [ -n "$all_ports" ] && echo "   Puertos:  $all_ports  (host→contenedor)"
+  [ -n "$port" ] && echo "   El link del dashboard apunta a: $port  (podés cambiarlo en Catálogo → editar)"
   [ "${#targets[@]}" -gt 0 ] && echo "   Datos:     ${targets[*]}"
   echo "   Archivos:  site/catalog/$tag.component · site/stacks/$tag/docker-compose.yml"
   [ "$nsvc" -gt 1 ] && warn "El compose tenía $nsvc servicios — importé solo '$svc'. Si necesita base de datos u otro, armalo a mano."

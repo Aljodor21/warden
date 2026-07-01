@@ -168,9 +168,23 @@ func composeFromTemplate(t portainerTemplate, tag string) string {
 	b.WriteString("services:\n")
 	b.WriteString("  " + tag + ":\n")
 	b.WriteString("    image: " + t.Image + "\n")
-	if host, container := firstPort(t.Ports); container != "" {
+	var portLines []string
+	for _, raw := range t.Ports {
+		h, c, proto := parsePortRaw(raw)
+		if c == "" {
+			continue
+		}
+		m := h + ":" + c
+		if proto == "udp" {
+			m += "/udp"
+		}
+		portLines = append(portLines, m)
+	}
+	if len(portLines) > 0 {
 		b.WriteString("    ports:\n")
-		fmt.Fprintf(&b, "      - \"%s:%s\"\n", host, container)
+		for _, p := range portLines {
+			fmt.Fprintf(&b, "      - \"%s\"\n", p)
+		}
 	}
 	var named []string
 	if len(t.Volumes) > 0 {
@@ -211,51 +225,49 @@ func composeFromTemplate(t portainerTemplate, tag string) string {
 	return b.String()
 }
 
-// firstPort devuelve el primer par host:contenedor usable de la lista de
-// puertos de Portainer (que mezcla strings y objetos).
-func firstPort(ports []json.RawMessage) (host, container string) {
-	for _, raw := range ports {
-		var str string
-		if json.Unmarshal(raw, &str) == nil {
-			if h, c := parsePortString(str); c != "" {
-				return h, c
-			}
-			continue
-		}
-		var m map[string]string
-		if json.Unmarshal(raw, &m) == nil {
-			for k, v := range m {
-				if c := stripProto(k); c != "" {
-					if v == "" {
-						v = c
-					}
-					return v, c
+// parsePortRaw parsea UN puerto de Portainer (string "8080:80/tcp" o objeto
+// {"80/tcp":"8080"}) y devuelve host, contenedor y protocolo.
+func parsePortRaw(raw json.RawMessage) (host, container, proto string) {
+	var str string
+	if json.Unmarshal(raw, &str) == nil {
+		return parsePortString(str)
+	}
+	var m map[string]string
+	if json.Unmarshal(raw, &m) == nil {
+		for k, v := range m {
+			c, p := splitProto(k)
+			if c != "" {
+				if v == "" {
+					v = c
 				}
+				return v, c, p
 			}
 		}
 	}
-	return "", ""
+	return "", "", ""
 }
 
-func parsePortString(s string) (host, container string) {
-	s = stripProto(strings.TrimSpace(s))
-	parts := strings.Split(s, ":")
+func parsePortString(s string) (host, container, proto string) {
+	var port string
+	port, proto = splitProto(strings.TrimSpace(s))
+	parts := strings.Split(port, ":")
 	switch len(parts) {
 	case 1:
-		return parts[0], parts[0]
+		return parts[0], parts[0], proto
 	case 2:
-		return parts[0], parts[1]
+		return parts[0], parts[1], proto
 	case 3: // ip:host:container
-		return parts[1], parts[2]
+		return parts[1], parts[2], proto
 	}
-	return "", ""
+	return "", "", proto
 }
 
-func stripProto(s string) string {
+// splitProto separa "80/tcp" en ("80", "tcp"). Sin sufijo → tcp.
+func splitProto(s string) (port, proto string) {
 	if i := strings.IndexByte(s, '/'); i >= 0 {
-		return s[:i]
+		return s[:i], s[i+1:]
 	}
-	return s
+	return s, "tcp"
 }
 
 func escapeYAMLValue(s string) string {
