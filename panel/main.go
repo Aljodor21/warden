@@ -148,6 +148,7 @@ func main() {
 	mux.HandleFunc("GET /catalog", s.handleList)
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
+	mux.HandleFunc("POST /edit/{tag}/compose", s.requireAdmin("err_inline.html", noExtra, s.handleComposeSave))
 	mux.HandleFunc("POST /delete/{tag}", s.requireAdmin("err_inline.html", noExtra, s.handleDeleteApp))
 	mux.HandleFunc("POST /delete/{tag}/with-token", s.requireAdmin("err_inline.html", noExtra, s.handleDeleteAppWithToken))
 	mux.HandleFunc("GET /new", func(w http.ResponseWriter, r *http.Request) {
@@ -411,6 +412,14 @@ func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{"C": c, "IsNew": tag == ""}
 	if tag != "" {
 		data["Ports"] = containerPorts(c.Container) // para el selector de puerto del link
+		// Leer el docker-compose.yml de la app (si existe) para mostrarlo en el editor.
+		if c.Install != "" {
+			composePath := s.root + "/" + c.Install
+			if b, err := os.ReadFile(composePath); err == nil {
+				data["ComposeContent"] = string(b)
+				data["ComposePath"] = c.Install
+			}
+		}
 	}
 	render(w, "edit.html", data)
 }
@@ -469,6 +478,30 @@ func (s *server) handleEditSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/catalog", http.StatusSeeOther)
+}
+
+// handleComposeSave guarda el docker-compose.yml editado desde el panel.
+// Solo escribe archivos dentro de s.root para evitar path traversal.
+func (s *server) handleComposeSave(w http.ResponseWriter, r *http.Request) {
+	tag := r.PathValue("tag")
+	if tag == "" {
+		http.Error(w, "tag requerido", http.StatusBadRequest)
+		return
+	}
+	content := r.FormValue("compose_content")
+	composePath := r.FormValue("compose_path")
+	// Validación: debe ser una ruta relativa sin ../ que termine en .yml/.yaml
+	if composePath == "" || strings.Contains(composePath, "..") ||
+		(!strings.HasSuffix(composePath, ".yml") && !strings.HasSuffix(composePath, ".yaml")) {
+		http.Error(w, "ruta de compose inválida", http.StatusBadRequest)
+		return
+	}
+	fullPath := s.root + "/" + composePath
+	if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+		http.Error(w, "no pude guardar el archivo: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/edit/"+tag+"?saved=compose", http.StatusSeeOther)
 }
 
 // handlePublish lanza 'warden publish' en segundo plano y muestra su log con

@@ -89,6 +89,20 @@
     <p><button class="btn" type="submit">Guardar</button></p>
   </form>
 
+  {{if .ComposeContent}}
+  <hr style="margin:2rem 0; border-color:var(--surface2)">
+  <h2 style="margin-bottom:0.25rem">docker-compose.yml</h2>
+  <p style="opacity:0.7; margin-bottom:0.8rem; font-size:0.9rem">
+    Editá el compose directamente. Guardá y luego reiniciá la app desde el Catálogo para que los cambios tomen efecto.
+  </p>
+  <form method="post" action="/edit/{{.C.Tag}}/compose">
+    <input type="hidden" name="compose_path" value="{{.ComposePath}}">
+    <textarea name="compose_content" rows="24"
+              style="font-family:monospace; font-size:0.85rem; white-space:pre; overflow-x:auto">{{.ComposeContent}}</textarea>
+    <p style="margin-top:0.5rem"><button class="btn" type="submit">Guardar compose</button></p>
+  </form>
+  {{end}}
+
   {{if not .IsNew}}
   <form method="post" action="/delete/{{.C.Tag}}" style="margin-top:1.5rem"
         onsubmit="return confirm('¿Eliminar \'{{.C.Name}}\' del catálogo? Esto NO borra el repo de GitHub ni el código — solo deja de respaldarla/publicarla desde warden.')">
