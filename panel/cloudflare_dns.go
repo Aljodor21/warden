@@ -128,9 +128,15 @@ func cloudflareTunnelDomain() string {
 	return zone.Result.Name
 }
 
-// rootDomain extrae el dominio de 2 niveles (ej. "servelejo.site" de
-// "clicks.servelejo.site"). No maneja TLDs compuestos (.co.uk) — suficiente
-// para el caso real de uso, y si falla, el error de la API lo deja claro.
+// rootDomainFromHost extrae el dominio de 2 niveles de un hostname completo
+// (ej. "servelejo.site" de "clicks.servelejo.site").
+func rootDomainFromHost(host string) string {
+	parts := strings.Split(strings.TrimSpace(host), ".")
+	if len(parts) < 2 {
+		return host
+	}
+	return strings.Join(parts[len(parts)-2:], ".")
+}
 
 // cloudflareZones lista los dominios (zonas) que el API token guardado puede
 // ver en tu cuenta de Cloudflare. Responde "¿qué dominios tengo para elegir?"

@@ -80,15 +80,18 @@ func (s *server) gatherSystemView() SystemView {
 	v.CloudflareID = cloudflareTunnelID()
 	v.CloudflareHosts = cloudflareIngressHosts()
 	v.CloudflareTokenSet = cloudflareTokenExists()
-	// Solo consultamos la API (red) si hay túnel y token — y solo aporta
-	// cuando el túnel aún no expone apps (ahí el usuario necesita saber qué
-	// dominios tiene para elegir). Si ya hay hosts, el dominio ya se ve.
-	if v.CloudflareSet && v.CloudflareTokenSet && len(v.CloudflareHosts) == 0 {
-		// Preferimos el dominio EXACTO del túnel (del cert.pem). Si no se puede
-		// detectar, caemos a listar todos los dominios de la cuenta.
-		v.CloudflareTunnelDomain = cloudflareTunnelDomain()
-		if v.CloudflareTunnelDomain == "" {
-			v.CloudflareZones = cloudflareZones()
+	if v.CloudflareSet {
+		// Intentar detectar el dominio del túnel siempre que haya config.
+		// Primero: extraerlo de los hosts ya configurados (sin red, instantáneo).
+		if len(v.CloudflareHosts) > 0 {
+			v.CloudflareTunnelDomain = rootDomainFromHost(v.CloudflareHosts[0])
+		}
+		// Si no hay hosts aún (túnel recién creado), consultar la API.
+		if v.CloudflareTunnelDomain == "" && v.CloudflareTokenSet {
+			v.CloudflareTunnelDomain = cloudflareTunnelDomain()
+			if v.CloudflareTunnelDomain == "" {
+				v.CloudflareZones = cloudflareZones()
+			}
 		}
 	}
 	v.Runners = listRunners()

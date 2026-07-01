@@ -178,23 +178,24 @@
       <div class="desc">
         Opcional — solo necesario si querés que alguna app sea accesible desde internet con subdominio propio.
         {{if .Sys.CloudflareSet}}Configurado{{if .Sys.CloudflareID}} — ID {{.Sys.CloudflareID}}{{end}}.
+          {{if .Sys.CloudflareTunnelDomain}}
+          <div style="margin-top:0.4rem">
+            <span style="color:var(--text)">Dominio:</span> <code>{{.Sys.CloudflareTunnelDomain}}</code>
+            — los subdominios de tus apps van bajo ese dominio.
+          </div>
+          {{end}}
           {{if .Sys.CloudflareHosts}}
           <div style="margin-top:0.4rem">
-            <span style="color:var(--text)">Dominios que sirve este túnel:</span>
+            <span style="color:var(--text)">Apps publicadas:</span>
             <ul style="margin:0.3rem 0 0 1.1rem; display:flex; flex-direction:column; gap:0.2rem">
               {{range .Sys.CloudflareHosts}}<li><a href="https://{{.}}" target="_blank" rel="noopener">{{.}}</a></li>{{end}}
             </ul>
           </div>
           {{else}}
           <div style="margin-top:0.4rem; color:var(--muted)">
-            El túnel existe pero todavía no expone ninguna app. El dominio aparece acá cuando le pongas
-            un subdominio a una app (Catálogo → editar → subdominio).
-            {{if .Sys.CloudflareTunnelDomain}}
-            <div style="margin-top:0.5rem">
-              <span style="color:var(--text)">Este túnel enruta subdominios de:</span> <code>{{.Sys.CloudflareTunnelDomain}}</code>
-              <span style="display:block; margin-top:0.2rem; font-size:0.82rem">Usá un subdominio bajo ese dominio, ej. <code>app.{{.Sys.CloudflareTunnelDomain}}</code>.</span>
-            </div>
-            {{else if .Sys.CloudflareZones}}
+            El túnel existe pero todavía no expone ninguna app.
+            Ponele un subdominio a una app en Catálogo → editar.
+            {{if .Sys.CloudflareZones}}
             <div style="margin-top:0.5rem">
               <span style="color:var(--text)">Tus dominios en Cloudflare</span> (elegí un subdominio bajo uno de estos):
               <ul style="margin:0.3rem 0 0 1.1rem; display:flex; flex-direction:column; gap:0.2rem">
