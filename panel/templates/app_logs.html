@@ -1,21 +1,20 @@
 {{define "app_logs.html"}}
-<div id="log-{{.Tag}}"
-     hx-get="/app/{{.Tag}}/logs"
+<div hx-get="/app/{{.Tag}}/logs/poll"
      hx-trigger="every 2s"
-     hx-swap="outerHTML"
-     style="margin-top:0.5rem">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem">
-    <span style="font-size:0.8rem; opacity:0.5">{{.Container}} — últimas 100 líneas</span>
+     hx-target="#log-pre-{{.Tag}}"
+     hx-swap="innerHTML"
+     hx-on::after-swap="(function(){var el=document.getElementById('log-pre-{{.Tag}}');if(el)el.scrollTop=el.scrollHeight})()">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;margin-top:0.5rem">
+    <span style="font-size:0.8rem;opacity:0.5">{{.Container}} — últimas 100 líneas · actualiza cada 2s</span>
     <button class="btn secondary"
-            style="padding:0.15rem 0.6rem; font-size:0.8rem"
+            style="padding:0.15rem 0.6rem;font-size:0.8rem"
             hx-get="/app/{{.Tag}}/logs/close"
             hx-target="#log-{{.Tag}}"
-            hx-swap="outerHTML">Cerrar</button>
+            hx-swap="innerHTML">Cerrar</button>
   </div>
-  {{if .Log}}
-  <pre class="install-log" style="max-height:20rem; overflow-y:auto">{{.Log}}</pre>
-  {{else}}
-  <p style="opacity:0.5; font-size:0.85rem">Sin logs todavía.</p>
-  {{end}}
+  <pre id="log-pre-{{.Tag}}"
+       class="install-log"
+       style="max-height:22rem;overflow-y:auto;white-space:pre-wrap;word-break:break-all">{{.Log}}</pre>
+  <script>(function(){var el=document.getElementById('log-pre-{{.Tag}}');if(el)el.scrollTop=el.scrollHeight})();</script>
 </div>
 {{end}}

@@ -9,14 +9,7 @@ import (
 func (s *server) handleAppLogs(w http.ResponseWriter, r *http.Request) {
 	tag := r.PathValue("tag")
 	container := s.containerForTag(tag)
-	lines := r.URL.Query().Get("lines")
-	if lines == "" {
-		lines = "100"
-	}
-
-	out, _ := exec.Command("docker", "logs", "--tail", lines, "--timestamps", container).CombinedOutput()
-	logText := strings.TrimSpace(string(out))
-
+	logText := fetchDockerLogs(container, "100")
 	render(w, "app_logs.html", map[string]any{
 		"Tag":       tag,
 		"Container": container,
@@ -24,9 +17,21 @@ func (s *server) handleAppLogs(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *server) handleAppLogsClose(w http.ResponseWriter, r *http.Request) {
+func (s *server) handleAppLogsPoll(w http.ResponseWriter, r *http.Request) {
 	tag := r.PathValue("tag")
-	w.Write([]byte(`<div id="log-` + tag + `"></div>`))
+	container := s.containerForTag(tag)
+	logText := fetchDockerLogs(container, "100")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte(logText))
+}
+
+func (s *server) handleAppLogsClose(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(""))
+}
+
+func fetchDockerLogs(container, tail string) string {
+	out, _ := exec.Command("docker", "logs", "--tail", tail, "--timestamps", container).CombinedOutput()
+	return strings.TrimSpace(string(out))
 }
 
 // containerForTag resuelve el nombre del contenedor Docker dado un tag.

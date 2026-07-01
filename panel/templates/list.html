@@ -32,7 +32,7 @@
       <button class="btn secondary"
               hx-get="/app/{{.Tag}}/logs"
               hx-target="#log-{{.Tag}}"
-              hx-swap="outerHTML">Ver logs</button>
+              hx-swap="innerHTML">Ver logs</button>
       {{end}}
       <a class="btn secondary" href="/edit/{{.Tag}}">Editar</a>
     </div>
@@ -58,7 +58,7 @@
       <button class="btn secondary"
               hx-get="/app/{{.Tag}}/logs"
               hx-target="#log-{{.Tag}}"
-              hx-swap="outerHTML">Ver logs</button>
+              hx-swap="innerHTML">Ver logs</button>
       {{end}}
       <a class="btn secondary" href="/edit/{{.Tag}}">Editar</a>
     </div>

@@ -153,6 +153,7 @@ func main() {
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	mux.HandleFunc("GET /catalog", s.handleList)
 	mux.HandleFunc("GET /app/{tag}/logs", s.handleAppLogs)
+	mux.HandleFunc("GET /app/{tag}/logs/poll", s.handleAppLogsPoll)
 	mux.HandleFunc("GET /app/{tag}/logs/close", s.handleAppLogsClose)
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
