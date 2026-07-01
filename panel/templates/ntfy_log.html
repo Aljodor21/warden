@@ -3,9 +3,15 @@
      {{if .Running}}hx-get="/system/ntfy-install-log" hx-trigger="every 1s" hx-swap="outerHTML"{{end}}>
   {{if .Log}}<pre class="install-log">{{.Log}}</pre>{{end}}
   {{if .Done}}
+  {{if .Success}}
   <p style="margin-top:0.5rem; color:var(--green)">
-    ntfy instalado. Suscribite al topic <strong>warden</strong> en la app del celular.
+    ntfy instalado. Recargá la página para ver la sección actualizada.
   </p>
+  {{else}}
+  <p style="margin-top:0.5rem; color:var(--red)">
+    Algo falló durante la instalación. Revisá el log arriba.
+  </p>
+  {{end}}
   {{end}}
 </div>
 {{end}}

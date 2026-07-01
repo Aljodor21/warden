@@ -233,6 +233,7 @@ case "${1:-menu}" in
   publish)     need_root; warden_publish ;;
   watch)       need_root; warden_watch ;;
   notify-url)  need_root; warden_notify_url_set "${2:-}" ;;
+  ntfy)        need_root; warden_ntfy_install ;;
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
   vpn)
     need_root

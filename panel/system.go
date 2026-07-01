@@ -202,7 +202,7 @@ func (s *server) handleNtfyInstall(w http.ResponseWriter, r *http.Request) {
 			defer s.ntfyProc.finish()
 			ctx, cancel := bgCtx3min()
 			defer cancel()
-			runInBackground(ctx, &s.ntfyProc, "sudo", s.wardenBin, "install-component", "ntfy")
+			runInBackground(ctx, &s.ntfyProc, "sudo", s.wardenBin, "ntfy")
 		}()
 	}
 	s.renderNtfyLog(w)
@@ -214,7 +214,9 @@ func (s *server) handleNtfyInstallLog(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) renderNtfyLog(w http.ResponseWriter) {
 	logText, running, done := s.ntfyProc.snapshot()
-	render(w, "ntfy_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
+	// Éxito real: terminó y el log no contiene marcadores de error de warden.
+	success := done && !strings.Contains(logText, "\n! ") && !strings.HasPrefix(logText, "! ")
+	render(w, "ntfy_log.html", map[string]any{"Log": logText, "Running": running, "Done": done, "Success": success})
 }
 
 // newNtfyRequest arma la petición HTTP para ntfy sin dependencia externa.
