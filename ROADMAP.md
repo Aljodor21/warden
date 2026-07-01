@@ -39,5 +39,10 @@ visualmente.
 - [x] CI propio: `shellcheck` + `bash -n` + build Go en cada push/PR
 - [ ] Cobertura de tests para los módulos críticos (backup, restore, reset)
 - [ ] Documentación en MkDocs con capturas/gifs del panel
-- [ ] Soporte de alertas push (ntfy) en eventos de backup y caída de servicio
+- [x] Soporte de alertas push (ntfy) en eventos de backup y caída de servicio
+  - Instalación con un click desde Sistema, log en vivo igual que la tienda
+  - Auto-detección si ntfy ya está corriendo (preset completo)
+  - Watch cada 5 min vía systemd timer: alerta si un contenedor del catálogo cae
+  - Backup/verify notifican éxito (silencioso) y fallo (prioritario)
+  - VPN connect migrado a bgProcess: link de auth aparece en el panel en tiempo real
 - [ ] Exportar/importar `site/` para facilitar migraciones entre servidores
