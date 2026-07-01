@@ -47,6 +47,23 @@ type StoreApp struct {
 	Category    string
 	Tag         string
 	Search      string // título+categoría en minúsculas, para el filtro del buscador
+	Installed   bool   // ya está instalada (contenedor corriendo o en tu site/catalog)
+}
+
+// installedTags: apps que el usuario ya tiene. Cuenta lo que está en SU
+// site/catalog (lo importado) + lo que está corriendo ahora en Docker. NO
+// cuenta las recetas del repo (esas están disponibles, no instaladas).
+func (s *server) installedTags() map[string]bool {
+	set := map[string]bool{}
+	if comps, err := listComponentsOne(s.siteCatalogDir); err == nil {
+		for _, c := range comps {
+			set[c.Tag] = true
+		}
+	}
+	for name := range runningContainers() {
+		set[name] = true
+	}
+	return set
 }
 
 var storeSlugRe = regexp.MustCompile(`[^a-z0-9]+`)
@@ -104,6 +121,7 @@ func (s *server) storeApps() ([]StoreApp, error) {
 	if err != nil {
 		return nil, err
 	}
+	installed := s.installedTags()
 	seen := map[string]bool{}
 	var apps []StoreApp
 	for _, t := range tpls {
@@ -122,7 +140,8 @@ func (s *server) storeApps() ([]StoreApp, error) {
 		apps = append(apps, StoreApp{
 			Title: t.Title, Description: t.Description, Logo: t.Logo,
 			Category: cat, Tag: tag,
-			Search: strings.ToLower(t.Title + " " + cat),
+			Search:    strings.ToLower(t.Title + " " + cat),
+			Installed: installed[tag],
 		})
 	}
 	return apps, nil

@@ -50,11 +50,17 @@
           </div>
         </div>
         <div class="storecard-desc">{{.Description}}</div>
+        {{if .Installed}}
+        <div style="margin-top:auto">
+          <span class="badge on" style="display:block; text-align:center; padding:0.4rem">Instalada</span>
+        </div>
+        {{else}}
         <form hx-post="/tienda/install" hx-target="#tienda-log" hx-swap="innerHTML show:top"
               style="margin-top:auto">
           <input type="hidden" name="tag" value="{{.Tag}}">
           <button class="btn" type="submit" style="width:100%">Instalar<span class="spinner"></span></button>
         </form>
+        {{end}}
       </div>
       {{end}}
     </div>
