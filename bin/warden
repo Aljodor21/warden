@@ -99,6 +99,8 @@ source "$HERE/modules/disk.sh"
 source "$HERE/modules/notify.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/watch.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/ntfy.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"

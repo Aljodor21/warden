@@ -214,8 +214,12 @@ func (s *server) handleNtfyInstallLog(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) renderNtfyLog(w http.ResponseWriter) {
 	logText, running, done := s.ntfyProc.snapshot()
-	// Éxito real: terminó y el log no contiene marcadores de error de warden.
-	success := done && !strings.Contains(logText, "\n! ") && !strings.HasPrefix(logText, "! ")
+	// Éxito real: terminó y el log no contiene marcadores de error (warden ni bash).
+	success := done &&
+		!strings.Contains(logText, "\n! ") && !strings.HasPrefix(logText, "! ") &&
+		!strings.Contains(logText, "command not found") &&
+		!strings.Contains(logText, "not found") &&
+		!strings.Contains(logText, "Error") && !strings.Contains(logText, "error")
 	render(w, "ntfy_log.html", map[string]any{"Log": logText, "Running": running, "Done": done, "Success": success})
 }
 
