@@ -3,7 +3,7 @@
      hx-trigger="every 2s"
      hx-target="#log-pre-{{.Tag}}"
      hx-swap="innerHTML"
-     hx-on::after-swap="(function(){var el=document.getElementById('log-pre-{{.Tag}}');if(el)el.scrollTop=el.scrollHeight})()">
+     hx-on::after-swap="(function(){var el=document.getElementById('log-pre-{{.Tag}}');if(el&&el.scrollHeight-el.scrollTop-el.clientHeight<40)el.scrollTop=el.scrollHeight})()">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;margin-top:0.5rem">
     <span style="font-size:0.8rem;opacity:0.5">{{.Container}} — últimas 100 líneas · actualiza cada 2s</span>
     <button class="btn secondary"
