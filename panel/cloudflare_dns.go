@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -76,6 +77,55 @@ type cfRecordList struct {
 		ID string `json:"id"`
 	} `json:"result"`
 	Success bool `json:"success"`
+}
+
+// cloudflareTunnelDomain averigua a QUÉ dominio está atado el túnel (el que se
+// eligió en 'cloudflared tunnel login'). El cert.pem trae un bloque "ARGO
+// TUNNEL TOKEN" en base64 con el zoneID adentro; con el API token resolvemos su
+// nombre. Best-effort: si algo falla (sin cert, sin token, API no accesible),
+// devuelve "" y el panel cae a listar todos los dominios de la cuenta.
+func cloudflareTunnelDomain() string {
+	var pem string
+	for _, p := range []string{"/etc/cloudflared/cert.pem", "/root/.cloudflared/cert.pem"} {
+		if b, err := os.ReadFile(p); err == nil {
+			pem = string(b)
+			break
+		}
+	}
+	const begin = "-----BEGIN ARGO TUNNEL TOKEN-----"
+	const end = "-----END ARGO TUNNEL TOKEN-----"
+	i, j := strings.Index(pem, begin), strings.Index(pem, end)
+	if i < 0 || j <= i {
+		return ""
+	}
+	b64 := strings.Join(strings.Fields(pem[i+len(begin):j]), "")
+	raw, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return ""
+	}
+	var tok map[string]any
+	if json.Unmarshal(raw, &tok) != nil {
+		return ""
+	}
+	zoneID, _ := tok["zoneID"].(string)
+	if zoneID == "" {
+		zoneID, _ = tok["zone_id"].(string)
+	}
+	if zoneID == "" {
+		return ""
+	}
+	token, err := readCloudflareToken()
+	if err != nil {
+		return ""
+	}
+	var zone struct {
+		Result  struct{ Name string } `json:"result"`
+		Success bool                  `json:"success"`
+	}
+	if cfAPIRequest("GET", cfAPIBaseURL+"/zones/"+zoneID, token, &zone) != nil || !zone.Success {
+		return ""
+	}
+	return zone.Result.Name
 }
 
 // rootDomain extrae el dominio de 2 niveles (ej. "servelejo.site" de
