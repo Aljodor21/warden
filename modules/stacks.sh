@@ -12,6 +12,51 @@ _compose() {
   fi
 }
 
+# Detecta si un contenedor crashea por permisos en sus datos y lo corrige solo.
+# Muchas imágenes corren como un usuario no-root (ej. n8n → UID 1000 'node') pero
+# warden crea las carpetas del host como root → el contenedor no puede escribir.
+_stack_fix_perms() {
+  local container="$1"; shift
+  local -a paths=("$@")
+
+  sleep 3
+  local cstatus
+  cstatus=$(docker inspect "$container" --format '{{.State.Status}}' 2>/dev/null) || return 0
+  [ "$cstatus" = "restarting" ] || return 0
+
+  docker logs "$container" 2>&1 | grep -qi "EACCES\|permission denied" || return 0
+
+  warn "Contenedor reiniciando por permisos — corrigiendo automáticamente…"
+
+  local img uid
+  img=$(docker inspect "$container" --format '{{.Config.Image}}' 2>/dev/null)
+  [ -n "$img" ] || return 1
+
+  # Preguntar al propio contenedor qué UID usa (hereda el USER del Dockerfile).
+  uid=$(docker run --rm --entrypoint sh "$img" -c "id -u" 2>/dev/null | tr -d '[:space:]')
+  # Ignorar si es root (0) o no es número — en ese caso el problema es otro.
+  case "$uid" in
+    ''|0) warn "UID del contenedor es root o no se detectó — revisá a mano: docker logs $container"; return 1 ;;
+    *[!0-9]*) warn "UID no numérico ($uid) — revisá a mano: docker logs $container"; return 1 ;;
+  esac
+
+  log "Ajustando dueño de datos a UID $uid…"
+  local p
+  for p in "${paths[@]:-}"; do
+    [ -n "$p" ] && chown -R "$uid" "$p" 2>/dev/null || true
+  done
+
+  docker restart "$container" >/dev/null 2>&1
+  sleep 5
+
+  cstatus=$(docker inspect "$container" --format '{{.State.Status}}' 2>/dev/null)
+  if [ "$cstatus" = "running" ]; then
+    ok "Permisos corregidos (UID $uid) — contenedor arriba"
+  else
+    warn "Corregí permisos pero $container sigue con problemas. Revisá: docker logs $container"
+  fi
+}
+
 # warden_stack_install <tag>
 warden_stack_install() {
   local tag="$1"
@@ -70,6 +115,14 @@ warden_stack_install() {
   else
     run "_compose -f '$compose' $extra up -d --pull always" || { warn "$COMP_NAME falló al levantar"; return 1; }
   fi
+
+  # Si el contenedor arrancó pero entra en restart loop por permisos (típico en
+  # apps que corren como usuario no-root, ej. n8n como 'node'/UID 1000), corregir
+  # el dueño de las carpetas de datos y reiniciar sin intervención manual.
+  if [ "${WARDEN_DRY_RUN:-0}" != 1 ] && [ -n "${COMP_CONTAINER:-}" ]; then
+    _stack_fix_perms "$COMP_CONTAINER" "${COMP_PATHS[@]:-}"
+  fi
+
   ok "$COMP_NAME arriba"
 
   # Mensaje de post-instalación, si el stack define uno (ej. cómo conectarte).
