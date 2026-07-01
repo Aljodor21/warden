@@ -407,7 +407,11 @@ func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {
 		}
 		c.Tag = tag
 	}
-	render(w, "edit.html", map[string]any{"C": c, "IsNew": tag == ""})
+	data := map[string]any{"C": c, "IsNew": tag == ""}
+	if tag != "" {
+		data["Ports"] = containerPorts(c.Container) // para el selector de puerto del link
+	}
+	render(w, "edit.html", data)
 }
 
 func (s *server) handleEditSave(w http.ResponseWriter, r *http.Request) {

@@ -61,8 +61,27 @@
     <label>Subdominio público (Cloudflare) — opcional, SOLO si querés que esta app sea accesible desde internet con tu dominio</label>
     <input name="cfhost" value="{{.C.CFHost}}" placeholder="app.tudominio.site">
 
-    <label>Puerto — esencial SI llenaste el subdominio de arriba (el puerto donde escucha la app en este server)</label>
-    <input name="cfport" value="{{.C.CFPort}}">
+    <label>Puerto — a qué puerto apunta el link del dashboard (y por dónde sale el subdominio, si lo hay)</label>
+    <input name="cfport" value="{{.C.CFPort}}" id="cfport-input">
+    {{if .Ports}}
+    <div style="background:var(--surface2); border-radius:8px; padding:0.6rem 0.9rem; margin:0.4rem 0 0.6rem">
+      <div style="font-size:0.82rem; margin-bottom:0.4rem; color:var(--muted)">
+        Puertos que expone este contenedor — clic en uno para que el link apunte ahí (el resaltado es el actual):
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:0.4rem">
+        {{range .Ports}}
+        <button type="button" class="btn secondary"
+                style="padding:0.25rem 0.65rem; font-size:0.82rem{{if eq .Host $.C.CFPort}}; border-color:var(--accent); color:var(--accent){{end}}"
+                onclick="document.getElementById('cfport-input').value='{{.Host}}'">
+          {{.Host}} &rarr; {{.Container}}/{{.Proto}}
+        </button>
+        {{end}}
+      </div>
+      <div style="font-size:0.76rem; color:var(--muted); margin-top:0.4rem">
+        La app solo publica estos. Para exponer otro puerto, editá el docker-compose en <code>site/stacks/{{.C.Tag}}/</code>.
+      </div>
+    </div>
+    {{end}}
 
     <label>Nota — opcional, cualquier detalle que quieras recordar sobre esta app</label>
     <textarea name="note">{{.C.Note}}</textarea>

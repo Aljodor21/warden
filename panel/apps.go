@@ -2,8 +2,51 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"strings"
 )
+
+// PortMap: un puerto que un contenedor publica al host (host→contenedor).
+type PortMap struct {
+	Host      string
+	Container string
+	Proto     string
+}
+
+// containerPorts lee los puertos que un contenedor publica al host ('docker
+// port'), para el selector de "a qué puerto apunta el link" en Catálogo→editar.
+func containerPorts(container string) []PortMap {
+	if container == "" {
+		return nil
+	}
+	out, err := exec.Command("docker", "port", container).Output()
+	if err != nil {
+		return nil
+	}
+	var ports []PortMap
+	seen := map[string]bool{}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		// formato: "53/tcp -> 0.0.0.0:54"
+		parts := strings.SplitN(line, " -> ", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		cp, proto := splitProto(strings.TrimSpace(parts[0]))
+		hp := parts[1]
+		i := strings.LastIndex(hp, ":")
+		if i < 0 {
+			continue
+		}
+		host := strings.TrimSpace(hp[i+1:])
+		key := host + "->" + cp + "/" + proto
+		if host == "" || cp == "" || seen[key] {
+			continue // 'docker port' lista ipv4 e ipv6 por separado
+		}
+		seen[key] = true
+		ports = append(ports, PortMap{Host: host, Container: cp, Proto: proto})
+	}
+	return ports
+}
 
 // AppCard es una app real (del catálogo) con su estado y su link directo —
 // NO un contenedor crudo. Una app puede tener varios contenedores satélite
