@@ -600,7 +600,7 @@ func (s *server) stopAndCleanApp(c *Component, tag string) {
 			if _, err := os.Stat(envf); err == nil {
 				args = append(args, "--env-file", envf)
 			}
-			args = append(args, "down")
+			args = append(args, "down", "--rmi", "all", "--volumes")
 			if exec.CommandContext(ctx, "docker", args...).Run() == nil {
 				stopped = true
 			}
