@@ -214,10 +214,7 @@ func (s *server) handleNtfyInstallLog(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) renderNtfyLog(w http.ResponseWriter) {
 	logText, running, done := s.ntfyProc.snapshot()
-	sys := s.gatherSystemView()
-	render(w, "system_fragment.html", map[string]any{
-		"Sys": sys, "NtfyInstalling": running, "NtfyInstallDone": done, "NtfyInstallLog": logText,
-	})
+	render(w, "ntfy_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
 }
 
 // newNtfyRequest arma la petición HTTP para ntfy sin dependencia externa.

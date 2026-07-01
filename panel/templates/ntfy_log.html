@@ -1,0 +1,11 @@
+{{define "ntfy_log.html"}}
+<div id="ntfy-log-box"
+     {{if .Running}}hx-get="/system/ntfy-install-log" hx-trigger="every 1s" hx-swap="outerHTML"{{end}}>
+  {{if .Log}}<pre class="install-log">{{.Log}}</pre>{{end}}
+  {{if .Done}}
+  <p style="margin-top:0.5rem; color:var(--green)">
+    ntfy instalado. Suscribite al topic <strong>warden</strong> en la app del celular.
+  </p>
+  {{end}}
+</div>
+{{end}}
