@@ -1,0 +1,21 @@
+{{define "app_logs.html"}}
+<div id="log-{{.Tag}}"
+     hx-get="/app/{{.Tag}}/logs"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     style="margin-top:0.5rem">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem">
+    <span style="font-size:0.8rem; opacity:0.5">{{.Container}} — últimas 100 líneas</span>
+    <button class="btn secondary"
+            style="padding:0.15rem 0.6rem; font-size:0.8rem"
+            hx-get="/app/{{.Tag}}/logs/close"
+            hx-target="#log-{{.Tag}}"
+            hx-swap="outerHTML">Cerrar</button>
+  </div>
+  {{if .Log}}
+  <pre class="install-log" style="max-height:20rem; overflow-y:auto">{{.Log}}</pre>
+  {{else}}
+  <p style="opacity:0.5; font-size:0.85rem">Sin logs todavía.</p>
+  {{end}}
+</div>
+{{end}}

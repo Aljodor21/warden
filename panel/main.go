@@ -152,6 +152,8 @@ func main() {
 	mux.HandleFunc("GET /partials/health", s.handleHealthPartial)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	mux.HandleFunc("GET /catalog", s.handleList)
+	mux.HandleFunc("GET /app/{tag}/logs", s.handleAppLogs)
+	mux.HandleFunc("GET /app/{tag}/logs/close", s.handleAppLogsClose)
 	mux.HandleFunc("GET /edit/{tag}", s.handleEditForm)
 	mux.HandleFunc("POST /edit/{tag}", s.handleEditSave)
 	mux.HandleFunc("POST /edit/{tag}/compose", s.requireAdmin("err_inline.html", noExtra, s.handleComposeSave))
