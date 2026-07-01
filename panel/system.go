@@ -214,13 +214,19 @@ func (s *server) handleNtfyInstallLog(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) renderNtfyLog(w http.ResponseWriter) {
 	logText, running, done := s.ntfyProc.snapshot()
-	// Éxito real: terminó y el log no contiene marcadores de error (warden ni bash).
 	success := done &&
 		!strings.Contains(logText, "\n! ") && !strings.HasPrefix(logText, "! ") &&
 		!strings.Contains(logText, "command not found") &&
 		!strings.Contains(logText, "not found") &&
 		!strings.Contains(logText, "Error") && !strings.Contains(logText, "error")
-	render(w, "ntfy_log.html", map[string]any{"Log": logText, "Running": running, "Done": done, "Success": success})
+	// Éxito: refrescar toda la sección para que muestre ntfy como activo.
+	if success {
+		w.Header().Set("HX-Retarget", "#system-status")
+		w.Header().Set("HX-Reswap", "innerHTML")
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView()})
+		return
+	}
+	render(w, "ntfy_log.html", map[string]any{"Log": logText, "Running": running, "Done": done, "Success": false})
 }
 
 // newNtfyRequest arma la petición HTTP para ntfy sin dependencia externa.
