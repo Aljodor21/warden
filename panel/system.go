@@ -34,6 +34,7 @@ type SystemView struct {
 	Runners                []RunnerInfo
 
 	Timezone string // zona horaria activa del sistema (IANA)
+	UseLocal bool   // los links del dashboard usan hostname.local (modo LAN/mDNS)
 }
 
 // ContainerMem: una fila de 'docker stats' — cuánta RAM usa un contenedor
@@ -101,8 +102,22 @@ func (s *server) gatherSystemView() SystemView {
 	}
 
 	v.Timezone = systemTimezone()
+	v.UseLocal = useLocalSuffix()
 
 	return v
+}
+
+// handleLocalToggle activa/desactiva el modo ".local" en los links del
+// dashboard (para acceder desde la LAN por mDNS; por Tailscale, nombre pelado).
+func (s *server) handleLocalToggle(w http.ResponseWriter, r *http.Request) {
+	const f = "/etc/warden/use-local"
+	if useLocalSuffix() {
+		_ = os.Remove(f)
+	} else {
+		_ = os.MkdirAll("/etc/warden", 0o755)
+		_ = os.WriteFile(f, []byte("1\n"), 0o644)
+	}
+	s.renderSystemAction(w, "Modo de acceso actualizado — recargá el Dashboard para ver los links nuevos.", nil)
 }
 
 func (s *server) handleSystemMem(w http.ResponseWriter, r *http.Request) {

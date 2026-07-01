@@ -70,6 +70,25 @@
 
   <div class="statusrow">
     <div>
+      <div class="label">Acceso por nombre (.local)</div>
+      <div class="desc">
+        Por <strong>Tailscale</strong> entrás con el nombre pelado. En tu <strong>red de casa (LAN)</strong> el
+        navegador necesita <code>.local</code>. Activalo si accedés desde la LAN — los links del dashboard van a
+        usar <code>nombre.local</code>.
+        Ahora los links usan: <strong>{{if .Sys.UseLocal}}nombre.local{{else}}nombre pelado{{end}}</strong>.
+      </div>
+    </div>
+    <div class="acts">
+      <form hx-post="/system/local-toggle" hx-target="#system-status" hx-swap="innerHTML">
+        <button class="btn {{if .Sys.UseLocal}}secondary{{end}}" type="submit">
+          {{if .Sys.UseLocal}}Volver a nombre pelado{{else}}Activar .local{{end}}<span class="spinner"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="statusrow">
+    <div>
       <div class="label">VPN (Tailscale)</div>
       <div class="desc">
         {{if .Sys.TailscaleConnected}}Conectada — IP {{.Sys.TailscaleIP}}. Acceso remoto seguro sin abrir puertos.

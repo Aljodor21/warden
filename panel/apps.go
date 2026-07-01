@@ -6,6 +6,23 @@ import (
 	"strings"
 )
 
+// useLocalSuffix: ¿el usuario activó el modo ".local"? (para acceder por mDNS
+// desde la LAN de casa; por Tailscale se usa el nombre pelado).
+func useLocalSuffix() bool {
+	_, err := os.Stat("/etc/warden/use-local")
+	return err == nil
+}
+
+// linkHost devuelve el hostname para los links del dashboard, con ".local" si
+// ese modo está activo.
+func linkHost() string {
+	h, _ := os.Hostname()
+	if useLocalSuffix() {
+		return h + ".local"
+	}
+	return h
+}
+
 // PortMap: un puerto que un contenedor publica al host (host→contenedor).
 type PortMap struct {
 	Host      string
@@ -74,7 +91,7 @@ func (s *server) buildAppView(containers []Container) (apps []AppCard, others []
 	}
 
 	claimed := map[string]bool{}
-	host, _ := os.Hostname()
+	host := linkHost()
 
 	for _, c := range comps {
 		// COMP_CONTAINER es opcional en catálogos viejos (se agregó después

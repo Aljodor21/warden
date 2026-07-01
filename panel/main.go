@@ -193,6 +193,7 @@ func main() {
 	mux.HandleFunc("POST /system/reset", s.requireAdmin("system_fragment.html", withSys, s.handleReset))
 	mux.HandleFunc("GET /system/reset-log", s.handleResetLog)
 	mux.HandleFunc("POST /system/timezone", s.requireAdmin("system_fragment.html", withSys, s.handleSetTimezone))
+	mux.HandleFunc("POST /system/local-toggle", s.requireAdmin("system_fragment.html", withSys, s.handleLocalToggle))
 	mux.HandleFunc("GET /system/mem", s.handleSystemMem)
 	mux.HandleFunc("GET /backups/content", s.handleBackupsContent)
 	withBackups := func() map[string]any { return map[string]any{"B": s.gatherBackupsView()} }

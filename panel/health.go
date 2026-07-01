@@ -524,7 +524,7 @@ func (s *server) buildHealthView(h Health, downBps, upBps float64) HealthView {
 	}
 	var apps []AppCard
 	apps, v.Others = s.buildAppView(h.Containers)
-	v.Tools = gatherTools(h.Containers, h.Hostname)
+	v.Tools = gatherTools(h.Containers, linkHost())
 	for _, a := range apps {
 		v.TotalCount++
 		if a.Up {
