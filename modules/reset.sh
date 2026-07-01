@@ -103,6 +103,16 @@ warden_reset() {
   run "rm -f /etc/systemd/system/warden-backup.* /etc/systemd/system/warden-verify.*"
   run "systemctl daemon-reload"
 
+  # Quitar la entrada del disco de backup de /etc/fstab (si existe).
+  # Sin esto el disco se auto-monta al reiniciar y puede causar confusión
+  # al volver a instalar (el panel lo ve montado sin que el usuario lo pida).
+  local bmp="/mnt/warden-backup"
+  if grep -q "$bmp" /etc/fstab 2>/dev/null; then
+    log "Quitando disco de backup de /etc/fstab"
+    run "sed -i '\|$bmp|d' /etc/fstab"
+    run "systemctl daemon-reload"
+  fi
+
   log "Borrando datos generados (${WARDEN_DATA:-/srv/warden})"
   run "rm -rf '${WARDEN_DATA:-/srv/warden}'"
 
