@@ -12,49 +12,38 @@ _compose() {
   fi
 }
 
-# Detecta si un contenedor crashea por permisos en sus datos y lo corrige solo.
-# Muchas imágenes corren como un usuario no-root (ej. n8n → UID 1000 'node') pero
-# warden crea las carpetas del host como root → el contenedor no puede escribir.
-_stack_fix_perms() {
-  local container="$1"; shift
+# Ajusta el dueño de las carpetas de datos ANTES de levantar el contenedor.
+# Muchas imágenes corren como usuario no-root (n8n → UID 1000 'node', Gitea → 1000,
+# etc.). Si warden crea las carpetas como root, el contenedor no puede escribir y
+# entra en restart loop inmediato. Hacemos el chown previo para que el primer
+# arranque ya funcione, sin intervención manual.
+#
+# Requiere que la imagen ya esté en caché local (llamar después de 'compose pull').
+_stack_preflight_perms() {
+  local compose_file="$1"; shift
   local -a paths=("$@")
+  [ "${#paths[@]}" -eq 0 ] && return 0
 
-  sleep 3
-  local cstatus
-  cstatus=$(docker inspect "$container" --format '{{.State.Status}}' 2>/dev/null) || return 0
-  [ "$cstatus" = "restarting" ] || return 0
+  # Imagen del compose — nuestra plantilla generada por import.sh siempre la tiene
+  # en una línea propia 'image: ...', así que un grep simple alcanza.
+  local img
+  img=$(grep -m1 '^\s*image:' "$compose_file" | awk '{print $2}' | tr -d '"'"'")
+  [ -n "$img" ] || return 0
 
-  docker logs "$container" 2>&1 | grep -qi "EACCES\|permission denied" || return 0
-
-  warn "Contenedor reiniciando por permisos — corrigiendo automáticamente…"
-
-  local img uid
-  img=$(docker inspect "$container" --format '{{.Config.Image}}' 2>/dev/null)
-  [ -n "$img" ] || return 1
-
-  # Preguntar al propio contenedor qué UID usa (hereda el USER del Dockerfile).
+  # Preguntar a la imagen qué UID efectivo usa (hereda el USER del Dockerfile).
+  # Al overridear el entrypoint con sh, evitamos que tini / scripts de init
+  # interfieran; la imagen corre como el usuario que declare su Dockerfile.
+  local uid
   uid=$(docker run --rm --entrypoint sh "$img" -c "id -u" 2>/dev/null | tr -d '[:space:]')
-  # Ignorar si es root (0) o no es número — en ese caso el problema es otro.
   case "$uid" in
-    ''|0) warn "UID del contenedor es root o no se detectó — revisá a mano: docker logs $container"; return 1 ;;
-    *[!0-9]*) warn "UID no numérico ($uid) — revisá a mano: docker logs $container"; return 1 ;;
+    ''|0|*[!0-9]*) return 0 ;;  # root o no detectado → no hay nada que ajustar
   esac
 
-  log "Ajustando dueño de datos a UID $uid…"
+  log "La imagen corre como UID $uid — ajustando dueño de datos antes de arrancar…"
   local p
-  for p in "${paths[@]:-}"; do
+  for p in "${paths[@]}"; do
     [ -n "$p" ] && chown -R "$uid" "$p" 2>/dev/null || true
   done
-
-  docker restart "$container" >/dev/null 2>&1
-  sleep 5
-
-  cstatus=$(docker inspect "$container" --format '{{.State.Status}}' 2>/dev/null)
-  if [ "$cstatus" = "running" ]; then
-    ok "Permisos corregidos (UID $uid) — contenedor arriba"
-  else
-    warn "Corregí permisos pero $container sigue con problemas. Revisá: docker logs $container"
-  fi
 }
 
 # warden_stack_install <tag>
@@ -110,19 +99,23 @@ warden_stack_install() {
   [ -f "$override" ] && extra="-f '$override'"
 
   log "Instalando $COMP_NAME ($tag)…"
+
+  # Bajar imágenes primero (separado del 'up') para poder inspeccionar el usuario
+  # del contenedor y pre-ajustar permisos antes del primer arranque.
+  if [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
+    if [ -n "$envfile" ]; then
+      _compose --env-file "$envfile" -f "$compose" pull 2>&1 || true
+    else
+      _compose -f "$compose" pull 2>&1 || true
+    fi
+    _stack_preflight_perms "$compose" "${COMP_PATHS[@]:-}"
+  fi
+
   if [ -n "$envfile" ]; then
-    run "_compose --env-file '$envfile' -f '$compose' $extra up -d --pull always" || { warn "$COMP_NAME falló al levantar"; return 1; }
+    run "_compose --env-file '$envfile' -f '$compose' $extra up -d" || { warn "$COMP_NAME falló al levantar"; return 1; }
   else
-    run "_compose -f '$compose' $extra up -d --pull always" || { warn "$COMP_NAME falló al levantar"; return 1; }
+    run "_compose -f '$compose' $extra up -d" || { warn "$COMP_NAME falló al levantar"; return 1; }
   fi
-
-  # Si el contenedor arrancó pero entra en restart loop por permisos (típico en
-  # apps que corren como usuario no-root, ej. n8n como 'node'/UID 1000), corregir
-  # el dueño de las carpetas de datos y reiniciar sin intervención manual.
-  if [ "${WARDEN_DRY_RUN:-0}" != 1 ] && [ -n "${COMP_CONTAINER:-}" ]; then
-    _stack_fix_perms "$COMP_CONTAINER" "${COMP_PATHS[@]:-}"
-  fi
-
   ok "$COMP_NAME arriba"
 
   # Mensaje de post-instalación, si el stack define uno (ej. cómo conectarte).
