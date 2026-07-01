@@ -15,5 +15,12 @@ EOF
   export NTFY_HOME
   log "Levantando ntfy"
   run "_compose -f '$WARDEN_ROOT/stacks/ntfy/docker-compose.yml' up -d"
-  ok "ntfy → http://$(warden_host):${NTFY_PORT:-8080} (o http://${ip:-<ip>}:${NTFY_PORT:-8080} si el celu no resuelve .local)"
+  local url="http://${ip:-localhost}:${NTFY_PORT:-8080}"
+  if [ "${WARDEN_DRY_RUN:-0}" != 1 ]; then
+    mkdir -p /etc/warden
+    printf '%s\n' "$url" > /etc/warden/ntfy-url
+  fi
+  ok "ntfy → $url"
+  ok "URL guardada en /etc/warden/ntfy-url — backup y watch mandan alertas al topic 'warden'."
+  ok "Instalá la app ntfy en tu celular y suscribite al topic 'warden' en $url"
 }

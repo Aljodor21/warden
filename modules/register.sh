@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # modules/register.sh — fija el disco de backup (fstab por UUID) y activa timers.
 
-# Copia y enciende los timers de systemd (backup horario + verify nocturno).
+# Copia y enciende los timers de systemd (backup horario + verify nocturno + watch cada 5 min).
 warden_timer_install() {
   local src="$WARDEN_ROOT/backup/systemd" u
-  for u in warden-backup.service warden-backup.timer warden-verify.service warden-verify.timer; do
+  for u in warden-backup.service warden-backup.timer \
+            warden-verify.service warden-verify.timer \
+            warden-watch.service warden-watch.timer; do
     run "install -m 644 '$src/$u' '/etc/systemd/system/$u'"
   done
   run "systemctl daemon-reload"
-  run "systemctl enable --now warden-backup.timer warden-verify.timer"
-  ok "Timers activos: backup cada hora + verify nocturno"
+  run "systemctl enable --now warden-backup.timer warden-verify.timer warden-watch.timer"
+  ok "Timers activos: backup cada hora + verify nocturno + watch cada 5 min"
 }
 
 # Si no hay disco de backup listo, lo detecta entre los discos disponibles,

@@ -1,0 +1,10 @@
+[Unit]
+Description=warden watch — monitoreo de contenedores cada 5 min
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=false
+
+[Install]
+WantedBy=timers.target

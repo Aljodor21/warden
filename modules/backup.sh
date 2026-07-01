@@ -24,8 +24,14 @@ warden_backup() {
   passfile="${RESTIC_PASS_FILE:-/root/.warden-restic-password}"
   dry="${WARDEN_DRY_RUN:-0}"
 
-  [ -d "$repo" ]     || die "No hay repositorio en $repo (¿montaste el disco de backup?)"
-  [ -f "$passfile" ] || die "Falta la contraseña restic ($passfile)"
+  if [ ! -d "$repo" ]; then
+    warden_notify "Backup fallido" "No hay repositorio en $repo. ¿Está montado el disco de backup?" "high" "rotating_light"
+    die "No hay repositorio en $repo (¿montaste el disco de backup?)"
+  fi
+  if [ ! -f "$passfile" ]; then
+    warden_notify "Backup fallido" "Falta la contraseña restic ($passfile)." "high" "rotating_light"
+    die "Falta la contraseña restic ($passfile)"
+  fi
   mkdir -p "$dumps"
 
   # --- Recorrer el catálogo: juntar rutas (+exclusiones) y dumpear BD ---
@@ -96,6 +102,7 @@ warden_backup() {
 
   rm -rf "$dumps"
   ok "Backup completo en $repo"
+  warden_notify "Backup completado" "Snapshot guardado correctamente. Repositorio: $repo" "default" "white_check_mark"
 }
 
 # warden_verify — comprueba la integridad del repositorio (restic check).
@@ -107,9 +114,13 @@ warden_verify() {
   [ -d "$repo" ]     || die "No hay repositorio en $repo"
   [ -f "$passfile" ] || die "Falta la contraseña restic ($passfile)"
   log "Verificando integridad (restic check)"
-  docker run --rm -e RESTIC_PASSWORD_FILE=/pass \
-    -v "$passfile:/pass:ro" -v "$repo:/repo" restic/restic -r /repo check
+  if ! docker run --rm -e RESTIC_PASSWORD_FILE=/pass \
+      -v "$passfile:/pass:ro" -v "$repo:/repo" restic/restic -r /repo check; then
+    warden_notify "Verificación fallida" "restic check detectó errores en el repositorio de backup. Revisá los logs." "urgent" "rotating_light,floppy_disk"
+    die "restic check falló — el repositorio puede estar dañado"
+  fi
   ok "Repositorio íntegro"
+  warden_notify "Verificación OK" "El repositorio de backup está íntegro." "low" "floppy_disk"
 }
 
 # warden_backup_toggle <tag> <on|off> — incluye (on) o excluye (off) un

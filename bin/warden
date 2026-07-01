@@ -30,6 +30,8 @@
 #   panel               [root] Instala el panel web del catálogo (:7890)
 #   nas <accion> ...    [root] Usuarios del NAS (adduser|passwd|deluser|users)
 #   reset               [root] Instalación limpia TOTAL: borra todo lo que warden tocó
+#   watch               [root] Chequea contenedores del catálogo y alerta por ntfy si alguno cayó
+#   notify-url <url>    [root] Guarda la URL del servidor ntfy para alertas push
 #   init-disk <dev>     [root] Prepara un disco NUEVO como destino de backup
 #   disk                Menú de gestión de discos (montar/desmontar/preparar)
 #   disk mount          [root] Monta un disco en /mnt/warden-backup
@@ -93,6 +95,10 @@ source "$HERE/modules/reset.sh"
 source "$HERE/modules/initdisk.sh"
 # shellcheck source=/dev/null
 source "$HERE/modules/disk.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/notify.sh"
+# shellcheck source=/dev/null
+source "$HERE/modules/watch.sh"
 
 CONFIG_DIR="/etc/warden"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -225,6 +231,8 @@ case "${1:-menu}" in
   cloudflare-init) need_root; warden_cloudflare_init "${2:-}" ;;
   cloudflare-reset) need_root; warden_cloudflare_reset ;;
   publish)     need_root; warden_publish ;;
+  watch)       need_root; warden_watch ;;
+  notify-url)  need_root; warden_notify_url_set "${2:-}" ;;
   runner)      need_root; warden_runner "${2:-}" "${3:-}" ;;
   vpn)
     need_root
