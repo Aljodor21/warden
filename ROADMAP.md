@@ -28,8 +28,15 @@ Go stdlib + HTMX + Alpine.js, sin Node/build. Todas las acciones de `warden`
 disponibles desde el navegador — mismo código por debajo. DR test completo
 pasado en producción real.
 
-## Fase 6 — Pulido continuo (en curso)
-- [ ] CI propio: shellcheck + instalación `--dry-run` en contenedor
+## Fase 6 — Tienda de apps ✅
+Grilla de apps listas para instalar (plantillas de Portainer, +100 apps).
+Instalar en un click desde el panel — detecta si hay receta curada en warden
+y la usa directamente; si no, importa y adapta el compose automáticamente.
+`warden import` disponible también por consola. Apps ya instaladas marcadas
+visualmente.
+
+## Fase 7 — Pulido y calidad (en curso)
+- [x] CI propio: `shellcheck` + `bash -n` + build Go en cada push/PR
 - [ ] Cobertura de tests para los módulos críticos (backup, restore, reset)
 - [ ] Documentación en MkDocs con capturas/gifs del panel
 - [ ] Soporte de alertas push (ntfy) en eventos de backup y caída de servicio

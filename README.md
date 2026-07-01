@@ -24,7 +24,7 @@ sudo ./bootstrap.sh                             # elegí preset o a la carta
 ```
 
 Al terminar, el comando `warden` queda en el PATH y el panel web corre en
-`http://<tu-server>:7890`.
+`http://<tu-server>` (puerto 80).
 
 ---
 
@@ -39,9 +39,10 @@ Linux limpio
              │
              ├─▶ Consola (warden …)  ← cualquier subcomando en cualquier momento
              │
-             └─▶ Panel web :7890     ← mismas acciones, con interfaz
+             └─▶ Panel web :80       ← mismas acciones, con interfaz
                      ├─ Dashboard (salud del sistema)
                      ├─ Catálogo (apps + CI/CD)
+                     ├─ Tienda (instalar apps en un click)
                      ├─ Archivos (FileBrowser)
                      ├─ Backups (backup/restore/timers)
                      └─ Sistema (VPN, Cloudflare, zona horaria, reset)
@@ -50,14 +51,14 @@ Linux limpio
 ### Primer uso — secuencia típica
 
 1. **Instalar desde cero** → `sudo ./bootstrap.sh` (elige preset o a la carta).
-2. **Abrir el panel** → `http://<IP>:7890` — candado de admin arriba a la derecha.
+2. **Abrir el panel** → `http://<IP>` — candado de admin arriba a la derecha.
 3. **Zona horaria** → Sistema → Conectividad → selector → Aplicar.
 4. **VPN (Tailscale)** → Sistema → Conectividad → Conectar (o `sudo warden vpn`).
-5. **Túnel Cloudflare** → Sistema → Conectividad → Configurar (o `sudo warden cloudflare`).
+5. **Túnel Cloudflare** → Sistema → Conectividad → Configurar (o `sudo warden cloudflare-init`).
 6. **Disco de backup** → Backups → Preparar disco → Guardar la clave de cifrado que aparece.
 7. **Primer backup** → Backups → Hacer backup ahora (o `sudo warden backup`).
 8. **Activar timer** → Backups → Activar (backup automático cada hora desde ahí).
-9. **Agregar apps** → Catálogo → Nueva app (o editá `site/catalog/<app>.component`).
+9. **Agregar apps** → Tienda (un click) o Catálogo → Nueva app.
 
 ---
 
@@ -110,16 +111,31 @@ todo lo que cambia el sistema.
 - Herramientas del sistema (Cockpit, Backrest, ntfy) con sus URLs.
 - Se refresca solo cada 3 segundos — no hace falta recargar la página.
 
+#### Tienda
+
+- Grilla de apps listas para instalar, tomadas de las plantillas de Portainer
+  (más de 100 apps: Vaultwarden, Immich, Gitea, n8n, Nextcloud, etc.).
+- **Instalar en un click** — detecta si la app ya tiene receta curada en warden
+  y la usa directamente; si no, importa el compose y lo adapta al formato warden.
+- Apps ya instaladas marcadas visualmente — no se pueden instalar dos veces.
+- También acepta un **compose propio** (pegado o por URL) para lo que no esté
+  en la grilla. Log de instalación en vivo, fijo en pantalla.
+
 #### Catálogo
 
-- Alta de apps con formulario: repo, puerto, subdominio (solo si hay túnel
-  Cloudflare configurado), tipo (instalada directa vs CI/CD).
+- Lista de apps con estado real (corriendo/caída), links directos y acciones.
+- Alta de apps con formulario: nombre, tipo de backup, rutas de datos,
+  subdominio Cloudflare (solo si el túnel está configurado), puerto.
+- **Selector de puerto**: muestra los puertos que expone el contenedor y
+  permite elegir con un click cuál usar para el link del dashboard.
+- **Editor de docker-compose.yml** integrado: editá el compose de la app
+  directamente desde el panel, sin terminal.
 - Valida en vivo que el puerto no choque con otro.
 - Al guardar con subdominio, **publica el túnel automáticamente**.
 - **Registra el runner** pegando el token de GitHub (sin terminal), con log
   en vivo del proceso.
-- **Elimina una app**: baja el contenedor, regenera el túnel, borra el registro
-  DNS de Cloudflare si guardaste el API Token (o te lo pide ahí mismo).
+- **Elimina una app**: baja el contenedor, borra imágenes y volúmenes, regenera
+  el túnel, borra el registro DNS de Cloudflare si guardaste el API Token.
 - Instala apps del catálogo directamente desde la lista con log de progreso.
 
 #### NAS
@@ -150,7 +166,7 @@ todo lo que cambia el sistema.
 - **Tailscale (VPN)** — instalar y conectar con log en vivo de la URL de
   autorización; muestra IP Tailscale cuando está conectada.
 - **Túnel Cloudflare** — configurar con streaming de la URL de login;
-  muestra el ID del túnel cuando está activo.
+  muestra el dominio y las apps publicadas cuando está activo.
 - **API Token de Cloudflare** — guardar para que "Eliminar app" borre el
   registro DNS automáticamente (opcional).
 - **Llave `age`** — generar la llave de cifrado de secretos.
@@ -180,10 +196,15 @@ warden   # menú principal interactivo
 | `verify` | `restic check` (integridad del repositorio) | — |
 | `register` | Fija el disco en `/etc/fstab` y activa los timers | Backups → Activar |
 | `restore` | Restaura desde un disco de backup | Backups → Restaurar |
+| `import <fuente> [tag]` | Importa un compose externo al formato warden | Tienda → Pegar compose |
+| `install-component <tag>` | Instala un componente del catálogo | Tienda / Catálogo → Instalar |
 | `publish` | Regenera el ingress de Cloudflare desde el catálogo | Automático al guardar app |
 | `runner <url> <token>` | Registra un self-hosted runner de GitHub Actions | Catálogo → Registrar runner |
 | `vpn` | Instala/conecta Tailscale | Sistema → Conectividad |
+| `vpn exit-node on\|off` | Activa/desactiva este server como salida de internet | — |
+| `vpn subnet on [CIDR]\|off` | Anuncia una subred por Tailscale | — |
 | `cloudflare-init` | Crea el túnel de Cloudflare (primera vez) | Sistema → Conectividad |
+| `cloudflare-reset` | Borra el túnel y la sesión para reconfigurar de cero | Sistema → Conectividad |
 | `secrets <init\|save\|restore>` | Cifra/restaura secretos con `age` | Sistema → Credenciales |
 | `reset` | Borra TODO lo que warden instaló/configuró | Sistema → Zona de peligro |
 | `motd` | Instala el saludo al iniciar sesión | — |
@@ -205,6 +226,8 @@ warden   # menú principal interactivo
   (`WARDEN_DRY_RUN=1`).
 - `warden reset` pide escribir `BORRAR` literal para confirmar, tanto por
   consola como desde el panel.
+- CI con `shellcheck` + `bash -n` en cada push y PR — nada llega a `main`
+  sin pasar los checks.
 
 ### Extras
 
