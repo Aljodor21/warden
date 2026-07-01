@@ -55,7 +55,7 @@
           <span class="badge on" style="display:block; text-align:center; padding:0.4rem">Instalada</span>
         </div>
         {{else}}
-        <form hx-post="/tienda/install" hx-target="#tienda-log" hx-swap="innerHTML show:top"
+        <form hx-post="/tienda/install" hx-target="#tienda-log" hx-swap="innerHTML"
               style="margin-top:auto">
           <input type="hidden" name="tag" value="{{.Tag}}">
           <button class="btn" type="submit" style="width:100%">Instalar<span class="spinner"></span></button>
@@ -72,7 +72,7 @@
     <p class="muted" style="margin:0.6rem 0 0.9rem">
       Cualquier app: pegá su compose (o la URL). Warden lo adapta e instala igual.
     </p>
-    <form hx-post="/tienda/import" hx-target="#tienda-log" hx-swap="innerHTML show:top"
+    <form hx-post="/tienda/import" hx-target="#tienda-log" hx-swap="innerHTML"
           style="display:flex; flex-direction:column; gap:0.7rem; max-width:660px">
       <input name="tag" placeholder="nombre / tag (ej. uptime-kuma)" required
              style="padding:0.45rem 0.7rem; background:#0f172a; border:1px solid #334155; border-radius:6px; color:#e2e8f0">

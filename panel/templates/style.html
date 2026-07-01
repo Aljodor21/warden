@@ -290,6 +290,22 @@
     .techitem { width: 64px; }
   }
 </style>
+<script>
+  // Las consolas en vivo (.logpre) se recrean en cada refresco (polling), lo
+  // que resetea su scroll al tope. Tras cada swap de HTMX, las mandamos al
+  // fondo para seguir la última línea de la salida — como una consola real.
+  document.addEventListener('htmx:afterSettle', function () {
+    document.querySelectorAll('.logpre').forEach(function (p) { p.scrollTop = p.scrollHeight; });
+    // Mientras hay una instalación en curso (el log sigue polleando: #tienda-box
+    // con hx-get), deshabilitar los botones Instalar de la tienda para no lanzar
+    // otra encima.
+    var busy = !!document.querySelector('#tienda-box[hx-get]');
+    document.querySelectorAll('.storecard button[type=submit]').forEach(function (b) {
+      b.disabled = busy;
+      b.style.opacity = busy ? '0.5' : '';
+    });
+  });
+</script>
 {{end}}
 
 {{define "nav"}}

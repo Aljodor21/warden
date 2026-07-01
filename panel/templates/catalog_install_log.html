@@ -6,6 +6,6 @@
   <div class="ok-msg">Listo, ya queda. Recargando…</div>
   <script>setTimeout(function(){ location.reload(); }, 1200);</script>
   {{end}}
-  {{if .Log}}<pre style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+  {{if .Log}}<pre class="logpre" style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
 </div>
 {{end}}

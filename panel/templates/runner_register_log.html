@@ -6,6 +6,6 @@
   {{else if .Done}}
   <div class="ok-msg">Terminó. Si dice "registered and ready", ya quedó corriendo — podés hacer push.</div>
   {{end}}
-  {{if .Log}}<pre style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
+  {{if .Log}}<pre class="logpre" style="max-height:240px; overflow-y:auto; white-space:pre-wrap">{{.Log}}</pre>{{end}}
 </div>
 {{end}}

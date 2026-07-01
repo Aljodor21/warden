@@ -4,6 +4,6 @@
      style="margin-top:0.5rem">
   {{if .Running}}<p class="muted">Eliminando sistema… el panel se va a apagar al final — eso es normal.</p>{{end}}
   {{if .Done}}<div class="ok-msg">Reset completo. El panel ya no está corriendo — reconectate por SSH y corré <code>sudo ./bootstrap.sh</code> para reinstalar.</div>{{end}}
-  {{if .Log}}<pre style="max-height:420px;overflow-y:auto;white-space:pre-wrap;font-size:0.8rem;background:rgba(0,0,0,0.25);border-radius:6px;padding:0.75rem;margin-top:0.5rem">{{.Log}}</pre>{{end}}
+  {{if .Log}}<pre class="logpre" style="max-height:420px;overflow-y:auto;white-space:pre-wrap;font-size:0.8rem;background:rgba(0,0,0,0.25);border-radius:6px;padding:0.75rem;margin-top:0.5rem">{{.Log}}</pre>{{end}}
 </div>
 {{end}}
