@@ -542,7 +542,45 @@ func (s *server) handleDeleteAppWithToken(w http.ResponseWriter, r *http.Request
 
 // finishDeleteApp hace el trabajo real: borra el archivo, regenera el
 // túnel si hacía falta, y borra el registro DNS si hay token disponible.
+// stopAndCleanApp baja el/los contenedor(es) de la app y borra su stack local.
+// SIN esto, "eliminar" borraba solo la receta y el contenedor seguía corriendo
+// (bug real: apps "borradas" seguían accesibles en su puerto). No toca apps
+// CI/CD (su contenedor lo administra el runner) ni los datos en WARDEN_DATA
+// (por si se reinstala).
+func (s *server) stopAndCleanApp(c *Component, tag string) {
+	if c.IsDeployed() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
+	defer cancel()
+	stopped := false
+	if c.Install != "" {
+		compose := s.root + "/" + c.Install
+		if _, err := os.Stat(compose); err == nil {
+			args := []string{"compose", "-f", compose}
+			envf := "/etc/warden/secrets/" + tag + ".env"
+			if _, err := os.Stat(envf); err == nil {
+				args = append(args, "--env-file", envf)
+			}
+			args = append(args, "down")
+			if exec.CommandContext(ctx, "docker", args...).Run() == nil {
+				stopped = true
+			}
+		}
+	}
+	if !stopped && c.Container != "" {
+		_ = exec.CommandContext(ctx, "docker", "rm", "-f", c.Container).Run()
+	}
+	// Borrar el stack importado (site/stacks/<tag>); nunca las recetas del repo.
+	if strings.HasPrefix(c.Install, "site/stacks/") {
+		_ = os.RemoveAll(s.root + "/site/stacks/" + tag)
+	}
+}
+
 func (s *server) finishDeleteApp(w http.ResponseWriter, r *http.Request, tag, path string, c *Component) {
+	// Apagar y quitar el contenedor ANTES de borrar la receta.
+	s.stopAndCleanApp(c, tag)
+
 	if err := os.Remove(path); err != nil {
 		http.Error(w, "No pude borrar el archivo: "+err.Error(), http.StatusInternalServerError)
 		return
