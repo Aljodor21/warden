@@ -20,6 +20,14 @@
     —igual que las que trae de fábrica. Si necesita HTTPS o base de datos, te lo avisa en el log.
   </p>
 
+  {{if not .AdminUnlocked}}
+  <div style="background:var(--accent-bg); border:1px solid var(--accent); color:var(--text);
+              padding:0.7rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:0.9rem">
+    Para <strong>instalar</strong> apps necesitás el <strong>modo admin</strong>: desbloquealo con el
+    candado de arriba a la derecha y volvé a intentar.
+  </div>
+  {{end}}
+
   <div id="tienda-log" style="margin-bottom:1rem"></div>
 
   {{if .FetchErr}}
@@ -42,7 +50,7 @@
           </div>
         </div>
         <div class="storecard-desc">{{.Description}}</div>
-        <form hx-post="/tienda/install" hx-target="#tienda-log" hx-swap="innerHTML show:window:top"
+        <form hx-post="/tienda/install" hx-target="#tienda-log" hx-swap="innerHTML show:top"
               style="margin-top:auto">
           <input type="hidden" name="tag" value="{{.Tag}}">
           <button class="btn" type="submit" style="width:100%">Instalar<span class="spinner"></span></button>
@@ -58,7 +66,7 @@
     <p class="muted" style="margin:0.6rem 0 0.9rem">
       Cualquier app: pegá su compose (o la URL). Warden lo adapta e instala igual.
     </p>
-    <form hx-post="/tienda/import" hx-target="#tienda-log" hx-swap="innerHTML show:window:top"
+    <form hx-post="/tienda/import" hx-target="#tienda-log" hx-swap="innerHTML show:top"
           style="display:flex; flex-direction:column; gap:0.7rem; max-width:660px">
       <input name="tag" placeholder="nombre / tag (ej. uptime-kuma)" required
              style="padding:0.45rem 0.7rem; background:#0f172a; border:1px solid #334155; border-radius:6px; color:#e2e8f0">
