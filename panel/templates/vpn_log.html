@@ -1,0 +1,6 @@
+{{define "vpn_log.html"}}
+<div id="vpn-log-box"
+     {{if .Running}}hx-get="/system/vpn-log" hx-trigger="every 1s" hx-swap="outerHTML"{{end}}>
+  {{if .Log}}<pre class="install-log">{{.Log}}</pre>{{end}}
+</div>
+{{end}}

@@ -101,12 +101,13 @@
       {{if .Sys.TailscaleConnected}}
       <span class="badge on">conectada</span>
       {{else}}
-      <form hx-post="/system/vpn" hx-target="#system-status" hx-swap="innerHTML">
+      <form hx-post="/system/vpn" hx-target="#vpn-log-box" hx-swap="outerHTML">
         <button class="btn" type="submit">{{if .Sys.TailscaleInstalled}}Conectar{{else}}Instalar{{end}}<span class="spinner"></span></button>
       </form>
       {{end}}
     </div>
   </div>
+  <div id="vpn-log-box"></div>
 
   {{if .Sys.TailscaleConnected}}
   <div class="statusrow">

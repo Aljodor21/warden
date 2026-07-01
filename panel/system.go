@@ -49,6 +49,14 @@ type ContainerMem struct {
 	bytes int64
 }
 
+func tailscaleConnected() bool {
+	out, err := exec.Command("tailscale", "ip", "-4").Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) != ""
+}
+
 func (s *server) gatherSystemView() SystemView {
 	v := SystemView{}
 
@@ -435,10 +443,31 @@ func (s *server) handleCloudflareReset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleVPNInstall(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second) // tailscale up puede tardar
-	defer cancel()
-	out, err := s.runWarden(ctx, "vpn")
-	s.renderSystemAction(w, out, err)
+	if s.vpnProc.start() {
+		go func() {
+			defer s.vpnProc.finish()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			runInBackground(ctx, &s.vpnProc, "sudo", s.wardenBin, "vpn")
+		}()
+	}
+	s.renderVPNLog(w)
+}
+
+func (s *server) handleVPNLog(w http.ResponseWriter, r *http.Request) {
+	s.renderVPNLog(w)
+}
+
+func (s *server) renderVPNLog(w http.ResponseWriter) {
+	logText, running, done := s.vpnProc.snapshot()
+	// Si terminó y tailscale ya está conectado, refrescar toda la sección.
+	if done && tailscaleConnected() {
+		w.Header().Set("HX-Retarget", "#system-status")
+		w.Header().Set("HX-Reswap", "innerHTML")
+		render(w, "system_fragment.html", map[string]any{"Sys": s.gatherSystemView()})
+		return
+	}
+	render(w, "vpn_log.html", map[string]any{"Log": logText, "Running": running, "Done": done})
 }
 
 func (s *server) handleSecretsInit(w http.ResponseWriter, r *http.Request) {

@@ -100,6 +100,9 @@ type server struct {
 	// Instalación de ntfy desde Sistema.
 	ntfyProc bgProcess
 
+	// Conectar/instalar Tailscale (puede tardar y requiere polling del link de auth).
+	vpnProc bgProcess
+
 	// Caché de las plantillas de la tienda (Portainer) — se bajan una vez y se
 	// reusan 1h, para no golpear la red en cada carga de la página.
 	storeMu        sync.Mutex
@@ -185,7 +188,8 @@ func main() {
 	mux.HandleFunc("GET /admin/status", s.handleAdminStatus)
 	withSys := func() map[string]any { return map[string]any{"Sys": s.gatherSystemView()} }
 	mux.HandleFunc("GET /system", s.handleSystem)
-	mux.HandleFunc("POST /system/vpn", s.requireAdmin("system_fragment.html", withSys, s.handleVPNInstall))
+	mux.HandleFunc("POST /system/vpn", s.requireAdmin("err_inline.html", noExtra, s.handleVPNInstall))
+	mux.HandleFunc("GET /system/vpn-log", s.handleVPNLog)
 	mux.HandleFunc("POST /system/vpn-exit-node", s.requireAdmin("system_fragment.html", withSys, s.handleVPNExitNode))
 	mux.HandleFunc("POST /system/vpn-subnet", s.requireAdmin("system_fragment.html", withSys, s.handleVPNSubnet))
 	mux.HandleFunc("POST /system/secrets-init", s.requireAdmin("system_fragment.html", withSys, s.handleSecretsInit))
