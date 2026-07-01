@@ -13,6 +13,10 @@ services:
       - "${VAULTWARDEN_PORT:-8222}:80"
     environment:
       TZ: "${TZ:-UTC}"
+      # URL pública — obligatoria detrás de HTTPS/Cloudflare para que las
+      # URLs internas queden bien y el cliente web no tire "Failed to fetch".
+      # warden la inyecta automáticamente desde COMP_CF_HOST.
+      DOMAIN: "${DOMAIN:-}"
       # Registro abierto SOLO para crear tu primera cuenta. Después entrá al
       # panel /admin (con el token de abajo) y ponelo en false para que
       # nadie más se registre.

@@ -78,7 +78,7 @@ warden_stack_install() {
 
   # Generar (una sola vez) los secretos que el stack necesite.
   local envfile="" secret
-  if [ "${#COMP_SECRETS[@]}" -gt 0 ]; then
+  if [ "${#COMP_SECRETS[@]}" -gt 0 ] || [ -n "${COMP_CF_HOST:-}" ]; then
     envfile="/etc/warden/secrets/$tag.env"
     if [ "${WARDEN_DRY_RUN:-0}" = 1 ]; then
       echo "   [dry-run] generaría secretos en $envfile: ${COMP_SECRETS[*]}"
@@ -89,6 +89,15 @@ warden_stack_install() {
         grep -q "^$secret=" "$envfile" 2>/dev/null || \
           echo "$secret=$(openssl rand -hex 16)" >> "$envfile"
       done
+      # Si el componente tiene dominio Cloudflare, inyectarlo como DOMAIN
+      # para que los stacks detrás de HTTPS funcionen correctamente.
+      if [ -n "${COMP_CF_HOST:-}" ]; then
+        if grep -q "^DOMAIN=" "$envfile" 2>/dev/null; then
+          sed -i "s|^DOMAIN=.*|DOMAIN=https://$COMP_CF_HOST|" "$envfile"
+        else
+          echo "DOMAIN=https://$COMP_CF_HOST" >> "$envfile"
+        fi
+      fi
       chmod 600 "$envfile"
     fi
   fi
