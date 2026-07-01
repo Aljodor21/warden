@@ -255,6 +255,18 @@
   .switch input:checked + .slider { background: var(--green-bg); border-color: var(--green); }
   .switch input:checked + .slider::before { transform: translateX(20px); background: var(--green); }
 
+  /* tienda: grilla de apps */
+  .storegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; }
+  .storecard { display: flex; flex-direction: column; gap: 0.5rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 0.9rem; }
+  .storecard:hover { border-color: var(--border2); }
+  .storecard-head { display: flex; align-items: center; gap: 0.6rem; }
+  .storelogo { width: 34px; height: 34px; object-fit: contain; border-radius: 7px; background: #fff2; padding: 2px; flex-shrink: 0; }
+  .storecard-title { font-weight: 600; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .storecard-cat { font-size: 0.72rem; color: var(--muted); }
+  .storecard-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
   /* spinner */
   .spinner { display: none; width: 12px; height: 12px; margin-left: 0.45rem;
              border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
@@ -285,6 +297,7 @@
   <span class="brand">warden</span>
   <a href="/" class="{{if eq .Page "dashboard"}}active{{end}}">Dashboard</a>
   <a href="/catalog" class="{{if eq .Page "catalog"}}active{{end}}">Catálogo</a>
+  <a href="/tienda" class="{{if eq .Page "tienda"}}active{{end}}">Tienda</a>
   <a href="/nas" class="{{if eq .Page "nas"}}active{{end}}">NAS</a>
   <a href="/system" class="{{if eq .Page "system"}}active{{end}}">Sistema</a>
   <a href="/backups" class="{{if eq .Page "backups"}}active{{end}}">Backups</a>

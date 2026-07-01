@@ -94,6 +94,15 @@ type server struct {
 	// puede tardar más que el WriteTimeout del server si se corre síncrono.
 	publishProc bgProcess
 
+	// Estado de la tienda: 'warden import' + 'install-component' en segundo plano.
+	tiendaProc bgProcess
+
+	// Caché de las plantillas de la tienda (Portainer) — se bajan una vez y se
+	// reusan 1h, para no golpear la red en cada carga de la página.
+	storeMu        sync.Mutex
+	storeTemplates []portainerTemplate
+	storeFetchedAt time.Time
+
 	// Caché de restic snapshots: evita arrancar un contenedor Docker en cada
 	// carga de página o acción de backups. TTL 60s; se invalida tras cada backup.
 	snapMu        sync.Mutex
@@ -158,6 +167,10 @@ func main() {
 	mux.HandleFunc("GET /backups/restore-log", s.handleRestorePoll)
 	mux.HandleFunc("POST /publish", s.handlePublish)
 	mux.HandleFunc("GET /publish-log", s.handlePublishPoll)
+	mux.HandleFunc("GET /tienda", s.handleTienda)
+	mux.HandleFunc("POST /tienda/install", s.requireAdmin("tienda_log.html", noExtra, s.handleTiendaInstall))
+	mux.HandleFunc("POST /tienda/import", s.requireAdmin("tienda_log.html", noExtra, s.handleTiendaImport))
+	mux.HandleFunc("GET /tienda/import-log", s.handleTiendaImportLog)
 	withUsers := func() map[string]any { return map[string]any{"Users": s.nasUsers()} }
 	mux.HandleFunc("GET /nas", s.handleNAS)
 	mux.HandleFunc("POST /nas/add", s.requireAdmin("nas_fragment.html", withUsers, s.handleNASAdd))

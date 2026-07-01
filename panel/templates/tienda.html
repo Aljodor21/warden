@@ -1,0 +1,74 @@
+{{define "tienda.html"}}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>warden — tienda</title>
+  {{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+  <script defer src="/static/alpine.min.js"></script>
+</head>
+<body>
+  {{template "nav" .}}
+
+  <div class="top">
+    <h1>Tienda</h1>
+  </div>
+  <p class="muted" style="margin-top:-0.6rem; margin-bottom:1rem">
+    Elegí una app y dale Instalar. Warden baja su imagen, le busca un puerto libre y la adapta a su formato
+    —igual que las que trae de fábrica. Si necesita HTTPS o base de datos, te lo avisa en el log.
+  </p>
+
+  <div id="tienda-log" style="margin-bottom:1rem"></div>
+
+  {{if .FetchErr}}
+  <div class="err">{{.FetchErr}}</div>
+  {{else}}
+  <div x-data="{ q: '' }">
+    <input x-model="q" placeholder="Buscar app… (nombre o categoría)"
+           style="width:100%; max-width:420px; box-sizing:border-box; padding:0.5rem 0.8rem; margin-bottom:1rem;
+                  background:#0f172a; border:1px solid #334155; border-radius:8px; color:#e2e8f0">
+    <div class="storegrid">
+      {{range .Apps}}
+      <div class="storecard" data-search="{{.Search}}"
+           x-show="q==='' || $el.dataset.search.includes(q.toLowerCase())">
+        <div class="storecard-head">
+          {{if .Logo}}<img class="storelogo" src="{{.Logo}}" alt="" loading="lazy"
+               onerror="this.style.display='none'">{{end}}
+          <div style="min-width:0">
+            <div class="storecard-title">{{.Title}}</div>
+            {{if .Category}}<div class="storecard-cat">{{.Category}}</div>{{end}}
+          </div>
+        </div>
+        <div class="storecard-desc">{{.Description}}</div>
+        <form hx-post="/tienda/install" hx-target="#tienda-log" hx-swap="innerHTML show:window:top"
+              style="margin-top:auto">
+          <input type="hidden" name="tag" value="{{.Tag}}">
+          <button class="btn" type="submit" style="width:100%">Instalar<span class="spinner"></span></button>
+        </form>
+      </div>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+
+  <details class="panel" style="margin-top:1.5rem">
+    <summary style="cursor:pointer; font-weight:600">¿No está en la lista? Pegá su docker-compose</summary>
+    <p class="muted" style="margin:0.6rem 0 0.9rem">
+      Cualquier app: pegá su compose (o la URL). Warden lo adapta e instala igual.
+    </p>
+    <form hx-post="/tienda/import" hx-target="#tienda-log" hx-swap="innerHTML show:window:top"
+          style="display:flex; flex-direction:column; gap:0.7rem; max-width:660px">
+      <input name="tag" placeholder="nombre / tag (ej. uptime-kuma)" required
+             style="padding:0.45rem 0.7rem; background:#0f172a; border:1px solid #334155; border-radius:6px; color:#e2e8f0">
+      <input name="url" placeholder="URL del compose (opcional)"
+             style="padding:0.45rem 0.7rem; background:#0f172a; border:1px solid #334155; border-radius:6px; color:#e2e8f0">
+      <textarea name="compose" rows="7" placeholder="…o pegá el compose acá"
+             style="padding:0.5rem 0.7rem; background:#0f172a; border:1px solid #334155; border-radius:6px; color:#e2e8f0; font-family:monospace; font-size:0.85rem"></textarea>
+      <button class="btn" type="submit" style="align-self:flex-start">Importar e instalar<span class="spinner"></span></button>
+    </form>
+  </details>
+</body>
+</html>
+{{end}}

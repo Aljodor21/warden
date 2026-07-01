@@ -92,7 +92,10 @@ warden_import() {
   while IFS= read -r t; do
     [ -n "$t" ] || continue
     case "$t" in
-      /etc/*|/var/run/*|/run/*|/proc/*|/sys/*|/usr/*|/dev/*|*docker.sock) continue ;;
+      # Solo archivos de sistema puntuales (no todo /etc/* — hay apps que
+      # guardan sus datos en /etc/<app>, ej. clamav en /etc/clamav).
+      /etc/timezone|/etc/localtime|/etc/hosts|/etc/resolv.conf) continue ;;
+      /var/run/*|/run/*|/proc/*|/sys/*|/dev/*|*/docker.sock) continue ;;
     esac
     targets+=("$t")
   done < <(echo "$json" | jq -r --arg s "$svc" '.services[$s].volumes[]?.target // empty')
