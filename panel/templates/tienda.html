@@ -88,6 +88,21 @@
       <button class="btn" type="submit" style="align-self:flex-start">Importar e instalar<span class="spinner"></span></button>
     </form>
   </details>
+
+  <div class="panel" style="margin-top:1.5rem">
+    <h2 style="font-size:0.95rem">De dónde salen estas apps y qué hace warden</h2>
+    <p class="muted" style="margin:0.4rem 0 0; line-height:1.6">
+      La lista viene de <a href="https://github.com/Lissy93/portainer-templates" target="_blank" rel="noopener">Portainer
+      Templates</a>, una colección abierta y comunitaria de apps self-hosted (imagen, puertos, volúmenes e ícono de cada una).
+      Warden <strong>no ejecuta nada de esa fuente directamente</strong>: al darle Instalar, toma el docker-compose de la app
+      y lo <strong>adapta a su formato</strong> — le busca un puerto libre (cruzando el catálogo + los puertos que escucha el
+      sistema + los contenedores de Docker), mapea sus datos a <code>${WARDEN_DATA}</code> para que entren al backup, e infiere
+      si necesita HTTPS. Después la levanta con Docker como cualquier app de warden, y la podés ver, respaldar y borrar igual.
+      <br><br>
+      Como es una fuente comunitaria, algunas apps pueden estar desactualizadas o ser complejas (varios servicios): esas se
+      importan lo mejor posible y quizás haya que ajustarlas. Las simples (un contenedor, un puerto) andan derecho.
+    </p>
+  </div>
 </body>
 </html>
 {{end}}
