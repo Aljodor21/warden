@@ -409,7 +409,7 @@ func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {
 		}
 		c.Tag = tag
 	}
-	data := map[string]any{"C": c, "IsNew": tag == ""}
+	data := map[string]any{"C": c, "IsNew": tag == "", "CloudflareSet": cloudflareConfigured()}
 	if tag != "" {
 		data["Ports"] = containerPorts(c.Container) // para el selector de puerto del link
 		// Leer el docker-compose.yml de la app (si existe) para mostrarlo en el editor.
@@ -456,6 +456,9 @@ func (s *server) handleEditSave(w http.ResponseWriter, r *http.Request) {
 		CFHost:      r.FormValue("cfhost"),
 		CFPort:      r.FormValue("cfport"),
 		Note:        r.FormValue("note"),
+	}
+	if c.CFHost != "" && !cloudflareConfigured() {
+		c.CFHost = ""
 	}
 	// SIEMPRE en site/catalog — nunca en catalog/ (eso es del repo genérico,
 	// se actualiza con git pull, no se debe pisar con cambios locales).

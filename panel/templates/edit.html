@@ -58,8 +58,12 @@
     <label>Ícono — opcional, nombre de ícono para Homepage (ej: <code>immich</code>, o vacío para el genérico de Docker)</label>
     <input name="icon" value="{{.C.Icon}}">
 
+    {{if .CloudflareSet}}
     <label>Subdominio público (Cloudflare) — opcional, SOLO si querés que esta app sea accesible desde internet con tu dominio</label>
     <input name="cfhost" value="{{.C.CFHost}}" placeholder="app.tudominio.site">
+    {{else}}
+    <p style="opacity:0.6; font-size:0.88rem">Subdominio público (Cloudflare) — no disponible: el túnel de Cloudflare no está configurado en este servidor.</p>
+    {{end}}
 
     <label>Puerto — a qué puerto apunta el link del dashboard (y por dónde sale el subdominio, si lo hay)</label>
     <input name="cfport" value="{{.C.CFPort}}" id="cfport-input">
