@@ -153,6 +153,8 @@ func main() {
 	mux.HandleFunc("GET /partials/health", s.handleHealthPartial)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	mux.HandleFunc("GET /appearance", s.handleThemes)
+	mux.HandleFunc("GET /appearance/server-images", s.handleServerImages)
+	mux.HandleFunc("GET /appearance/server-image-file", s.handleServerImageFile)
 	mux.HandleFunc("GET /catalog", s.handleList)
 	mux.HandleFunc("GET /app/{tag}/logs", s.handleAppLogs)
 	mux.HandleFunc("GET /app/{tag}/logs/poll", s.handleAppLogsPoll)

@@ -52,6 +52,19 @@
     </div>
 
     <div class="section-sep">
+      <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.6rem">
+        Imágenes guardadas en el servidor:
+      </p>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem">
+        <input id="server-dir-input" type="text" value="/srv/warden/wallpapers"
+               style="flex:1; min-width:200px; max-width:380px; font-family:monospace; font-size:0.82rem">
+        <button class="btn secondary" id="btn-browse-server">Explorar</button>
+      </div>
+      <div id="server-wall-status" style="font-size:0.82rem; color:var(--muted); margin-bottom:0.4rem"></div>
+      <div class="wall-grid" id="server-wall-grid"></div>
+    </div>
+
+    <div class="section-sep">
       <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.75rem">
         Imagen propia — desde tu equipo o una URL:
       </p>
@@ -347,13 +360,59 @@ document.getElementById('btn-load-walls').onclick = async function() {
   }
 };
 
-// Auto-render si hay caché
+// Auto-render si hay caché de dharmx/walls
 (function() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
     if (cached && Date.now() - cached.ts < CACHE_TTL) loadWallpapers(cached.files, true);
   } catch(e) {}
 })();
+
+// === IMÁGENES DEL SERVIDOR ===
+let serverDir = '';
+
+async function browseServer() {
+  const dir = document.getElementById('server-dir-input').value.trim();
+  const status = document.getElementById('server-wall-status');
+  const grid = document.getElementById('server-wall-grid');
+  if (!dir) return;
+
+  status.textContent = 'Cargando...';
+  grid.innerHTML = '';
+
+  try {
+    const resp = await fetch('/appearance/server-images?dir=' + encodeURIComponent(dir));
+    const data = await resp.json();
+    if (data.error) { status.textContent = 'Error: ' + data.error; return; }
+
+    serverDir = data.dir;
+    if (!data.files.length) {
+      status.textContent = 'No hay imágenes en esa carpeta.';
+      return;
+    }
+    status.textContent = data.files.length + ' imagen' + (data.files.length !== 1 ? 'es' : '') + ' en ' + data.dir;
+
+    data.files.forEach(name => {
+      const url = '/appearance/server-image-file?dir=' + encodeURIComponent(data.dir) + '&name=' + encodeURIComponent(name);
+      const img = document.createElement('img');
+      img.className = 'wall-thumb' + (localStorage.getItem('warden-wallpaper') === url ? ' active' : '');
+      img.src = url;
+      img.loading = 'lazy';
+      img.dataset.url = url;
+      img.alt = name;
+      img.title = name;
+      img.onclick = () => applyWallpaper(url);
+      grid.appendChild(img);
+    });
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+}
+
+document.getElementById('btn-browse-server').onclick = browseServer;
+document.getElementById('server-dir-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') browseServer();
+});
 </script>
 </body>
 </html>
