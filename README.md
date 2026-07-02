@@ -1,5 +1,11 @@
 # warden
 
+[![CI](https://github.com/Aljodor21/warden/actions/workflows/ci.yml/badge.svg)](https://github.com/Aljodor21/warden/actions/workflows/ci.yml)
+[![Docs](https://github.com/Aljodor21/warden/actions/workflows/docs.yml/badge.svg)](https://aljodor21.github.io/warden/)
+[![Go 1.21+](https://img.shields.io/badge/Go-1.21%2B-00ADD8?logo=go)](https://go.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-orange)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Debian%20%2F%20Ubuntu%20%2F%20Arch-blue)](#)
+
 > Base opinionada y reutilizable para montar y mantener tu propio servidor casero
 > (homelab): instalación desde cero, backup/restauración, dashboard y CI/CD,
 > en **Debian/Ubuntu** o **Arch**. Todo tiene DOS caminos equivalentes: la
