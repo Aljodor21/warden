@@ -45,7 +45,8 @@ Linux limpio
                      ├─ Tienda (instalar apps en un click)
                      ├─ Archivos (FileBrowser)
                      ├─ Backups (backup/restore/timers)
-                     └─ Sistema (VPN, Cloudflare, zona horaria, reset)
+                     ├─ Sistema (VPN, Cloudflare, zona horaria, reset)
+                     └─ Apariencia (temas, fondos, ajuste de vidrio)
 ```
 
 ### Primer uso — secuencia típica
@@ -130,8 +131,11 @@ todo lo que cambia el sistema.
   permite elegir con un click cuál usar para el link del dashboard.
 - **Editor de docker-compose.yml** integrado: editá el compose de la app
   directamente desde el panel, sin terminal.
+- **Logs en vivo por contenedor**: botón "Ver logs" en cada app lista que abre
+  un visor de las últimas 100 líneas con auto-scroll y refresco cada 2s.
 - Valida en vivo que el puerto no choque con otro.
-- Al guardar con subdominio, **publica el túnel automáticamente**.
+- Al guardar con subdominio, **publica el túnel automáticamente** en background
+  y redirige de inmediato — sin esperar los 25s del proceso.
 - **Registra el runner** pegando el token de GitHub (sin terminal), con log
   en vivo del proceso.
 - **Elimina una app**: baja el contenedor, borra imágenes y volúmenes, regenera
@@ -163,10 +167,12 @@ todo lo que cambia el sistema.
 - **Zona horaria** — selector con zonas comunes (América Latina, Europa, otros),
   aplica en vivo con `timedatectl` y refleja la hora correcta en todos los
   timestamps del panel inmediatamente.
-- **Tailscale (VPN)** — instalar y conectar con log en vivo de la URL de
-  autorización; muestra IP Tailscale cuando está conectada.
+- **Tailscale (VPN)** — instalar y conectar con **link de autorización en tiempo
+  real** (bgProcess + HTMX polling); muestra IP Tailscale cuando está conectada.
 - **Túnel Cloudflare** — configurar con streaming de la URL de login;
   muestra el dominio y las apps publicadas cuando está activo.
+- **Alertas push (ntfy)** — instalar y configurar ntfy; el panel muestra la URL
+  del servidor y el estado. También disponible como `warden ntfy` en la CLI.
 - **API Token de Cloudflare** — guardar para que "Eliminar app" borre el
   registro DNS automáticamente (opcional).
 - **Llave `age`** — generar la llave de cifrado de secretos.
@@ -179,6 +185,19 @@ todo lo que cambia el sistema.
   *en tu cuenta*, Tailscale, firewall, paquetes). Pide escribir `BORRAR` en
   un campo de texto para habilitar el botón. Log en vivo mientras corre —
   el panel se apaga al final, eso es normal.
+
+#### Apariencia
+
+- **7 temas de color**: Dark, Nord, Catppuccin Mocha, Dracula, Gruvbox, Tokyo Night y Claro.
+  Se aplican en tiempo real y persisten en `localStorage`.
+- **Fondos de pantalla**: grilla paginada (12 por página) desde el repositorio
+  [dharmx/walls](https://github.com/dharmx/walls) vía GitHub API, con caché de 24h.
+  También acepta imágenes del propio servidor (explorador de directorios) y subida
+  desde el equipo local (se redimensionan a 1920px antes de guardar).
+- **Contraste automático**: detecta la luminancia del fondo con canvas y aplica
+  un scrim más oscuro si la imagen es clara — el texto siempre se lee.
+- **4 sliders de ajuste fino**: opacidad del vidrio · desenfoque del vidrio ·
+  brillo del fondo · desenfoque del fondo. Todos persistentes y sin parpadeo al cargar.
 
 ### El comando `warden`
 
@@ -207,6 +226,7 @@ warden   # menú principal interactivo
 | `cloudflare-reset` | Borra el túnel y la sesión para reconfigurar de cero | Sistema → Conectividad |
 | `secrets <init\|save\|restore>` | Cifra/restaura secretos con `age` | Sistema → Credenciales |
 | `reset` | Borra TODO lo que warden instaló/configuró | Sistema → Zona de peligro |
+| `ntfy` | Instala y configura el servidor de alertas push | Sistema → Alertas push |
 | `motd` | Instala el saludo al iniciar sesión | — |
 
 ### CI/CD
