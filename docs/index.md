@@ -2,7 +2,7 @@
 
 > Base opinionada y reutilizable para montar y mantener tu propio servidor casero (homelab): instalación desde cero, backup/restauración, panel web y CI/CD — en **Debian/Ubuntu** o **Arch**, con un solo comando.
 
-![Dashboard de warden](screenshots/screenshot-dashboard.png)
+![Tour del panel de warden](screenshots/tour.gif)
 
 warden convierte un Linux recién instalado en un homelab sólido y mantenible. Los **datos** se respaldan con `restic` a un disco; la **configuración** vive como código y es reproducible. Si toca recuperarte o migrar a otro SO, el camino ya está trazado.
 
