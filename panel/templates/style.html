@@ -274,6 +274,7 @@
              animation: warden-spin 0.65s linear infinite; }
   .htmx-request .spinner, .htmx-request.spinner { display: inline-block; }
   @keyframes warden-spin { to { transform: rotate(360deg); } }
+  form.htmx-request, button.htmx-request { pointer-events: none; opacity: 0.65; }
 
   @media (max-width: 640px) {
     body { padding: 1rem; }
