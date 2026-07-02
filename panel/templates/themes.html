@@ -1,0 +1,276 @@
+{{define "themes.html"}}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><title>warden — apariencia</title>{{template "_style"}}
+  <style>
+    .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.65rem; margin-top: 1rem; }
+    .theme-swatch { border-radius: 12px; overflow: hidden; cursor: pointer;
+                    border: 2px solid var(--border2); transition: border-color 0.2s, transform 0.15s; }
+    .theme-swatch:hover { transform: translateY(-2px); border-color: var(--muted); }
+    .theme-swatch.active { border-color: var(--accent); }
+    .theme-preview { height: 64px; position: relative; }
+    .theme-dot { position: absolute; bottom: 7px; left: 9px; width: 10px; height: 10px;
+                 border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.4); }
+    .theme-name { padding: 0.45rem 0.7rem; font-size: 0.8rem; font-weight: 500;
+                  background: var(--surface); color: var(--text); }
+
+    .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+                 gap: 0.5rem; margin-top: 0.75rem; }
+    .wall-thumb { aspect-ratio: 16/9; object-fit: cover; width: 100%; display: block;
+                  border-radius: 8px; cursor: pointer; border: 2px solid transparent;
+                  transition: border-color 0.15s, transform 0.15s; background: var(--surface2); }
+    .wall-thumb:hover { transform: scale(1.02); border-color: var(--muted); }
+    .wall-thumb.active { border-color: var(--accent); }
+
+    .wall-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .wall-status { font-size: 0.82rem; color: var(--muted); }
+    .section-sep { margin: 1.5rem 0 0; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  {{template "nav" .}}
+  <div class="top"><h1>Apariencia</h1></div>
+
+  <div class="panel">
+    <h2>Tema de color</h2>
+    <div class="theme-grid" id="theme-grid"></div>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <h2>Fondo de pantalla</h2>
+    <div class="wall-actions">
+      <button class="btn" id="btn-load-walls">Cargar fondos</button>
+      <button class="btn secondary" id="btn-remove-wall" style="display:none">Quitar fondo</button>
+      <span class="wall-status" id="wall-status"></span>
+    </div>
+    <div class="wall-grid" id="wall-grid"></div>
+
+    <div class="section-sep">
+      <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.6rem">
+        O pegá la URL de cualquier imagen propia:
+      </p>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap">
+        <input id="custom-wall-url" type="url" placeholder="https://..." style="flex:1;min-width:200px;max-width:460px">
+        <button class="btn" id="btn-apply-custom">Aplicar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const THEMES = [
+  { id:'dark', name:'Dark', dot:'#f97316',
+    preview:'linear-gradient(135deg,#0c1118 0%,#1a2436 100%)',
+    vars:[['--bg','#0c1118'],['--surface','#141c2b'],['--surface2','#1a2436'],
+          ['--border','rgba(255,255,255,0.07)'],['--border2','rgba(255,255,255,0.13)'],
+          ['--accent','#f97316'],['--accent-bg','rgba(249,115,22,0.12)'],
+          ['--text','#dde6f0'],['--muted','#52637a'],
+          ['--green','#34d399'],['--green-bg','rgba(52,211,153,0.1)'],
+          ['--red','#f87171'],['--red-bg','rgba(248,113,113,0.1)'],
+          ['--blue','#7dd3fc'],
+          ['--card-bg','rgba(14,22,40,0.65)'],['--panel-bg','rgba(14,22,40,0.68)'],
+          ['--glass-card','rgba(10,15,28,0.50)'],
+          ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(249,115,22,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(14,165,233,0.05) 0%,transparent 70%),#0b0f1a'],
+          ['color-scheme','dark']] },
+  { id:'nord', name:'Nord', dot:'#88c0d0',
+    preview:'linear-gradient(135deg,#2e3440 0%,#3b4252 100%)',
+    vars:[['--bg','#2e3440'],['--surface','#3b4252'],['--surface2','#434c5e'],
+          ['--border','rgba(255,255,255,0.06)'],['--border2','rgba(255,255,255,0.11)'],
+          ['--accent','#88c0d0'],['--accent-bg','rgba(136,192,208,0.15)'],
+          ['--text','#eceff4'],['--muted','#7b88a1'],
+          ['--green','#a3be8c'],['--green-bg','rgba(163,190,140,0.15)'],
+          ['--red','#bf616a'],['--red-bg','rgba(191,97,106,0.15)'],
+          ['--blue','#81a1c1'],
+          ['--card-bg','rgba(46,52,64,0.75)'],['--panel-bg','rgba(46,52,64,0.78)'],
+          ['--glass-card','rgba(36,42,54,0.55)'],
+          ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(136,192,208,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(94,129,172,0.05) 0%,transparent 70%),#242933'],
+          ['color-scheme','dark']] },
+  { id:'catppuccin', name:'Catppuccin', dot:'#cba6f7',
+    preview:'linear-gradient(135deg,#1e1e2e 0%,#313244 100%)',
+    vars:[['--bg','#1e1e2e'],['--surface','#313244'],['--surface2','#45475a'],
+          ['--border','rgba(255,255,255,0.06)'],['--border2','rgba(255,255,255,0.10)'],
+          ['--accent','#cba6f7'],['--accent-bg','rgba(203,166,247,0.15)'],
+          ['--text','#cdd6f4'],['--muted','#6c7086'],
+          ['--green','#a6e3a1'],['--green-bg','rgba(166,227,161,0.15)'],
+          ['--red','#f38ba8'],['--red-bg','rgba(243,139,168,0.15)'],
+          ['--blue','#89dceb'],
+          ['--card-bg','rgba(30,30,46,0.70)'],['--panel-bg','rgba(30,30,46,0.73)'],
+          ['--glass-card','rgba(24,24,37,0.55)'],
+          ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(203,166,247,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(137,220,235,0.05) 0%,transparent 70%),#181825'],
+          ['color-scheme','dark']] },
+  { id:'dracula', name:'Dracula', dot:'#ff79c6',
+    preview:'linear-gradient(135deg,#282a36 0%,#44475a 100%)',
+    vars:[['--bg','#282a36'],['--surface','#1e1f29'],['--surface2','#44475a'],
+          ['--border','rgba(255,255,255,0.07)'],['--border2','rgba(255,255,255,0.12)'],
+          ['--accent','#ff79c6'],['--accent-bg','rgba(255,121,198,0.15)'],
+          ['--text','#f8f8f2'],['--muted','#6272a4'],
+          ['--green','#50fa7b'],['--green-bg','rgba(80,250,123,0.12)'],
+          ['--red','#ff5555'],['--red-bg','rgba(255,85,85,0.15)'],
+          ['--blue','#8be9fd'],
+          ['--card-bg','rgba(40,42,54,0.72)'],['--panel-bg','rgba(40,42,54,0.75)'],
+          ['--glass-card','rgba(30,31,41,0.55)'],
+          ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(255,121,198,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(139,233,253,0.05) 0%,transparent 70%),#1e1f2a'],
+          ['color-scheme','dark']] },
+  { id:'gruvbox', name:'Gruvbox', dot:'#d79921',
+    preview:'linear-gradient(135deg,#282828 0%,#3c3836 100%)',
+    vars:[['--bg','#282828'],['--surface','#3c3836'],['--surface2','#504945'],
+          ['--border','rgba(255,255,255,0.06)'],['--border2','rgba(255,255,255,0.10)'],
+          ['--accent','#d79921'],['--accent-bg','rgba(215,153,33,0.15)'],
+          ['--text','#ebdbb2'],['--muted','#928374'],
+          ['--green','#98971a'],['--green-bg','rgba(152,151,26,0.15)'],
+          ['--red','#cc241d'],['--red-bg','rgba(204,36,29,0.15)'],
+          ['--blue','#458588'],
+          ['--card-bg','rgba(40,40,40,0.72)'],['--panel-bg','rgba(40,40,40,0.75)'],
+          ['--glass-card','rgba(29,32,33,0.55)'],
+          ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(215,153,33,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(69,133,136,0.05) 0%,transparent 70%),#1d2021'],
+          ['color-scheme','dark']] },
+  { id:'tokyo', name:'Tokyo Night', dot:'#7aa2f7',
+    preview:'linear-gradient(135deg,#1a1b2e 0%,#24283b 100%)',
+    vars:[['--bg','#1a1b2e'],['--surface','#24283b'],['--surface2','#292e42'],
+          ['--border','rgba(255,255,255,0.06)'],['--border2','rgba(255,255,255,0.10)'],
+          ['--accent','#7aa2f7'],['--accent-bg','rgba(122,162,247,0.15)'],
+          ['--text','#c0caf5'],['--muted','#565f89'],
+          ['--green','#9ece6a'],['--green-bg','rgba(158,206,106,0.15)'],
+          ['--red','#f7768e'],['--red-bg','rgba(247,118,142,0.15)'],
+          ['--blue','#7dcfff'],
+          ['--card-bg','rgba(26,27,46,0.70)'],['--panel-bg','rgba(26,27,46,0.73)'],
+          ['--glass-card','rgba(16,16,28,0.55)'],
+          ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(122,162,247,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(125,207,255,0.05) 0%,transparent 70%),#16161e'],
+          ['color-scheme','dark']] },
+  { id:'light', name:'Claro', dot:'#f97316',
+    preview:'linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)',
+    vars:[['--bg','#f1f5f9'],['--surface','#ffffff'],['--surface2','#f1f5f9'],
+          ['--border','rgba(0,0,0,0.08)'],['--border2','rgba(0,0,0,0.14)'],
+          ['--accent','#f97316'],['--accent-bg','rgba(249,115,22,0.10)'],
+          ['--text','#1e293b'],['--muted','#64748b'],
+          ['--green','#16a34a'],['--green-bg','rgba(22,163,74,0.10)'],
+          ['--red','#dc2626'],['--red-bg','rgba(220,38,38,0.10)'],
+          ['--blue','#0284c7'],
+          ['--card-bg','rgba(255,255,255,0.85)'],['--panel-bg','rgba(255,255,255,0.88)'],
+          ['--glass-card','rgba(255,255,255,0.65)'],
+          ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(249,115,22,0.05) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(14,165,233,0.04) 0%,transparent 70%),#e8edf2'],
+          ['color-scheme','light']] },
+];
+
+const CACHE_KEY = 'warden-walls-v1';
+const CACHE_TTL = 86400000;
+
+function applyTheme(id) {
+  const t = THEMES.find(t => t.id === id);
+  if (!t) return;
+  const r = document.documentElement.style;
+  t.vars.forEach(([k, v]) => {
+    if (k === 'color-scheme') document.documentElement.style.colorScheme = v;
+    else r.setProperty(k, v);
+  });
+  localStorage.setItem('warden-theme-id', id);
+  localStorage.setItem('warden-theme-vars', JSON.stringify(t.vars));
+  document.querySelectorAll('.theme-swatch').forEach(el =>
+    el.classList.toggle('active', el.dataset.id === id));
+}
+
+function applyWallpaper(url) {
+  document.documentElement.classList.add('has-wallpaper');
+  document.documentElement.style.setProperty('--wallpaper-url', 'url("' + url + '")');
+  localStorage.setItem('warden-wallpaper', url);
+  document.getElementById('btn-remove-wall').style.display = '';
+  document.querySelectorAll('.wall-thumb').forEach(el =>
+    el.classList.toggle('active', el.dataset.url === url));
+}
+
+function removeWallpaper() {
+  document.documentElement.classList.remove('has-wallpaper');
+  document.documentElement.style.removeProperty('--wallpaper-url');
+  localStorage.removeItem('warden-wallpaper');
+  document.getElementById('btn-remove-wall').style.display = 'none';
+  document.querySelectorAll('.wall-thumb').forEach(el => el.classList.remove('active'));
+}
+
+// Render swatches
+const activeTheme = localStorage.getItem('warden-theme-id') || 'dark';
+const activeWall  = localStorage.getItem('warden-wallpaper') || '';
+const grid = document.getElementById('theme-grid');
+THEMES.forEach(t => {
+  const el = document.createElement('div');
+  el.className = 'theme-swatch' + (t.id === activeTheme ? ' active' : '');
+  el.dataset.id = t.id;
+  el.innerHTML = '<div class="theme-preview" style="background:' + t.preview + '">'
+    + '<span class="theme-dot" style="background:' + t.dot + '"></span></div>'
+    + '<div class="theme-name">' + t.name + '</div>';
+  el.onclick = () => applyTheme(t.id);
+  grid.appendChild(el);
+});
+
+// Wallpaper buttons
+if (activeWall) document.getElementById('btn-remove-wall').style.display = '';
+document.getElementById('btn-remove-wall').onclick = removeWallpaper;
+document.getElementById('btn-apply-custom').onclick = function() {
+  const url = document.getElementById('custom-wall-url').value.trim();
+  if (url) applyWallpaper(url);
+};
+
+function renderWallpapers(files) {
+  const wg = document.getElementById('wall-grid');
+  wg.innerHTML = '';
+  files.forEach(path => {
+    const url = 'https://raw.githubusercontent.com/dharmx/walls/main/' + path;
+    const img = document.createElement('img');
+    img.className = 'wall-thumb' + (url === activeWall ? ' active' : '');
+    img.src = url;
+    img.loading = 'lazy';
+    img.dataset.url = url;
+    img.alt = path.split('/').pop().replace(/\.[^.]+$/, '');
+    img.title = img.alt;
+    img.onclick = () => applyWallpaper(url);
+    wg.appendChild(img);
+  });
+}
+
+// Load from GitHub (with localStorage cache)
+document.getElementById('btn-load-walls').onclick = async function() {
+  const btn = this;
+  const status = document.getElementById('wall-status');
+  btn.disabled = true;
+  status.textContent = 'Cargando desde GitHub...';
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      renderWallpapers(cached.files);
+      status.textContent = cached.files.length + ' fondos cargados (caché)';
+      return;
+    }
+
+    const resp = await fetch('https://api.github.com/repos/dharmx/walls/git/trees/HEAD?recursive=1');
+    if (!resp.ok) throw new Error('GitHub API: ' + resp.status);
+    const data = await resp.json();
+    const exts = ['.jpg','.jpeg','.png','.webp'];
+    const files = data.tree
+      .filter(f => f.type === 'blob' && exts.some(e => f.path.toLowerCase().endsWith(e)))
+      .map(f => f.path)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 80);
+
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), files }));
+    renderWallpapers(files);
+    status.textContent = files.length + ' fondos cargados';
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+  }
+};
+
+// Auto-render si hay caché
+(function() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      renderWallpapers(cached.files);
+      document.getElementById('wall-status').textContent = cached.files.length + ' fondos (caché 24h)';
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
+{{end}}
