@@ -35,14 +35,26 @@ y la usa directamente; si no, importa y adapta el compose automáticamente.
 `warden import` disponible también por consola. Apps ya instaladas marcadas
 visualmente.
 
-## Fase 7 — Pulido y calidad (en curso)
+## Fase 7 — Pulido y calidad ✅
 - [x] CI propio: `shellcheck` + `bash -n` + build Go en cada push/PR
-- [ ] Cobertura de tests para los módulos críticos (backup, restore, reset)
-- [ ] Documentación en MkDocs con capturas/gifs del panel
-- [x] Soporte de alertas push (ntfy) en eventos de backup y caída de servicio
-  - Instalación con un click desde Sistema, log en vivo igual que la tienda
-  - Auto-detección si ntfy ya está corriendo (preset completo)
-  - Watch cada 5 min vía systemd timer: alerta si un contenedor del catálogo cae
-  - Backup/verify notifican éxito (silencioso) y fallo (prioritario)
-  - VPN connect migrado a bgProcess: link de auth aparece en el panel en tiempo real
-- [ ] Exportar/importar `site/` para facilitar migraciones entre servidores
+- [x] Alertas push (ntfy): instalación con un click, watch de contenedores,
+  notificaciones de backup/verify, log en vivo
+- [x] VPN connect migrado a bgProcess: link de auth aparece en el panel en tiempo real
+- [x] Logs en vivo por contenedor desde el catálogo (últimas 100 líneas, auto-scroll)
+- [x] Guardar app en catálogo redirige de inmediato (publish en background)
+- [x] Anti doble-click: botones y formularios se deshabilitan durante requests HTMX
+
+## Fase 8 — Apariencia y experiencia ✅
+- [x] 7 temas de color: Dark, Nord, Catppuccin Mocha, Dracula, Gruvbox, Tokyo Night, Claro
+- [x] Fondos de pantalla desde dharmx/walls (GitHub API, paginados, caché 24h)
+- [x] Explorador de imágenes del servidor (ruta configurable)
+- [x] Subida de imagen local con redimensionado automático a 1920px
+- [x] Detección de luminancia: contraste automático en imágenes claras
+- [x] 4 sliders persistentes: opacidad vidrio · desenfoque vidrio · brillo fondo · desenfoque fondo
+- [x] Navbar con efecto glass sutil
+- [x] Contenedores difuminados con backdrop-filter real
+- [x] Página "Acerca de" con grupos de tecnologías, descripciones y créditos externos
+
+## Pendiente (opcional / baja prioridad)
+- [ ] Tests unitarios para módulos bash críticos (backup, restore, reset)
+- [ ] Documentación en MkDocs con capturas del panel (si se publica para otros)
