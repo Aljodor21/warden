@@ -21,16 +21,24 @@
     --panel-rgb:    14,22,40;
     --wall-alpha:   0.38;
     --wall-blur:    22px;
+    --bg-brightness:1;
+    --bg-sat:       1;
     --html-bg:      radial-gradient(ellipse 80% 55% at 5% 10%, rgba(249,115,22,0.07) 0%, transparent 70%),
                     radial-gradient(ellipse 65% 65% at 95% 88%, rgba(14,165,233,0.05) 0%, transparent 70%),
                     #0b0f1a;
   }
 
-  html { background: var(--html-bg); min-height: 100%; }
-
-  /* Wallpaper mode */
-  html.has-wallpaper {
-    background: var(--wallpaper-url, #0b0f1a) center/cover fixed no-repeat !important;
+  /* El fondo vive en ::before para poder filtrar brillo/saturación
+     sin afectar el contenido de la página */
+  html { background: transparent; min-height: 100%; }
+  html::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1;
+    background: var(--html-bg);
+    filter: brightness(var(--bg-brightness,1)) saturate(var(--bg-sat,1));
+  }
+  html.has-wallpaper::before {
+    background: var(--wallpaper-url, #0b0f1a) center/cover no-repeat;
   }
   html.has-wallpaper .card,
   html.has-wallpaper .panel {
@@ -332,6 +340,10 @@
     if (a) document.documentElement.style.setProperty('--wall-alpha', a);
     var bl = localStorage.getItem('warden-wall-blur');
     if (bl) document.documentElement.style.setProperty('--wall-blur', bl + 'px');
+    var bb = localStorage.getItem('warden-bg-brightness');
+    if (bb) document.documentElement.style.setProperty('--bg-brightness', bb);
+    var bs = localStorage.getItem('warden-bg-sat');
+    if (bs) document.documentElement.style.setProperty('--bg-sat', bs);
     var w = localStorage.getItem('warden-wallpaper');
     if (w) {
       document.documentElement.classList.add('has-wallpaper');

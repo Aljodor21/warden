@@ -40,22 +40,45 @@
   <div class="panel" style="margin-top:1rem">
     <h2>Fondo de pantalla</h2>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem 2rem; margin-bottom:1.25rem; max-width:520px">
-      <div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
-          <span style="font-size:0.8rem; color:var(--muted)">Opacidad del vidrio</span>
-          <span id="lbl-alpha" style="font-size:0.8rem; font-weight:600; color:var(--accent)">38%</span>
+    <div style="max-width:540px; margin-bottom:1.25rem">
+      <p style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin:0 0 0.6rem; font-weight:600">Paneles (vidrio)</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem 2rem">
+        <div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
+            <span style="font-size:0.8rem; color:var(--muted)">Opacidad</span>
+            <span id="lbl-alpha" style="font-size:0.8rem; font-weight:600; color:var(--accent)">38%</span>
+          </div>
+          <input type="range" id="slider-alpha" min="5" max="90" step="1" value="38"
+                 style="width:100%; accent-color:var(--accent)">
         </div>
-        <input type="range" id="slider-alpha" min="5" max="90" step="1" value="38"
-               style="width:100%; accent-color:var(--accent)">
+        <div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
+            <span style="font-size:0.8rem; color:var(--muted)">Desenfoque</span>
+            <span id="lbl-blur" style="font-size:0.8rem; font-weight:600; color:var(--accent)">22px</span>
+          </div>
+          <input type="range" id="slider-blur" min="4" max="48" step="2" value="22"
+                 style="width:100%; accent-color:var(--accent)">
+        </div>
       </div>
-      <div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
-          <span style="font-size:0.8rem; color:var(--muted)">Desenfoque</span>
-          <span id="lbl-blur" style="font-size:0.8rem; font-weight:600; color:var(--accent)">22px</span>
+
+      <p style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin:1rem 0 0.6rem; font-weight:600">Fondo</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem 2rem">
+        <div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
+            <span style="font-size:0.8rem; color:var(--muted)">Brillo</span>
+            <span id="lbl-bright" style="font-size:0.8rem; font-weight:600; color:var(--accent)">100%</span>
+          </div>
+          <input type="range" id="slider-bright" min="20" max="160" step="5" value="100"
+                 style="width:100%; accent-color:var(--accent)">
         </div>
-        <input type="range" id="slider-blur" min="4" max="48" step="2" value="22"
-               style="width:100%; accent-color:var(--accent)">
+        <div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
+            <span style="font-size:0.8rem; color:var(--muted)">Saturación</span>
+            <span id="lbl-sat" style="font-size:0.8rem; font-weight:600; color:var(--accent)">100%</span>
+          </div>
+          <input type="range" id="slider-sat" min="0" max="200" step="5" value="100"
+                 style="width:100%; accent-color:var(--accent)">
+        </div>
       </div>
     </div>
 
@@ -341,32 +364,54 @@ function loadWallpapers(files, fromCache) {
 document.getElementById('btn-prev').onclick = () => showPage(currentPage - 1);
 document.getElementById('btn-next').onclick = () => showPage(currentPage + 1);
 
-// === SLIDERS DE VIDRIO ===
+// === SLIDERS ===
 (function() {
-  const sliderA = document.getElementById('slider-alpha');
-  const sliderB = document.getElementById('slider-blur');
-  const lblA    = document.getElementById('lbl-alpha');
-  const lblB    = document.getElementById('lbl-blur');
+  const sAlpha  = document.getElementById('slider-alpha');
+  const sBlur   = document.getElementById('slider-blur');
+  const sBright = document.getElementById('slider-bright');
+  const sSat    = document.getElementById('slider-sat');
+  const lAlpha  = document.getElementById('lbl-alpha');
+  const lBlur   = document.getElementById('lbl-blur');
+  const lBright = document.getElementById('lbl-bright');
+  const lSat    = document.getElementById('lbl-sat');
+  const root    = document.documentElement;
 
   function applyGlass() {
-    const alpha = sliderA.value / 100;
-    const blur  = sliderB.value;
-    document.documentElement.style.setProperty('--wall-alpha', alpha);
-    document.documentElement.style.setProperty('--wall-blur', blur + 'px');
-    lblA.textContent = sliderA.value + '%';
-    lblB.textContent = blur + 'px';
+    const alpha = sAlpha.value / 100;
+    const blur  = sBlur.value;
+    root.style.setProperty('--wall-alpha', alpha);
+    root.style.setProperty('--wall-blur', blur + 'px');
+    lAlpha.textContent = sAlpha.value + '%';
+    lBlur.textContent  = blur + 'px';
     localStorage.setItem('warden-wall-alpha', alpha);
     localStorage.setItem('warden-wall-blur', blur);
   }
 
-  // Restaurar valores guardados en los sliders
-  const savedA = localStorage.getItem('warden-wall-alpha');
-  const savedB = localStorage.getItem('warden-wall-blur');
-  if (savedA) { sliderA.value = Math.round(parseFloat(savedA) * 100); lblA.textContent = sliderA.value + '%'; }
-  if (savedB) { sliderB.value = savedB; lblB.textContent = savedB + 'px'; }
+  function applyBg() {
+    const bright = sBright.value / 100;
+    const sat    = sSat.value / 100;
+    root.style.setProperty('--bg-brightness', bright);
+    root.style.setProperty('--bg-sat', sat);
+    lBright.textContent = sBright.value + '%';
+    lSat.textContent    = sSat.value + '%';
+    localStorage.setItem('warden-bg-brightness', bright);
+    localStorage.setItem('warden-bg-sat', sat);
+  }
 
-  sliderA.addEventListener('input', applyGlass);
-  sliderB.addEventListener('input', applyGlass);
+  // Restaurar desde localStorage
+  const sA = localStorage.getItem('warden-wall-alpha');
+  const sB = localStorage.getItem('warden-wall-blur');
+  const sBr = localStorage.getItem('warden-bg-brightness');
+  const sSa = localStorage.getItem('warden-bg-sat');
+  if (sA)  { sAlpha.value  = Math.round(parseFloat(sA) * 100);  lAlpha.textContent  = sAlpha.value + '%'; }
+  if (sB)  { sBlur.value   = sB;  lBlur.textContent   = sB + 'px'; }
+  if (sBr) { sBright.value = Math.round(parseFloat(sBr) * 100); lBright.textContent = sBright.value + '%'; }
+  if (sSa) { sSat.value    = Math.round(parseFloat(sSa) * 100); lSat.textContent    = sSat.value + '%'; }
+
+  sAlpha.addEventListener('input', applyGlass);
+  sBlur.addEventListener('input', applyGlass);
+  sBright.addEventListener('input', applyBg);
+  sSat.addEventListener('input', applyBg);
 })();
 
 // Load from GitHub (with localStorage cache)
