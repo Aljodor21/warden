@@ -73,10 +73,10 @@
         </div>
         <div>
           <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
-            <span style="font-size:0.8rem; color:var(--muted)">Saturación</span>
-            <span id="lbl-sat" style="font-size:0.8rem; font-weight:600; color:var(--accent)">100%</span>
+            <span style="font-size:0.8rem; color:var(--muted)">Desenfoque</span>
+            <span id="lbl-sat" style="font-size:0.8rem; font-weight:600; color:var(--accent)">0px</span>
           </div>
-          <input type="range" id="slider-sat" min="0" max="200" step="5" value="100"
+          <input type="range" id="slider-sat" min="0" max="20" step="1" value="0"
                  style="width:100%; accent-color:var(--accent)">
         </div>
       </div>
@@ -389,24 +389,24 @@ document.getElementById('btn-next').onclick = () => showPage(currentPage + 1);
 
   function applyBg() {
     const bright = sBright.value / 100;
-    const sat    = sSat.value / 100;
+    const blur   = sSat.value;
     root.style.setProperty('--bg-brightness', bright);
-    root.style.setProperty('--bg-sat', sat);
+    root.style.setProperty('--bg-blur', blur + 'px');
     lBright.textContent = sBright.value + '%';
-    lSat.textContent    = sSat.value + '%';
+    lSat.textContent    = blur + 'px';
     localStorage.setItem('warden-bg-brightness', bright);
-    localStorage.setItem('warden-bg-sat', sat);
+    localStorage.setItem('warden-bg-blur', blur);
   }
 
   // Restaurar desde localStorage
   const sA = localStorage.getItem('warden-wall-alpha');
   const sB = localStorage.getItem('warden-wall-blur');
   const sBr = localStorage.getItem('warden-bg-brightness');
-  const sSa = localStorage.getItem('warden-bg-sat');
+  const sBl = localStorage.getItem('warden-bg-blur');
   if (sA)  { sAlpha.value  = Math.round(parseFloat(sA) * 100);  lAlpha.textContent  = sAlpha.value + '%'; }
   if (sB)  { sBlur.value   = sB;  lBlur.textContent   = sB + 'px'; }
   if (sBr) { sBright.value = Math.round(parseFloat(sBr) * 100); lBright.textContent = sBright.value + '%'; }
-  if (sSa) { sSat.value    = Math.round(parseFloat(sSa) * 100); lSat.textContent    = sSat.value + '%'; }
+  if (sBl) { sSat.value = sBl; lSat.textContent = sBl + 'px'; }
 
   sAlpha.addEventListener('input', applyGlass);
   sBlur.addEventListener('input', applyGlass);

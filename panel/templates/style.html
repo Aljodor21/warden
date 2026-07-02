@@ -22,7 +22,7 @@
     --wall-alpha:   0.38;
     --wall-blur:    22px;
     --bg-brightness:1;
-    --bg-sat:       1;
+    --bg-blur:      0px;
     --html-bg:      radial-gradient(ellipse 80% 55% at 5% 10%, rgba(249,115,22,0.07) 0%, transparent 70%),
                     radial-gradient(ellipse 65% 65% at 95% 88%, rgba(14,165,233,0.05) 0%, transparent 70%),
                     #0b0f1a;
@@ -35,7 +35,8 @@
     content: '';
     position: fixed; inset: 0; z-index: -1;
     background: var(--html-bg);
-    filter: brightness(var(--bg-brightness,1)) saturate(var(--bg-sat,1));
+    filter: brightness(var(--bg-brightness,1)) blur(var(--bg-blur,0px));
+    transform: scale(1.06); /* oculta los bordes difuminados del blur */
   }
   html.has-wallpaper::before {
     background: var(--wallpaper-url, #0b0f1a) center/cover no-repeat;
@@ -106,7 +107,14 @@
   /* navegación */
   .nav { display: flex; gap: 0.3rem; align-items: center;
          margin-bottom: 2rem; flex-wrap: wrap;
-         padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+         padding: 0.55rem 0.8rem 0.55rem;
+         background: rgba(var(--card-rgb), 0.28);
+         backdrop-filter: blur(18px) saturate(1.2);
+         -webkit-backdrop-filter: blur(18px) saturate(1.2);
+         border: 1px solid var(--border);
+         border-top: 1px solid rgba(255,255,255,0.08);
+         border-radius: 12px;
+         box-shadow: 0 2px 12px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06); }
   .nav .brand { font-weight: 700; margin-right: 0.6rem; font-size: 1rem;
                 color: var(--accent); letter-spacing: -0.01em; }
   .nav .brand::before { content: ''; display: inline-block; width: 7px; height: 7px;
@@ -342,8 +350,8 @@
     if (bl) document.documentElement.style.setProperty('--wall-blur', bl + 'px');
     var bb = localStorage.getItem('warden-bg-brightness');
     if (bb) document.documentElement.style.setProperty('--bg-brightness', bb);
-    var bs = localStorage.getItem('warden-bg-sat');
-    if (bs) document.documentElement.style.setProperty('--bg-sat', bs);
+    var bs = localStorage.getItem('warden-bg-blur');
+    if (bs) document.documentElement.style.setProperty('--bg-blur', bs + 'px');
     var w = localStorage.getItem('warden-wallpaper');
     if (w) {
       document.documentElement.classList.add('has-wallpaper');
