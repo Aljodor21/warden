@@ -1,0 +1,69 @@
+site_name: warden
+site_description: Base opinionada para homelab propio — instalación desde cero, backup, panel web y CI/CD en un comando.
+site_url: https://aljodor21.github.io/warden
+repo_url: https://github.com/Aljodor21/warden
+repo_name: Aljodor21/warden
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: es
+  palette:
+    scheme: slate
+    primary: deep orange
+    accent: deep orange
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/shield-home
+
+nav:
+  - Inicio: index.md
+  - Instalación: instalacion.md
+  - Panel web:
+    - Resumen: panel/index.md
+    - Dashboard: panel/dashboard.md
+    - Catálogo: panel/catalogo.md
+    - Tienda: panel/tienda.md
+    - Backups: panel/backups.md
+    - Sistema: panel/sistema.md
+    - NAS: panel/nas.md
+    - Apariencia: panel/apariencia.md
+  - CLI: cli.md
+  - CI/CD: cicd.md
+  - Contribuir: contribuir.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Aljodor21/warden
+
+copyright: MIT License · Aljodor21
