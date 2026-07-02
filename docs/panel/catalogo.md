@@ -2,9 +2,7 @@
 
 ![Catálogo](../screenshots/screenshot-catalog.png)
 
-El catálogo es la **fuente de verdad** de warden. Cada app se define una sola vez y esa definición la consumen el instalador, el backup, la restauración y el CI/CD.
-
-## Lista de apps
+El catálogo muestra todas las apps gestionadas por warden. Se puebla automáticamente al instalar con el preset — no hace falta editar ningún archivo.
 
 Las apps aparecen en dos grupos:
 
@@ -33,33 +31,12 @@ Al guardar con subdominio, publica el túnel automáticamente en background y re
 ### Eliminar app
 Baja el contenedor, borra imágenes y volúmenes, regenera el túnel y borra el registro DNS de Cloudflare (si configuraste el API Token).
 
+## Instalar una app que no está activa
+
+Si una app aparece en el catálogo pero no está corriendo (contenedor caído o no instalado), el botón **Instalar** la levanta con log en vivo.
+
 ## Agregar una app nueva
 
-Botón **+ Nueva app** → formulario de alta. Los campos mínimos son nombre y tag; los demás son opcionales según lo que necesite la app.
+El botón **+ Nueva app** abre un formulario de alta. Los campos mínimos son nombre y tag; los demás son opcionales. La app queda registrada en el catálogo y disponible para backup, tunnel y CI/CD desde ese momento.
 
-## Instalar desde el catálogo
-
-Apps que están definidas en el catálogo pero no instaladas tienen un botón **Instalar** que muestra el log en vivo del proceso.
-
-## Definir una app en el catálogo
-
-Creá un archivo `site/catalog/<tag>.component`:
-
-```ini
-COMP_NAME="Mi App"
-COMP_CONTAINER="miapp"
-COMP_PATHS="/srv/warden/miapp"
-COMP_BACKUP_TYPE="files"
-COMP_CF_HOST="miapp.tudominio.com"
-COMP_CF_PORT="8080"
-```
-
-| Campo | Descripción |
-|---|---|
-| `COMP_NAME` | Nombre legible |
-| `COMP_CONTAINER` | Nombre del contenedor Docker |
-| `COMP_PATHS` | Rutas a respaldar (separadas por espacio) |
-| `COMP_BACKUP_TYPE` | `files`, `postgres` o `none` |
-| `COMP_CF_HOST` | Subdominio para Cloudflare Tunnel |
-| `COMP_CF_PORT` | Puerto del contenedor para el tunnel |
-| `COMP_INSTALL` | Ruta al script de instalación (opcional) |
+Para instalar apps de terceros de forma más rápida, usá la [Tienda](tienda.md) — tiene más de 100 apps listas con un click.

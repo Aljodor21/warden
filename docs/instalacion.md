@@ -14,56 +14,51 @@
 ```bash
 git clone https://github.com/Aljodor21/warden.git
 cd warden
-```
-
-### 2. Configurar tu sitio
-
-```bash
-mkdir -p site/catalog
-cp examples/site.conf.example site/site.conf
-```
-
-Editá `site/site.conf` con tus datos:
-
-```bash
-# Nombre de tu server (solo letras/números/guiones)
-SITE_NAME=miserver
-
-# Usuario principal del sistema
-SITE_USER=tu_usuario
-
-# Zona horaria (ej: America/Bogota, America/Argentina/Buenos_Aires)
-SITE_TZ=America/Bogota
-```
-
-### 3. Correr el instalador
-
-```bash
 sudo ./bootstrap.sh
 ```
 
-El instalador detecta tu distro y te pregunta qué instalar:
+Eso es todo. El instalador hace el resto.
+
+### 2. Responder las preguntas iniciales
+
+La primera vez que corre, el instalador te pide unos datos básicos sobre tu server:
+
+- **Nombre del server** — se detecta automáticamente desde el hostname, podés cambiarlo
+- **Zona horaria** — lista interactiva, solo elegís la tuya
+- **Subred de tu LAN** — para las reglas de firewall (ej: `192.168.1.0/24`)
+
+Estos datos se guardan en `site/site.conf` y no se vuelven a pedir.
+
+### 3. Elegir un preset
 
 === "Preset básico"
-    Instala: Docker, warden-panel, Cockpit, NAS (Samba), shell (zsh + p10k), MOTD, firewall (ufw).
-    
-    Ideal para empezar rápido.
+    Docker, warden-panel, Cockpit, NAS (Samba), shell (zsh + p10k), MOTD, firewall (ufw).
+
+    Ideal para empezar rápido con un server liviano.
 
 === "Preset completo"
     Todo lo del básico más: Backrest, ntfy (alertas push), Immich (fotos), Docmost (wiki), Excalidraw.
 
 === "A la carta"
-    Elegís manualmente cada módulo y app.
+    Elegís manualmente cada módulo y app desde un menú interactivo.
+
+El preset instala todo y registra las apps en el catálogo automáticamente — no hay que tocar ningún archivo.
 
 ### 4. Abrir el panel
 
-Una vez terminado el bootstrap, el panel queda en:
+Al terminar, el panel queda disponible en:
 
 ```
 http://<IP-del-server>
 ```
 
-El candado **Admin** (arriba a la derecha) desbloquea las acciones que modifican el sistema. La clave es la que configuraste en `site.conf` o la que te pidió el instalador.
+El candado **Admin** (arriba a la derecha) desbloquea las acciones que modifican el sistema.
+
+---
+
+## Instalar más apps después
+
+Una vez instalado warden, podés agregar más apps en cualquier momento desde la **Tienda** en el panel — sin terminal, sin editar archivos.
 
 ---
 
@@ -80,15 +75,3 @@ sudo warden panel   # recompila e instala el panel
 ## Probar en una VM
 
 Si querés probar antes de instalar en hardware real, ver [Prueba en VM](https://github.com/Aljodor21/warden/blob/main/docs/PRUEBA-VM.md).
-
----
-
-## Agregar tus propias apps
-
-Por cada app tuya, creá un archivo en `site/catalog/`:
-
-```bash
-cp examples/catalog/app.component.example site/catalog/miapp.component
-```
-
-Editá los campos necesarios (`COMP_NAME`, `COMP_CONTAINER`, `COMP_PATHS`, etc.) y la app aparece en el Catálogo. Ver [Catálogo](panel/catalogo.md) para más detalle.

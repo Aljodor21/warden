@@ -15,12 +15,10 @@ Todo tiene **dos caminos equivalentes**: la consola (`warden ...`) o el panel we
 ```bash
 git clone https://github.com/Aljodor21/warden.git
 cd warden
-mkdir -p site/catalog
-cp examples/site.conf.example site/site.conf   # editá tus datos
-sudo ./bootstrap.sh                             # elegí preset o a la carta
+sudo ./bootstrap.sh
 ```
 
-Al terminar, `warden` queda en el PATH y el panel web corre en `http://<tu-server>` (puerto 80).
+El instalador pregunta los datos básicos de tu server la primera vez (hostname, zona horaria, subred), después elegís un preset — y eso es todo. `warden` queda en el PATH y el panel web corre en `http://<tu-server>` (puerto 80).
 
 ---
 
