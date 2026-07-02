@@ -1,6 +1,6 @@
 # Apariencia
 
-![Apariencia](../screenshots/screenshot-appearance.png)
+![Cambio de temas en vivo](../screenshots/apariencia-temas.gif)
 
 La sección Apariencia personaliza el aspecto visual del panel. Todo se guarda en `localStorage` del navegador — sin recargar la página y sin guardar nada en el servidor.
 

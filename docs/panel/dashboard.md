@@ -23,6 +23,8 @@ Lista de los procesos con mayor consumo: PID, nombre, barra de CPU y porcentaje 
 
 ## Apps
 
+![Apps instaladas](../screenshots/screenshot-dashboard-bottom.png)
+
 Muestra todas las apps en dos grupos:
 
 - **Instaladas por warden**: apps del catálogo gestionadas directamente.
