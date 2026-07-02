@@ -26,5 +26,10 @@ jobs:
       - name: Install MkDocs Material
         run: pip install mkdocs-material
 
+      - name: Configure git author
+        run: |
+          git config user.name "Aljodor21"
+          git config user.email "alejandro_toro23202@elpoli.edu.co"
+
       - name: Deploy to GitHub Pages
         run: mkdocs gh-deploy --force
