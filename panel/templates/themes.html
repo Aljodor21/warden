@@ -52,12 +52,19 @@
     </div>
 
     <div class="section-sep">
-      <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.6rem">
-        O pegá la URL de cualquier imagen propia:
+      <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.75rem">
+        Imagen propia — desde tu equipo o una URL:
       </p>
-      <div style="display:flex; gap:0.5rem; flex-wrap:wrap">
-        <input id="custom-wall-url" type="url" placeholder="https://..." style="flex:1;min-width:200px;max-width:460px">
-        <button class="btn" id="btn-apply-custom">Aplicar</button>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center">
+        <label class="btn secondary" style="cursor:pointer">
+          Elegir archivo
+          <input id="local-wall-input" type="file" accept="image/*" style="display:none">
+        </label>
+        <span id="local-wall-name" style="font-size:0.82rem;color:var(--muted)">Sin selección</span>
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.6rem">
+        <input id="custom-wall-url" type="url" placeholder="https://..." style="flex:1;min-width:200px;max-width:440px">
+        <button class="btn" id="btn-apply-custom">Aplicar URL</button>
       </div>
     </div>
   </div>
@@ -174,6 +181,26 @@ function applyTheme(id) {
     el.classList.toggle('active', el.dataset.id === id));
 }
 
+function detectLuminance(url, cb) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    try {
+      const c = document.createElement('canvas');
+      c.width = 48; c.height = 27;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, 48, 27);
+      const d = ctx.getImageData(0, 0, 48, 27).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4)
+        sum += (d[i]*299 + d[i+1]*587 + d[i+2]*114) / 1000;
+      cb(sum / (48 * 27) / 255);
+    } catch(e) { cb(0.3); }
+  };
+  img.onerror = () => cb(0.3);
+  img.src = url;
+}
+
 function applyWallpaper(url) {
   document.documentElement.classList.add('has-wallpaper');
   document.documentElement.style.setProperty('--wallpaper-url', 'url("' + url + '")');
@@ -181,14 +208,40 @@ function applyWallpaper(url) {
   document.getElementById('btn-remove-wall').style.display = '';
   document.querySelectorAll('.wall-thumb').forEach(el =>
     el.classList.toggle('active', el.dataset.url === url));
+
+  detectLuminance(url, function(lum) {
+    const bright = lum > 0.48;
+    document.documentElement.classList.toggle('wall-bright', bright);
+    localStorage.setItem('warden-wall-bright', bright ? '1' : '0');
+  });
 }
 
 function removeWallpaper() {
-  document.documentElement.classList.remove('has-wallpaper');
+  document.documentElement.classList.remove('has-wallpaper', 'wall-bright');
   document.documentElement.style.removeProperty('--wallpaper-url');
   localStorage.removeItem('warden-wallpaper');
+  localStorage.removeItem('warden-wall-bright');
   document.getElementById('btn-remove-wall').style.display = 'none';
   document.querySelectorAll('.wall-thumb').forEach(el => el.classList.remove('active'));
+}
+
+function resizeAndApply(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const MAX = 1920;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = c.toDataURL('image/jpeg', 0.82);
+      applyWallpaper(dataUrl);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 // Render swatches
@@ -212,6 +265,12 @@ document.getElementById('btn-remove-wall').onclick = removeWallpaper;
 document.getElementById('btn-apply-custom').onclick = function() {
   const url = document.getElementById('custom-wall-url').value.trim();
   if (url) applyWallpaper(url);
+};
+document.getElementById('local-wall-input').onchange = function() {
+  const file = this.files[0];
+  if (!file) return;
+  document.getElementById('local-wall-name').textContent = file.name;
+  resizeAndApply(file);
 };
 
 const PAGE_SIZE = 12;
