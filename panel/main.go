@@ -20,6 +20,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -323,6 +324,7 @@ func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
 	render(w, "list.html", map[string]any{
 		"Installed": installed, "Deployed": deployed,
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r),
+		"Saved": r.URL.Query().Get("saved"),
 	})
 }
 
@@ -382,23 +384,17 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Si tiene subdominio, publicar YA — sin esto, el túnel queda con el
-	// ingress viejo hasta que alguien se acuerde de tocar el botón
-	// "Publicar" en Catálogo (bug real visto: guardar/editar sin esto deja
-	// el subdominio configurado pero sin responder, porque cloudflared
-	// nunca se entera del cambio).
-	var publishErr error
+	// Publicar en background — el usuario no tiene que esperar los 25s.
+	// El tunnel se actualiza en segundos; la página ya redirige al catálogo.
 	if c.CFHost != "" {
-		ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
-		defer cancel()
-		_, publishErr = s.runWarden(ctx, "publish")
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+			defer cancel()
+			_, _ = s.runWarden(ctx, "publish")
+		}()
 	}
 
-	render(w, "new_deploy_done.html", map[string]any{
-		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "Name": c.Name, "Install": c.Install,
-		"Tag": c.Tag, "Container": c.Container, "Port": c.CFPort,
-		"Published": c.CFHost != "", "PublishErr": publishErr,
-	})
+	http.Redirect(w, r, "/catalog?saved="+url.QueryEscape(c.Name), http.StatusSeeOther)
 }
 
 func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {
