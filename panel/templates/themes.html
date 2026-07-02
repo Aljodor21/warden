@@ -39,6 +39,26 @@
 
   <div class="panel" style="margin-top:1rem">
     <h2>Fondo de pantalla</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem 2rem; margin-bottom:1.25rem; max-width:520px">
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
+          <span style="font-size:0.8rem; color:var(--muted)">Opacidad del vidrio</span>
+          <span id="lbl-alpha" style="font-size:0.8rem; font-weight:600; color:var(--accent)">38%</span>
+        </div>
+        <input type="range" id="slider-alpha" min="5" max="90" step="1" value="38"
+               style="width:100%; accent-color:var(--accent)">
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem">
+          <span style="font-size:0.8rem; color:var(--muted)">Desenfoque</span>
+          <span id="lbl-blur" style="font-size:0.8rem; font-weight:600; color:var(--accent)">22px</span>
+        </div>
+        <input type="range" id="slider-blur" min="4" max="48" step="2" value="22"
+               style="width:100%; accent-color:var(--accent)">
+      </div>
+    </div>
+
     <div class="wall-actions">
       <button class="btn" id="btn-load-walls">Cargar fondos</button>
       <button class="btn secondary" id="btn-remove-wall" style="display:none">Quitar fondo</button>
@@ -93,8 +113,7 @@ const THEMES = [
           ['--green','#34d399'],['--green-bg','rgba(52,211,153,0.1)'],
           ['--red','#f87171'],['--red-bg','rgba(248,113,113,0.1)'],
           ['--blue','#7dd3fc'],
-          ['--card-bg','rgba(14,22,40,0.38)'],['--panel-bg','rgba(14,22,40,0.42)'],
-          ['--glass-card','rgba(6,10,20,0.44)'],
+          ['--card-rgb','14,22,40'],['--panel-rgb','14,22,40'],
           ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(249,115,22,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(14,165,233,0.05) 0%,transparent 70%),#0b0f1a'],
           ['color-scheme','dark']] },
   { id:'nord', name:'Nord', dot:'#88c0d0',
@@ -106,8 +125,7 @@ const THEMES = [
           ['--green','#a3be8c'],['--green-bg','rgba(163,190,140,0.15)'],
           ['--red','#bf616a'],['--red-bg','rgba(191,97,106,0.15)'],
           ['--blue','#81a1c1'],
-          ['--card-bg','rgba(46,52,64,0.40)'],['--panel-bg','rgba(46,52,64,0.44)'],
-          ['--glass-card','rgba(28,34,46,0.48)'],
+          ['--card-rgb','46,52,64'],['--panel-rgb','46,52,64'],
           ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(136,192,208,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(94,129,172,0.05) 0%,transparent 70%),#242933'],
           ['color-scheme','dark']] },
   { id:'catppuccin', name:'Catppuccin', dot:'#cba6f7',
@@ -119,8 +137,7 @@ const THEMES = [
           ['--green','#a6e3a1'],['--green-bg','rgba(166,227,161,0.15)'],
           ['--red','#f38ba8'],['--red-bg','rgba(243,139,168,0.15)'],
           ['--blue','#89dceb'],
-          ['--card-bg','rgba(30,30,46,0.38)'],['--panel-bg','rgba(30,30,46,0.42)'],
-          ['--glass-card','rgba(18,18,30,0.46)'],
+          ['--card-rgb','30,30,46'],['--panel-rgb','30,30,46'],
           ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(203,166,247,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(137,220,235,0.05) 0%,transparent 70%),#181825'],
           ['color-scheme','dark']] },
   { id:'dracula', name:'Dracula', dot:'#ff79c6',
@@ -132,8 +149,7 @@ const THEMES = [
           ['--green','#50fa7b'],['--green-bg','rgba(80,250,123,0.12)'],
           ['--red','#ff5555'],['--red-bg','rgba(255,85,85,0.15)'],
           ['--blue','#8be9fd'],
-          ['--card-bg','rgba(40,42,54,0.38)'],['--panel-bg','rgba(40,42,54,0.42)'],
-          ['--glass-card','rgba(22,23,32,0.46)'],
+          ['--card-rgb','40,42,54'],['--panel-rgb','40,42,54'],
           ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(255,121,198,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(139,233,253,0.05) 0%,transparent 70%),#1e1f2a'],
           ['color-scheme','dark']] },
   { id:'gruvbox', name:'Gruvbox', dot:'#d79921',
@@ -145,8 +161,7 @@ const THEMES = [
           ['--green','#98971a'],['--green-bg','rgba(152,151,26,0.15)'],
           ['--red','#cc241d'],['--red-bg','rgba(204,36,29,0.15)'],
           ['--blue','#458588'],
-          ['--card-bg','rgba(40,40,40,0.38)'],['--panel-bg','rgba(40,40,40,0.42)'],
-          ['--glass-card','rgba(20,22,22,0.46)'],
+          ['--card-rgb','40,40,40'],['--panel-rgb','40,40,40'],
           ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(215,153,33,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(69,133,136,0.05) 0%,transparent 70%),#1d2021'],
           ['color-scheme','dark']] },
   { id:'tokyo', name:'Tokyo Night', dot:'#7aa2f7',
@@ -158,8 +173,7 @@ const THEMES = [
           ['--green','#9ece6a'],['--green-bg','rgba(158,206,106,0.15)'],
           ['--red','#f7768e'],['--red-bg','rgba(247,118,142,0.15)'],
           ['--blue','#7dcfff'],
-          ['--card-bg','rgba(26,27,46,0.38)'],['--panel-bg','rgba(26,27,46,0.42)'],
-          ['--glass-card','rgba(10,10,20,0.46)'],
+          ['--card-rgb','26,27,46'],['--panel-rgb','26,27,46'],
           ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(122,162,247,0.07) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(125,207,255,0.05) 0%,transparent 70%),#16161e'],
           ['color-scheme','dark']] },
   { id:'light', name:'Claro', dot:'#f97316',
@@ -171,8 +185,7 @@ const THEMES = [
           ['--green','#16a34a'],['--green-bg','rgba(22,163,74,0.10)'],
           ['--red','#dc2626'],['--red-bg','rgba(220,38,38,0.10)'],
           ['--blue','#0284c7'],
-          ['--card-bg','rgba(255,255,255,0.52)'],['--panel-bg','rgba(255,255,255,0.56)'],
-          ['--glass-card','rgba(255,255,255,0.58)'],
+          ['--card-rgb','255,255,255'],['--panel-rgb','255,255,255'],
           ['--html-bg','radial-gradient(ellipse 80% 55% at 5% 10%,rgba(249,115,22,0.05) 0%,transparent 70%),radial-gradient(ellipse 65% 65% at 95% 88%,rgba(14,165,233,0.04) 0%,transparent 70%),#e8edf2'],
           ['color-scheme','light']] },
 ];
@@ -327,6 +340,34 @@ function loadWallpapers(files, fromCache) {
 
 document.getElementById('btn-prev').onclick = () => showPage(currentPage - 1);
 document.getElementById('btn-next').onclick = () => showPage(currentPage + 1);
+
+// === SLIDERS DE VIDRIO ===
+(function() {
+  const sliderA = document.getElementById('slider-alpha');
+  const sliderB = document.getElementById('slider-blur');
+  const lblA    = document.getElementById('lbl-alpha');
+  const lblB    = document.getElementById('lbl-blur');
+
+  function applyGlass() {
+    const alpha = sliderA.value / 100;
+    const blur  = sliderB.value;
+    document.documentElement.style.setProperty('--wall-alpha', alpha);
+    document.documentElement.style.setProperty('--wall-blur', blur + 'px');
+    lblA.textContent = sliderA.value + '%';
+    lblB.textContent = blur + 'px';
+    localStorage.setItem('warden-wall-alpha', alpha);
+    localStorage.setItem('warden-wall-blur', blur);
+  }
+
+  // Restaurar valores guardados en los sliders
+  const savedA = localStorage.getItem('warden-wall-alpha');
+  const savedB = localStorage.getItem('warden-wall-blur');
+  if (savedA) { sliderA.value = Math.round(parseFloat(savedA) * 100); lblA.textContent = sliderA.value + '%'; }
+  if (savedB) { sliderB.value = savedB; lblB.textContent = savedB + 'px'; }
+
+  sliderA.addEventListener('input', applyGlass);
+  sliderB.addEventListener('input', applyGlass);
+})();
 
 // Load from GitHub (with localStorage cache)
 document.getElementById('btn-load-walls').onclick = async function() {
