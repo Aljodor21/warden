@@ -299,6 +299,21 @@ Tu `site/` nunca se sube al repo; el programa se actualiza con `git pull`.
 - [docs/PRUEBA-VM.md](docs/PRUEBA-VM.md) — probar warden en una máquina virtual.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — cómo contribuir: CI, dry-run, módulos nuevos.
 
+## Créditos y recursos externos
+
+warden no reinventa lo que ya existe — lo ensambla. Los siguientes proyectos
+de terceros son consumidos por warden con su propia autoría y licencia:
+
+| Recurso | Autor | Uso en warden |
+|---|---|---|
+| [dharmx/walls](https://github.com/dharmx/walls) | dharmx | Colección de wallpapers cargada vía GitHub API en la sección Apariencia. Se cachean 24h en el navegador, no se descargan al servidor. |
+| [Portainer Community Templates](https://github.com/portainer/portainer/blob/develop/api/stacks/templates.json) | Portainer.io | JSON público con +100 apps self-hosted que alimenta la Tienda de warden. Se carga en vivo; las apps con receta curada usan la suya. |
+| [HTMX](https://htmx.org) | bigskysoftware | Interactividad del panel web sin escribir JavaScript. Vendorizado en el binario. |
+| [Alpine.js](https://alpinejs.dev) | Caleb Porzio | Estado reactivo del cliente (modales, candado de sesión). Vendorizado. |
+| [restic](https://restic.net) | Alexander Neumann y comunidad | Motor de backup cifrado, versionado y deduplicado. Corre en Docker. |
+| [age](https://github.com/FiloSottile/age) | Filippo Valsorda | Cifrado de secretos y credenciales. Alternativa moderna a GPG. |
+| [gum](https://github.com/charmbracelet/gum) | Charmbracelet | Menús interactivos en la terminal para el instalador. |
+
 ## Licencia
 
 MIT.

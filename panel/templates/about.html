@@ -1,49 +1,98 @@
 {{define "about.html"}}
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><title>warden — acerca de</title>{{template "_style"}}</head>
+<head><meta charset="utf-8"><title>warden — acerca de</title>{{template "_style"}}
+<style>
+  .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.65rem; margin-top: 0.85rem; }
+  .tech-card { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.9rem 1rem;
+               background: rgba(var(--card-rgb), calc(var(--wall-alpha) * 0.7));
+               border: 1px solid var(--border); border-radius: 12px; text-decoration: none;
+               color: var(--text); transition: border-color 0.18s, transform 0.15s;
+               box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  .tech-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .tech-card-head { display: flex; align-items: center; gap: 0.65rem; }
+  .tech-card-head strong { font-size: 0.92rem; font-weight: 600; }
+  .tech-initial { width: 28px; height: 28px; border-radius: 8px; background: var(--surface2);
+                  display: flex; align-items: center; justify-content: center;
+                  font-weight: 700; font-size: 0.82rem; color: var(--muted); flex-shrink: 0; }
+  .tech-why { font-size: 0.8rem; color: var(--muted); line-height: 1.55; margin: 0; }
+
+  .credit-card { padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: 12px;
+                 background: rgba(var(--card-rgb), calc(var(--wall-alpha) * 0.7));
+                 margin-top: 0.65rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  .credit-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem; }
+  .credit-name { font-weight: 600; font-size: 0.92rem; }
+  .credit-author { font-size: 0.78rem; color: var(--muted); }
+  .credit-what { font-size: 0.82rem; margin: 0 0 0.45rem; }
+  .credit-how { font-size: 0.8rem; color: var(--muted); margin: 0; line-height: 1.55; }
+
+  .section-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em;
+                   color: var(--muted); font-weight: 600; margin: 0 0 0; }
+</style>
+</head>
 <body>
   {{template "nav" .}}
-  <div class="top">
-    <h1>Acerca de warden</h1>
-  </div>
+  <div class="top"><h1>Acerca de warden</h1></div>
 
   <div class="panel">
-    <h2>Qué es</h2>
-    <p>Base opinionada y reutilizable para montar y mantener tu propio servidor casero (homelab):
-      instalación desde cero, backup y restauración, dashboard, y CI/CD para tus propios proyectos —
-      en Debian/Ubuntu o Arch. Todo tiene dos caminos equivalentes: la <strong>consola</strong>
-      (<code>warden ...</code>) o este <strong>panel web</strong>, ninguno es "el oficial".</p>
-    <p class="muted">Los datos se respaldan cifrados, versionados y deduplicados con restic a un
-      disco; la configuración vive como código y es reproducible — si toca recuperarte o migrar a
-      otro sistema operativo, el camino ya está trazado.</p>
+    <p class="section-label">Qué es</p>
+    <p style="margin-top:0.6rem">Base opinionada y reutilizable para montar y mantener tu propio servidor casero (homelab):
+      instalación desde cero, backup y restauración, dashboard y CI/CD para tus propios proyectos —
+      en <strong>Debian/Ubuntu</strong> o <strong>Arch</strong>. Todo tiene dos caminos equivalentes:
+      la <strong>consola</strong> (<code>warden ...</code>) o este <strong>panel web</strong> — ninguno es "el oficial".</p>
+    <p class="muted" style="margin-bottom:0">Los datos se respaldan cifrados, versionados y deduplicados con restic.
+      La configuración vive como código y es reproducible — si toca recuperarte o migrar a otro sistema operativo, el camino ya está trazado.</p>
   </div>
 
   <div class="panel" style="margin-top:1rem">
-    <h2>Repositorio y licencia</h2>
-    <p><a href="https://github.com/Aljodor21/warden" target="_blank">github.com/Aljodor21/warden</a></p>
-    <p class="muted">Publicado bajo licencia <strong>MIT</strong> — uso, copia y modificación libres,
-      sin garantía. Ver el archivo
-      <a href="https://github.com/Aljodor21/warden/blob/main/LICENSE" target="_blank">LICENSE</a>
-      en el repo.</p>
+    <p class="section-label">Repositorio y licencia</p>
+    <p style="margin-top:0.6rem">
+      <a href="https://github.com/Aljodor21/warden" target="_blank" style="font-size:1rem; font-weight:600">github.com/Aljodor21/warden</a>
+    </p>
+    <p class="muted" style="margin-bottom:0">Publicado bajo licencia <strong>MIT</strong> — uso, copia y modificación libres, sin garantía.
+      Ver el archivo <a href="https://github.com/Aljodor21/warden/blob/main/LICENSE" target="_blank">LICENSE</a> en el repo.</p>
   </div>
 
+  {{range .Groups}}
   <div class="panel" style="margin-top:1rem">
-    <h2>Tecnologías usadas</h2>
-    <div class="techrow">
-      {{range .Tech}}
-      <a href="{{.URL}}" target="_blank" class="techitem" title="{{.Why}}">
-        {{if .Logo}}
-        <img src="/static/logos/{{.Logo}}" alt="{{.Name}}" width="30" height="30">
-        {{else}}
-        <span class="techinitial">{{slice .Name 0 1}}</span>
-        {{end}}
-        <span class="techname">{{.Name}}</span>
+    <p class="section-label">{{.Title}}</p>
+    <div class="tech-grid">
+      {{range .Items}}
+      <a href="{{.URL}}" target="_blank" rel="noopener" class="tech-card">
+        <div class="tech-card-head">
+          {{if .Logo}}
+          <img src="/static/logos/{{.Logo}}" alt="{{.Name}}" width="28" height="28" style="border-radius:6px">
+          {{else}}
+          <span class="tech-initial">{{slice .Name 0 1}}</span>
+          {{end}}
+          <strong>{{.Name}}</strong>
+        </div>
+        <p class="tech-why">{{.Why}}</p>
       </a>
       {{end}}
     </div>
-    <p class="muted" style="margin-top:0.8rem">Pasá el cursor sobre cada una para ver para qué se usa exactamente.</p>
   </div>
+  {{end}}
+
+  <div class="panel" style="margin-top:1rem">
+    <p class="section-label">Fuentes y créditos externos</p>
+    <p class="muted" style="margin-top:0.5rem; margin-bottom:0.1rem; font-size:0.82rem">
+      Recursos de terceros que warden consume — no producidos por este proyecto, con su autoría y licencia propias.
+    </p>
+    {{range .Credits}}
+    <div class="credit-card">
+      <div class="credit-head">
+        <span class="credit-name">{{.Name}}</span>
+        <span class="credit-author">por {{.Author}}</span>
+        <a href="{{.URL}}" target="_blank" rel="noopener"
+           style="margin-left:auto; font-size:0.78rem; color:var(--blue)">Ver repo</a>
+      </div>
+      <p class="credit-what">{{.What}}</p>
+      <p class="credit-how">En warden: {{.How}}</p>
+    </div>
+    {{end}}
+  </div>
+
 </body>
 </html>
 {{end}}
