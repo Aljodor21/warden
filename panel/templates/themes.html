@@ -45,6 +45,11 @@
       <span class="wall-status" id="wall-status"></span>
     </div>
     <div class="wall-grid" id="wall-grid"></div>
+    <div id="wall-pager" style="display:none; align-items:center; gap:0.75rem; margin-top:0.75rem">
+      <button class="btn secondary" id="btn-prev" style="padding:0.25rem 0.8rem">&#8592; Anterior</button>
+      <span id="pager-info" style="font-size:0.82rem; color:var(--muted)"></span>
+      <button class="btn secondary" id="btn-next" style="padding:0.25rem 0.8rem">Siguiente &#8594;</button>
+    </div>
 
     <div class="section-sep">
       <p style="font-size:0.82rem; color:var(--muted); margin:0 0 0.6rem">
@@ -209,10 +214,19 @@ document.getElementById('btn-apply-custom').onclick = function() {
   if (url) applyWallpaper(url);
 };
 
-function renderWallpapers(files) {
+const PAGE_SIZE = 12;
+let allFiles = [];
+let currentPage = 0;
+
+function showPage(page) {
   const wg = document.getElementById('wall-grid');
+  const pager = document.getElementById('wall-pager');
+  const totalPages = Math.ceil(allFiles.length / PAGE_SIZE);
+  currentPage = Math.max(0, Math.min(page, totalPages - 1));
+
+  const slice = allFiles.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
   wg.innerHTML = '';
-  files.forEach(path => {
+  slice.forEach(path => {
     const url = 'https://raw.githubusercontent.com/dharmx/walls/main/' + path;
     const img = document.createElement('img');
     img.className = 'wall-thumb' + (url === activeWall ? ' active' : '');
@@ -224,7 +238,23 @@ function renderWallpapers(files) {
     img.onclick = () => applyWallpaper(url);
     wg.appendChild(img);
   });
+
+  document.getElementById('pager-info').textContent =
+    'Página ' + (currentPage + 1) + ' de ' + totalPages;
+  document.getElementById('btn-prev').disabled = currentPage === 0;
+  document.getElementById('btn-next').disabled = currentPage >= totalPages - 1;
+  pager.style.display = 'flex';
 }
+
+function loadWallpapers(files, fromCache) {
+  allFiles = files;
+  showPage(0);
+  document.getElementById('wall-status').textContent =
+    files.length + ' fondos' + (fromCache ? ' (caché 24h)' : ' cargados');
+}
+
+document.getElementById('btn-prev').onclick = () => showPage(currentPage - 1);
+document.getElementById('btn-next').onclick = () => showPage(currentPage + 1);
 
 // Load from GitHub (with localStorage cache)
 document.getElementById('btn-load-walls').onclick = async function() {
@@ -236,8 +266,7 @@ document.getElementById('btn-load-walls').onclick = async function() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
     if (cached && Date.now() - cached.ts < CACHE_TTL) {
-      renderWallpapers(cached.files);
-      status.textContent = cached.files.length + ' fondos cargados (caché)';
+      loadWallpapers(cached.files, true);
       return;
     }
 
@@ -249,11 +278,10 @@ document.getElementById('btn-load-walls').onclick = async function() {
       .filter(f => f.type === 'blob' && exts.some(e => f.path.toLowerCase().endsWith(e)))
       .map(f => f.path)
       .sort(() => Math.random() - 0.5)
-      .slice(0, 80);
+      .slice(0, 96);
 
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), files }));
-    renderWallpapers(files);
-    status.textContent = files.length + ' fondos cargados';
+    loadWallpapers(files, false);
   } catch(e) {
     status.textContent = 'Error: ' + e.message;
     btn.disabled = false;
@@ -264,10 +292,7 @@ document.getElementById('btn-load-walls').onclick = async function() {
 (function() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-    if (cached && Date.now() - cached.ts < CACHE_TTL) {
-      renderWallpapers(cached.files);
-      document.getElementById('wall-status').textContent = cached.files.length + ' fondos (caché 24h)';
-    }
+    if (cached && Date.now() - cached.ts < CACHE_TTL) loadWallpapers(cached.files, true);
   } catch(e) {}
 })();
 </script>
