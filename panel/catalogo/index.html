@@ -587,17 +587,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#lista-de-apps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Lista de apps
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#acciones-por-app" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -648,32 +637,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instalar-una-app-que-no-esta-activa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instalar una app que no está activa
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#agregar-una-app-nueva" class="md-nav__link">
     <span class="md-ellipsis">
       
         Agregar una app nueva
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#instalar-desde-el-catalogo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Instalar desde el catálogo
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#definir-una-app-en-el-catalogo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Definir una app en el catálogo
       
     </span>
   </a>
@@ -944,17 +922,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#lista-de-apps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Lista de apps
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#acciones-por-app" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1005,32 +972,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instalar-una-app-que-no-esta-activa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instalar una app que no está activa
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#agregar-una-app-nueva" class="md-nav__link">
     <span class="md-ellipsis">
       
         Agregar una app nueva
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#instalar-desde-el-catalogo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Instalar desde el catálogo
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#definir-una-app-en-el-catalogo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Definir una app en el catálogo
       
     </span>
   </a>
@@ -1059,8 +1015,7 @@
 
 <h1 id="catalogo">Catálogo<a class="headerlink" href="#catalogo" title="Permanent link">&para;</a></h1>
 <p><img alt="Catálogo" src="../../screenshots/screenshot-catalog.png" /></p>
-<p>El catálogo es la <strong>fuente de verdad</strong> de warden. Cada app se define una sola vez y esa definición la consumen el instalador, el backup, la restauración y el CI/CD.</p>
-<h2 id="lista-de-apps">Lista de apps<a class="headerlink" href="#lista-de-apps" title="Permanent link">&para;</a></h2>
+<p>El catálogo muestra todas las apps gestionadas por warden. Se puebla automáticamente al instalar con el preset — no hace falta editar ningún archivo.</p>
 <p>Las apps aparecen en dos grupos:</p>
 <ul>
 <li><strong>Instaladas por warden</strong>: Docker Compose gestionado por warden.</li>
@@ -1083,57 +1038,11 @@
 <p>Al guardar con subdominio, publica el túnel automáticamente en background y redirige de inmediato.</p>
 <h3 id="eliminar-app">Eliminar app<a class="headerlink" href="#eliminar-app" title="Permanent link">&para;</a></h3>
 <p>Baja el contenedor, borra imágenes y volúmenes, regenera el túnel y borra el registro DNS de Cloudflare (si configuraste el API Token).</p>
+<h2 id="instalar-una-app-que-no-esta-activa">Instalar una app que no está activa<a class="headerlink" href="#instalar-una-app-que-no-esta-activa" title="Permanent link">&para;</a></h2>
+<p>Si una app aparece en el catálogo pero no está corriendo (contenedor caído o no instalado), el botón <strong>Instalar</strong> la levanta con log en vivo.</p>
 <h2 id="agregar-una-app-nueva">Agregar una app nueva<a class="headerlink" href="#agregar-una-app-nueva" title="Permanent link">&para;</a></h2>
-<p>Botón <strong>+ Nueva app</strong> → formulario de alta. Los campos mínimos son nombre y tag; los demás son opcionales según lo que necesite la app.</p>
-<h2 id="instalar-desde-el-catalogo">Instalar desde el catálogo<a class="headerlink" href="#instalar-desde-el-catalogo" title="Permanent link">&para;</a></h2>
-<p>Apps que están definidas en el catálogo pero no instaladas tienen un botón <strong>Instalar</strong> que muestra el log en vivo del proceso.</p>
-<h2 id="definir-una-app-en-el-catalogo">Definir una app en el catálogo<a class="headerlink" href="#definir-una-app-en-el-catalogo" title="Permanent link">&para;</a></h2>
-<p>Creá un archivo <code>site/catalog/&lt;tag&gt;.component</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="na">COMP_NAME</span><span class="o">=</span><span class="s">&quot;Mi App&quot;</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="na">COMP_CONTAINER</span><span class="o">=</span><span class="s">&quot;miapp&quot;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="na">COMP_PATHS</span><span class="o">=</span><span class="s">&quot;/srv/warden/miapp&quot;</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="na">COMP_BACKUP_TYPE</span><span class="o">=</span><span class="s">&quot;files&quot;</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="na">COMP_CF_HOST</span><span class="o">=</span><span class="s">&quot;miapp.tudominio.com&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="na">COMP_CF_PORT</span><span class="o">=</span><span class="s">&quot;8080&quot;</span>
-</code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Campo</th>
-<th>Descripción</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>COMP_NAME</code></td>
-<td>Nombre legible</td>
-</tr>
-<tr>
-<td><code>COMP_CONTAINER</code></td>
-<td>Nombre del contenedor Docker</td>
-</tr>
-<tr>
-<td><code>COMP_PATHS</code></td>
-<td>Rutas a respaldar (separadas por espacio)</td>
-</tr>
-<tr>
-<td><code>COMP_BACKUP_TYPE</code></td>
-<td><code>files</code>, <code>postgres</code> o <code>none</code></td>
-</tr>
-<tr>
-<td><code>COMP_CF_HOST</code></td>
-<td>Subdominio para Cloudflare Tunnel</td>
-</tr>
-<tr>
-<td><code>COMP_CF_PORT</code></td>
-<td>Puerto del contenedor para el tunnel</td>
-</tr>
-<tr>
-<td><code>COMP_INSTALL</code></td>
-<td>Ruta al script de instalación (opcional)</td>
-</tr>
-</tbody>
-</table>
+<p>El botón <strong>+ Nueva app</strong> abre un formulario de alta. Los campos mínimos son nombre y tag; los demás son opcionales. La app queda registrada en el catálogo y disponible para backup, tunnel y CI/CD desde ese momento.</p>
+<p>Para instalar apps de terceros de forma más rápida, usá la <a href="../tienda/">Tienda</a> — tiene más de 100 apps listas con un click.</p>
 
 
 

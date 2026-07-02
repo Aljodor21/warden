@@ -481,10 +481,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-configurar-tu-sitio" class="md-nav__link">
+  <a href="#2-responder-las-preguntas-iniciales" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Configurar tu sitio
+        2. Responder las preguntas iniciales
       
     </span>
   </a>
@@ -492,10 +492,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-correr-el-instalador" class="md-nav__link">
+  <a href="#3-elegir-un-preset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Correr el instalador
+        3. Elegir un preset
       
     </span>
   </a>
@@ -519,6 +519,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instalar-mas-apps-despues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instalar más apps después
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#actualizar-warden" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -534,17 +545,6 @@
     <span class="md-ellipsis">
       
         Probar en una VM
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agregar-tus-propias-apps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agregar tus propias apps
       
     </span>
   </a>
@@ -984,10 +984,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-configurar-tu-sitio" class="md-nav__link">
+  <a href="#2-responder-las-preguntas-iniciales" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Configurar tu sitio
+        2. Responder las preguntas iniciales
       
     </span>
   </a>
@@ -995,10 +995,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-correr-el-instalador" class="md-nav__link">
+  <a href="#3-elegir-un-preset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Correr el instalador
+        3. Elegir un preset
       
     </span>
   </a>
@@ -1022,6 +1022,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instalar-mas-apps-despues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instalar más apps después
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#actualizar-warden" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1037,17 +1048,6 @@
     <span class="md-ellipsis">
       
         Probar en una VM
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agregar-tus-propias-apps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agregar tus propias apps
       
     </span>
   </a>
@@ -1086,59 +1086,50 @@
 <h3 id="1-clonar-el-repo">1. Clonar el repo<a class="headerlink" href="#1-clonar-el-repo" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Aljodor21/warden.git
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>warden
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>sudo<span class="w"> </span>./bootstrap.sh
 </code></pre></div>
-<h3 id="2-configurar-tu-sitio">2. Configurar tu sitio<a class="headerlink" href="#2-configurar-tu-sitio" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>site/catalog
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>cp<span class="w"> </span>examples/site.conf.example<span class="w"> </span>site/site.conf
-</code></pre></div>
-<p>Editá <code>site/site.conf</code> con tus datos:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Nombre de tu server (solo letras/números/guiones)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">SITE_NAME</span><span class="o">=</span>miserver
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Usuario principal del sistema</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nv">SITE_USER</span><span class="o">=</span>tu_usuario
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Zona horaria (ej: America/Bogota, America/Argentina/Buenos_Aires)</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nv">SITE_TZ</span><span class="o">=</span>America/Bogota
-</code></pre></div>
-<h3 id="3-correr-el-instalador">3. Correr el instalador<a class="headerlink" href="#3-correr-el-instalador" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>sudo<span class="w"> </span>./bootstrap.sh
-</code></pre></div>
-<p>El instalador detecta tu distro y te pregunta qué instalar:</p>
+<p>Eso es todo. El instalador hace el resto.</p>
+<h3 id="2-responder-las-preguntas-iniciales">2. Responder las preguntas iniciales<a class="headerlink" href="#2-responder-las-preguntas-iniciales" title="Permanent link">&para;</a></h3>
+<p>La primera vez que corre, el instalador te pide unos datos básicos sobre tu server:</p>
+<ul>
+<li><strong>Nombre del server</strong> — se detecta automáticamente desde el hostname, podés cambiarlo</li>
+<li><strong>Zona horaria</strong> — lista interactiva, solo elegís la tuya</li>
+<li><strong>Subred de tu LAN</strong> — para las reglas de firewall (ej: <code>192.168.1.0/24</code>)</li>
+</ul>
+<p>Estos datos se guardan en <code>site/site.conf</code> y no se vuelven a pedir.</p>
+<h3 id="3-elegir-un-preset">3. Elegir un preset<a class="headerlink" href="#3-elegir-un-preset" title="Permanent link">&para;</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Preset básico</label><label for="__tabbed_1_2">Preset completo</label><label for="__tabbed_1_3">A la carta</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>Instala: Docker, warden-panel, Cockpit, NAS (Samba), shell (zsh + p10k), MOTD, firewall (ufw).</p>
-<p>Ideal para empezar rápido.</p>
+<p>Docker, warden-panel, Cockpit, NAS (Samba), shell (zsh + p10k), MOTD, firewall (ufw).</p>
+<p>Ideal para empezar rápido con un server liviano.</p>
 </div>
 <div class="tabbed-block">
 <p>Todo lo del básico más: Backrest, ntfy (alertas push), Immich (fotos), Docmost (wiki), Excalidraw.</p>
 </div>
 <div class="tabbed-block">
-<p>Elegís manualmente cada módulo y app.</p>
+<p>Elegís manualmente cada módulo y app desde un menú interactivo.</p>
 </div>
 </div>
 </div>
+<p>El preset instala todo y registra las apps en el catálogo automáticamente — no hay que tocar ningún archivo.</p>
 <h3 id="4-abrir-el-panel">4. Abrir el panel<a class="headerlink" href="#4-abrir-el-panel" title="Permanent link">&para;</a></h3>
-<p>Una vez terminado el bootstrap, el panel queda en:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>http://&lt;IP-del-server&gt;
+<p>Al terminar, el panel queda disponible en:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>http://&lt;IP-del-server&gt;
 </code></pre></div>
-<p>El candado <strong>Admin</strong> (arriba a la derecha) desbloquea las acciones que modifican el sistema. La clave es la que configuraste en <code>site.conf</code> o la que te pidió el instalador.</p>
+<p>El candado <strong>Admin</strong> (arriba a la derecha) desbloquea las acciones que modifican el sistema.</p>
+<hr />
+<h2 id="instalar-mas-apps-despues">Instalar más apps después<a class="headerlink" href="#instalar-mas-apps-despues" title="Permanent link">&para;</a></h2>
+<p>Una vez instalado warden, podés agregar más apps en cualquier momento desde la <strong>Tienda</strong> en el panel — sin terminal, sin editar archivos.</p>
 <hr />
 <h2 id="actualizar-warden">Actualizar warden<a class="headerlink" href="#actualizar-warden" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">cd</span><span class="w"> </span>~/warden
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>git<span class="w"> </span>pull
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>sudo<span class="w"> </span>warden<span class="w"> </span>panel<span class="w">   </span><span class="c1"># recompila e instala el panel</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>~/warden
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>git<span class="w"> </span>pull
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>sudo<span class="w"> </span>warden<span class="w"> </span>panel<span class="w">   </span><span class="c1"># recompila e instala el panel</span>
 </code></pre></div>
 <hr />
 <h2 id="probar-en-una-vm">Probar en una VM<a class="headerlink" href="#probar-en-una-vm" title="Permanent link">&para;</a></h2>
 <p>Si querés probar antes de instalar en hardware real, ver <a href="https://github.com/Aljodor21/warden/blob/main/docs/PRUEBA-VM.md">Prueba en VM</a>.</p>
-<hr />
-<h2 id="agregar-tus-propias-apps">Agregar tus propias apps<a class="headerlink" href="#agregar-tus-propias-apps" title="Permanent link">&para;</a></h2>
-<p>Por cada app tuya, creá un archivo en <code>site/catalog/</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cp<span class="w"> </span>examples/catalog/app.component.example<span class="w"> </span>site/catalog/miapp.component
-</code></pre></div>
-<p>Editá los campos necesarios (<code>COMP_NAME</code>, <code>COMP_CONTAINER</code>, <code>COMP_PATHS</code>, etc.) y la app aparece en el Catálogo. Ver <a href="../panel/catalogo/">Catálogo</a> para más detalle.</p>
 
 
 
