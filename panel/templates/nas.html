@@ -13,11 +13,64 @@
   {{template "nav" .}}
 
   <div class="panel" style="margin-bottom:1rem">
-    <h2>Usuarios del NAS — smb://<span id="nashost">tu-server.local</span>/warden</h2>
+    <h2>Cómo conectarte al NAS</h2>
+    <p class="muted" style="margin:0.3rem 0 1rem">
+      La carpeta compartida se llama <strong>warden</strong>. Entrá con cualquier usuario de la
+      lista de abajo (nombre y clave). Tenés que estar en la misma red que el server, o conectado
+      por la VPN.
+    </p>
+
+    <div class="connrow">
+      <span class="conn-os">Windows</span>
+      <span class="conn-how">Explorador → barra de dirección</span>
+      <span class="conn-path">
+        <code id="path-win">\\tu-server\warden</code>
+        <button class="conn-copy" data-copy="path-win" type="button">Copiar</button>
+      </span>
+    </div>
+    <div class="connrow">
+      <span class="conn-os">macOS</span>
+      <span class="conn-how">Finder → Ir → Conectarse (⌘K)</span>
+      <span class="conn-path">
+        <code id="path-mac">smb://tu-server/warden</code>
+        <button class="conn-copy" data-copy="path-mac" type="button">Copiar</button>
+      </span>
+    </div>
+    <div class="connrow">
+      <span class="conn-os">Linux</span>
+      <span class="conn-how">Archivos → Otras ubicaciones</span>
+      <span class="conn-path">
+        <code id="path-lin">smb://tu-server/warden</code>
+        <button class="conn-copy" data-copy="path-lin" type="button">Copiar</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:1rem">
+    <h2>Usuarios del NAS</h2>
     <div id="nas-list">{{template "nas_fragment.html" .}}</div>
   </div>
 
-  <script>document.getElementById('nashost').textContent = location.hostname;</script>
+  <script>
+    (function() {
+      var host = location.hostname;
+      document.getElementById('path-win').textContent = '\\\\' + host + '\\warden';
+      document.getElementById('path-mac').textContent = 'smb://' + host + '/warden';
+      document.getElementById('path-lin').textContent = 'smb://' + host + '/warden';
+
+      document.querySelectorAll('.conn-copy').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var txt = document.getElementById(btn.dataset.copy).textContent;
+          navigator.clipboard.writeText(txt).then(function() {
+            var old = btn.textContent;
+            btn.textContent = 'Copiado';
+            btn.classList.add('done');
+            setTimeout(function() { btn.textContent = old; btn.classList.remove('done'); }, 1400);
+          });
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
 {{end}}

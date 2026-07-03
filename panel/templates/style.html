@@ -262,6 +262,23 @@
   .reveal { font-family: monospace; background: var(--bg); padding: 0.6rem 0.9rem;
             border-radius: 8px; border: 1px solid var(--border); display: inline-block; margin-top: 0.5rem; }
 
+  /* NAS — cómo conectarse */
+  .connrow { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 0;
+             border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .connrow:last-child { border-bottom: none; }
+  .conn-os { font-weight: 600; font-size: 0.9rem; min-width: 92px; }
+  .conn-how { color: var(--muted); font-size: 0.82rem; min-width: 150px; flex: 1; }
+  .conn-path { display: flex; align-items: stretch; gap: 0; flex: 2; min-width: 220px; }
+  .conn-path code { font-family: monospace; font-size: 0.85rem; background: var(--bg);
+                    padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+                    border-radius: 8px 0 0 8px; border-right: none; flex: 1;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conn-copy { border: 1px solid var(--border); border-radius: 0 8px 8px 0; cursor: pointer;
+               background: var(--surface2); color: var(--text); padding: 0 0.85rem;
+               font-size: 0.78rem; white-space: nowrap; transition: background 0.15s; }
+  .conn-copy:hover { background: var(--border2); }
+  .conn-copy.done { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
+
   /* modo admin */
   dialog#admin-modal { background: var(--surface); color: var(--text); border: 1px solid var(--border2);
                         border-radius: 16px; padding: 1.5rem; width: 320px; }
