@@ -58,14 +58,38 @@
       document.getElementById('path-mac').textContent = 'smb://' + host + '/warden';
       document.getElementById('path-lin').textContent = 'smb://' + host + '/warden';
 
+      function copyText(txt) {
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(txt);
+        }
+        // Fallback para HTTP plano (sin contexto seguro, sin Clipboard API).
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+          document.execCommand('copy');
+        } finally {
+          document.body.removeChild(ta);
+        }
+        return Promise.resolve();
+      }
+
       document.querySelectorAll('.conn-copy').forEach(function(btn) {
         btn.addEventListener('click', function() {
           var txt = document.getElementById(btn.dataset.copy).textContent;
-          navigator.clipboard.writeText(txt).then(function() {
+          copyText(txt).then(function() {
             var old = btn.textContent;
             btn.textContent = 'Copiado';
             btn.classList.add('done');
             setTimeout(function() { btn.textContent = old; btn.classList.remove('done'); }, 1400);
+          }).catch(function() {
+            var old = btn.textContent;
+            btn.textContent = 'No se pudo copiar';
+            setTimeout(function() { btn.textContent = old; }, 1400);
           });
         });
       });
