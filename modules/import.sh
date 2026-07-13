@@ -98,7 +98,7 @@ warden_import() {
 
   # 6. Volúmenes de datos (sus targets), saltando montajes de sistema
   local -a targets=()
-  local t
+  local t already
   while IFS= read -r t; do
     [ -n "$t" ] || continue
     case "$t" in
@@ -107,6 +107,17 @@ warden_import() {
       /etc/timezone|/etc/localtime|/etc/hosts|/etc/resolv.conf) continue ;;
       /var/run/*|/run/*|/proc/*|/sys/*|/dev/*|*/docker.sock) continue ;;
     esac
+    # postgres 18+ prohíbe montar justo en /var/lib/postgresql/data (layout
+    # viejo) — hay que montar el padre /var/lib/postgresql. Monta bien en
+    # cualquier versión (la 18+ crea su subcarpeta ahí adentro), así que lo
+    # normalizamos siempre para esta familia de imágenes.
+    case "$image" in
+      postgres:*|postgres|*/postgres:*|*/postgres|postgis/postgis*)
+        [ "$t" = "/var/lib/postgresql/data" ] && t="/var/lib/postgresql" ;;
+    esac
+    already=0
+    for existing in "${targets[@]:-}"; do [ "$existing" = "$t" ] && already=1 && break; done
+    [ "$already" = 1 ] && continue
     targets+=("$t")
   done < <(echo "$json" | jq -r --arg s "$svc" '.services[$s].volumes[]?.target // empty')
 
