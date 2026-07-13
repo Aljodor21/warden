@@ -147,6 +147,56 @@ warden_import() {
     *vaultwarden*|*bitwarden*|*keycloak*|*authelia*) needs_https=1 ;;
   esac
 
+  # 9b. Variables de entorno que ya traía el compose original (antes se
+  # descartaban del todo y solo quedaba TZ — rompía cualquier app que
+  # necesitara config por env, no solo bases de datos).
+  local -a orig_env_keys=()
+  local ekey
+  while IFS= read -r ekey; do
+    [ -n "$ekey" ] || continue
+    [ "$ekey" = "TZ" ] && continue
+    orig_env_keys+=("$ekey")
+  done < <(echo "$json" | jq -r --arg s "$svc" '.services[$s].environment // {} | keys[]')
+  _import_has_env_key() {
+    local k="$1" x
+    for x in "${orig_env_keys[@]}"; do [ "$x" = "$k" ] && return 0; done
+    return 1
+  }
+  local env_block=""
+  if [ "${#orig_env_keys[@]}" -gt 0 ]; then
+    env_block="$(echo "$json" | jq -r --arg s "$svc" \
+      '.services[$s].environment // {} | to_entries[] | select(.value != null and .key != "TZ") | "      " + .key + ": " + (.value|tojson)')"
+  fi
+
+  # 9c. Bases de datos conocidas que EXIGEN contraseña para arrancar (postgres,
+  # mariadb/mysql, mongo). Si el compose original no la trae ya, generamos un
+  # secreto con el mismo mecanismo que usan las recetas curadas (COMP_SECRETS
+  # -> /etc/warden/secrets/<tag>.env al instalar). Sin esto el contenedor
+  # entra en crash-loop pidiendo la contraseña por consola.
+  local db_secret_var="" db_secret_line=""
+  case "$image" in
+    postgres:*|postgres|*/postgres:*|*/postgres|postgis/postgis*)
+      if ! _import_has_env_key POSTGRES_PASSWORD; then
+        db_secret_var="$(_import_envname "$tag")_DB_PASSWORD"
+        db_secret_line="      POSTGRES_PASSWORD: \${$db_secret_var:?warden debía generar este secreto automáticamente}"
+      fi ;;
+    mariadb:*|mariadb|*/mariadb:*|*/mariadb)
+      if ! _import_has_env_key MARIADB_ROOT_PASSWORD && ! _import_has_env_key MYSQL_ROOT_PASSWORD; then
+        db_secret_var="$(_import_envname "$tag")_DB_PASSWORD"
+        db_secret_line="      MARIADB_ROOT_PASSWORD: \${$db_secret_var:?warden debía generar este secreto automáticamente}"
+      fi ;;
+    mysql:*|mysql|*/mysql:*|*/mysql)
+      if ! _import_has_env_key MYSQL_ROOT_PASSWORD; then
+        db_secret_var="$(_import_envname "$tag")_DB_PASSWORD"
+        db_secret_line="      MYSQL_ROOT_PASSWORD: \${$db_secret_var:?warden debía generar este secreto automáticamente}"
+      fi ;;
+    mongo:*|mongo|*/mongo:*|*/mongo)
+      if ! _import_has_env_key MONGO_INITDB_ROOT_PASSWORD; then
+        db_secret_var="$(_import_envname "$tag")_DB_PASSWORD"
+        db_secret_line="      MONGO_INITDB_ROOT_USERNAME: admin\n      MONGO_INITDB_ROOT_PASSWORD: \${$db_secret_var:?warden debía generar este secreto automáticamente}"
+      fi ;;
+  esac
+
   # --- Generar las partes dinámicas del compose (ports_block ya se armó arriba) -
   local vols_block="" paths_str="" bn hostpath t
   if [ "${#targets[@]}" -gt 0 ]; then
@@ -180,6 +230,8 @@ warden_import() {
     printf '%b' "$ports_block"
     echo "    environment:"
     echo "      TZ: \"\${TZ:-UTC}\""
+    [ -n "$env_block" ] && printf '%s\n' "$env_block"
+    [ -n "$db_secret_line" ] && printf '%b\n' "$db_secret_line"
     printf '%b' "$vols_block"
   } > "$stackdir/docker-compose.yml"
 
@@ -196,7 +248,11 @@ warden_import() {
     echo "COMP_DB_TYPE=\"\""
     echo "COMP_INSTALL=\"site/stacks/$tag/docker-compose.yml\""
     echo "COMP_CONTAINER=\"$tag\""
-    echo "COMP_SECRETS=()"
+    if [ -n "$db_secret_var" ]; then
+      echo "COMP_SECRETS=( \"$db_secret_var\" )"
+    else
+      echo "COMP_SECRETS=()"
+    fi
     echo "COMP_ICON=\"$tag\""
     echo "COMP_CF_HOST=\"\""
     echo "COMP_CF_PORT=\"${port}\""
@@ -213,6 +269,7 @@ warden_import() {
   [ -n "$port" ] && echo "   El link del dashboard apunta a: $port  (podés cambiarlo en Catálogo → editar)"
   [ "${#targets[@]}" -gt 0 ] && echo "   Datos:     ${targets[*]}"
   echo "   Archivos:  site/catalog/$tag.component · site/stacks/$tag/docker-compose.yml"
+  [ -n "$db_secret_var" ] && echo "   Contraseña: se generó sola al instalar ($db_secret_var, en /etc/warden/secrets/$tag.env)"
   [ "$nsvc" -gt 1 ] && warn "El compose tenía $nsvc servicios — importé solo '$svc'. Si necesita base de datos u otro, armalo a mano."
   [ "$needs_https" = 1 ] && warn "Esta app suele EXIGIR HTTPS (contexto seguro): exponela por el túnel de Cloudflare con subdominio, no http plano."
   echo
