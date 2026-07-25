@@ -1,6 +1,70 @@
 #!/usr/bin/env bash
 # modules/disk.sh — gestión interactiva de discos no-sistema:
-#   montar, desmontar, preparar (init + reformatear unificados).
+#   montar, desmontar, preparar (init + reformatear unificados), silenciar.
+
+# ¿el disco es de platos (HDD) y no SSD/NVMe?
+_disk_is_rotational() {
+  [ "$(lsblk -dno ROTA "$1" 2>/dev/null | tr -d ' ')" = "1" ]
+}
+
+# Ruta estable del disco: /dev/sdX cambia de orden entre arranques, by-id no.
+# Sin esto, hdparm.conf podría terminar aplicándole la config a otro disco.
+_disk_by_id() {
+  local dev="$1" link
+  link="$(find /dev/disk/by-id -lname "*/${dev##*/}" ! -name '*-part*' 2>/dev/null | head -1)"
+  echo "${link:-$dev}"
+}
+
+# Aplica y persiste el ahorro de energía de un HDD de backup.
+# Los discos de 2.5" aparcan los cabezales cada pocos minutos: hacen "click"
+# y queman ciclos de carga (SMART 193 Load_Cycle_Count, ~600k de vida útil).
+# En un disco que solo recibe backups eso es puro desgaste y ruido de noche.
+_disk_quiet_apply() {
+  local dev="$1"
+  local conf="/etc/hdparm.conf" byid; byid="$(_disk_by_id "$dev")"
+
+  # apm=254 -> sin parking agresivo · spindown=24 -> duerme tras 2 min sin uso
+  run "hdparm -B 254 -S 24 '$dev'"
+
+  if grep -q "^$byid {" "$conf" 2>/dev/null; then
+    ok "Ya estaba configurado en $conf, no lo duplico."
+  else
+    log "Persistiendo la configuración en $conf (la aplica udev al arrancar)"
+    run "bash -c \"printf '\n# warden: HDD de backup — sin parking de cabezales, duerme a los 2 min\n%s {\n    apm = 254\n    spindown_time = 24\n}\n' '$byid' >> '$conf'\""
+  fi
+}
+
+# Silenciado automático: se llama solo al montar/preparar un disco de backup.
+# No instala nada ni interrumpe el flujo — si falta hdparm, avisa y sigue.
+_disk_quiet_auto() {
+  local dev="$1"
+  _disk_is_rotational "$dev" || return 0
+  if ! is_installed hdparm; then
+    warn "Es un disco mecánico y hdparm no está instalado — va a hacer ruido."
+    warn "Silencialo con: warden disk quiet"
+    return 0
+  fi
+  log "Disco mecánico: lo configuro para que no aparque cabezales y duerma solo"
+  _disk_quiet_apply "$dev"
+}
+
+# warden disk quiet [dev] — silenciar un HDD a mano (o volver a aplicarlo).
+warden_disk_quiet() {
+  local dev="${1:-}"
+  [ -n "$dev" ] || dev="$(_disk_pick 'Elegí el disco a silenciar')" || return 1
+
+  local sysd; sysd="$(system_disk)"
+  [ "${dev##*/}" != "$sysd" ] || { warn "$dev es el disco del sistema — no lo toco."; return 1; }
+
+  if ! _disk_is_rotational "$dev"; then
+    ok "$dev es SSD/NVMe: no aparca cabezales ni hace ruido. Nada que hacer."
+    return 0
+  fi
+
+  ensure_pkg hdparm hdparm
+  _disk_quiet_apply "$dev"
+  ok "Listo. Comprobalo con: hdparm -C $dev  (debe decir 'standby' cuando nadie lo use)"
+}
 
 # Lista los discos no-sistema con su rol. Imprime "nombre|tamaño|rol|detalle".
 _disk_list_non_system() {
@@ -67,6 +131,8 @@ warden_disk_mount() {
   else
     warn "Disco montado en $mount pero no tiene el marcador warden (no fue preparado con warden)."
   fi
+
+  _disk_quiet_auto "$dev"
 }
 
 # warden disk unmount — desmonta el disco de backup actual
@@ -133,6 +199,8 @@ warden_disk_prepare() {
     warn "Guardá esta clave fuera del server (warden secrets save) — sin ella no podés restaurar."
   fi
 
+  _disk_quiet_auto "$dev"
+
   ok "Disco preparado y montado en $mount."
   echo
   log "Siguiente paso: 'warden register' para activar el backup automático."
@@ -175,6 +243,7 @@ warden_disk_menu() {
     'Desmontar disco de backup' \
     'Preparar disco (nuevo o reformatear)' \
     'Explorar backup' \
+    'Silenciar disco (HDD)' \
     'Volver')"
   case "$opt" in
     'Listar discos')
@@ -194,6 +263,7 @@ warden_disk_menu() {
     'Desmontar disco de backup')           need_root; warden_disk_unmount ;;
     'Preparar disco (nuevo o reformatear)') need_root; warden_disk_prepare ;;
     'Explorar backup')                     need_root; warden_disk_explore ;;
+    'Silenciar disco (HDD)')               need_root; warden_disk_quiet ;;
     *) : ;;
   esac
 }

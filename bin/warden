@@ -38,6 +38,7 @@
 #   disk unmount        [root] Desmonta el disco de backup actual
 #   disk prepare        [root] Prepara un disco (nuevo o reformatear con confirmación)
 #   disk explore        [root] Muestra snapshots y uso del disco montado
+#   disk quiet [dev]    [root] Silencia un HDD de backup (sin parking, duerme a los 2 min)
 #   disk list           Lista discos no-sistema con su rol
 #   restore             Restaura un backup (restore/restore.sh)
 #   list-disks          Lista discos físicos
@@ -269,8 +270,9 @@ case "${1:-menu}" in
       unmount)  need_root; warden_disk_unmount ;;
       prepare)  need_root; warden_disk_prepare ;;
       explore)  need_root; warden_disk_explore ;;
+      quiet)    need_root; warden_disk_quiet "${3:-}" ;;
       list)     _disk_list_non_system ;;
-      *) echo "Uso: warden disk {menu|mount|unmount|prepare|explore|list}"; exit 1 ;;
+      *) echo "Uso: warden disk {menu|mount|unmount|prepare|explore|quiet|list}"; exit 1 ;;
     esac
     ;;
   secrets)
