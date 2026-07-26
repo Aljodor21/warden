@@ -32,6 +32,16 @@ warden <cmd>    # ejecutar un subcomando directamente
 | `ntfy` | Instala y configura el servidor de alertas push | Sistema → ntfy |
 | `motd` | Instala el saludo al iniciar sesión SSH | — |
 | `reset` | Borra TODO lo que warden instaló/configuró | Sistema → Zona de peligro |
+| `catalog` | Lista los componentes del catálogo | Catálogo |
+| `menu` | Abre el menú principal (es lo que hace `warden` sin argumentos) | — |
+| `list-disks` | Lista los discos físicos del equipo | — |
+| `disk` | Menú de gestión de discos: montar, desmontar, preparar | Backups |
+| `init-disk <dev>` | Prepara un disco NUEVO como destino de backup | Backups → Preparar disco |
+| `backup-toggle <tag> on\|off` | Incluye o excluye un componente del backup automático | Backups |
+| `nas <accion> ...` | Usuarios del NAS: `adduser`, `passwd`, `deluser`, `users` | NAS |
+| `watch` | Revisa los contenedores del catálogo y avisa por ntfy si alguno cayó | — |
+| `notify-url <url>` | Guarda la URL del servidor ntfy para las alertas push | Sistema → ntfy |
+| `homepage` | Regenera la configuración de Homepage y la recarga | — |
 
 ## Variables de entorno
 
