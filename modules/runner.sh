@@ -3,15 +3,19 @@
 #   Pide la URL del repo y el token de registro (no se guardan en el repo) y
 #   deja el agente corriendo como servicio.
 
-RUNNER_DIR="${RUNNER_DIR:-/opt/warden/actions-runner}"
+# Cada repo tiene su propio runner, en su propia carpeta: /opt/warden/actions-runner-<usuario>-<repo>.
+# (Un mismo runner no se puede registrar en dos repos.) RUNNER_DIR fuerza una carpeta concreta.
+RUNNER_BASE="${RUNNER_BASE:-/opt/warden}"
 RUNNER_USER="${RUNNER_USER:-${SUDO_USER:-$USER}}"
 
 warden_runner() {
-  local url token name arch ver tarball
+  local url token name arch ver tarball slug dir
   url="${1:-$(ui_input 'URL del repo (https://github.com/usuario/repo)' '')}"
   token="${2:-$(ui_input 'Token de registro (GitHub > repo > Settings > Actions > Runners)' '')}"
   [ -n "$url" ] && [ -n "$token" ] || die "Necesito la URL del repo y el token de registro."
   name="${WARDEN_HOSTNAME:-$(hostname)}-runner"
+  slug="$(printf '%s' "${url%.git}" | sed -E 's#^(https://github\.com/|git@github\.com:)##; s#[^A-Za-z0-9._-]+#-#g')"
+  dir="${RUNNER_DIR:-$RUNNER_BASE/actions-runner-$slug}"
 
   case "$(uname -m)" in
     x86_64)        arch=x64 ;;
@@ -24,9 +28,9 @@ warden_runner() {
   fi
 
   has curl || ensure_pkg curl
-  mkdir -p "$RUNNER_DIR"; chown "$RUNNER_USER" "$RUNNER_DIR"
+  mkdir -p "$dir"; chown "$RUNNER_USER" "$dir"
 
-  if [ ! -f "$RUNNER_DIR/config.sh" ]; then
+  if [ ! -f "$dir/config.sh" ]; then
     ver="$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest \
            | grep -oE '"tag_name": *"v[^"]+"' | head -1 | grep -oE '[0-9.]+')"
     [ -n "$ver" ] || die "No pude averiguar la última versión del runner"
@@ -34,16 +38,16 @@ warden_runner() {
     log "Descargando runner $ver ($arch)"
     curl -fsSL -o "/tmp/$tarball" \
       "https://github.com/actions/runner/releases/download/v$ver/$tarball"
-    sudo -u "$RUNNER_USER" tar xzf "/tmp/$tarball" -C "$RUNNER_DIR"
+    sudo -u "$RUNNER_USER" tar xzf "/tmp/$tarball" -C "$dir"
     rm -f "/tmp/$tarball"
-    [ -f "$RUNNER_DIR/bin/installdependencies.sh" ] && bash "$RUNNER_DIR/bin/installdependencies.sh" || true
+    [ -f "$dir/bin/installdependencies.sh" ] && bash "$dir/bin/installdependencies.sh" || true
   fi
 
   log "Registrando el runner en $url"
   sudo -u "$RUNNER_USER" bash -c \
-    "cd '$RUNNER_DIR' && ./config.sh --url '$url' --token '$token' --name '$name' --labels warden --unattended --replace"
+    "cd '$dir' && ./config.sh --url '$url' --token '$token' --name '$name' --labels warden --unattended --replace"
 
   log "Instalando el runner como servicio"
-  ( cd "$RUNNER_DIR" && ./svc.sh install "$RUNNER_USER" && ./svc.sh start )
+  ( cd "$dir" && ./svc.sh install "$RUNNER_USER" && ./svc.sh start )
   ok "Runner '$name' registrado y corriendo (etiqueta: warden)."
 }

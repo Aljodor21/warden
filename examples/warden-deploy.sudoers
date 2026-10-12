@@ -1,0 +1,8 @@
+# Permite que el runner del repo 'warden' instale el panel que acaba de compilar y lo reinicie,
+# sin contraseña y solo con estos comandos exactos.
+# Instalar:  sudo cp examples/warden-deploy.sudoers /etc/sudoers.d/warden-deploy
+#            (reemplazá USUARIO por el usuario del runner)
+#            sudo visudo -cf /etc/sudoers.d/warden-deploy   # validar
+USUARIO ALL=(root) NOPASSWD: /usr/bin/install -m 755 /home/USUARIO/warden/.build/warden-panel /usr/local/bin/warden-panel, \
+                             /usr/bin/install -m 755 /home/USUARIO/warden/.build/warden-panel.anterior /usr/local/bin/warden-panel, \
+                             /usr/bin/systemctl restart warden-panel

@@ -46,3 +46,22 @@ de Cloudflare. Definís la app una vez y el despliegue la publica solo.
 ```
 git push → GitHub → runner en tu server → docker compose build/up → warden publish (Cloudflare)
 ```
+
+## Desplegar warden mismo
+
+Cada push a `main` del repo `warden` actualiza el servidor: `git pull` en `~/warden` (eso ya actualiza el comando `warden` y los módulos, porque `/usr/local/bin/warden` apunta al repo), compila el panel, lo instala y lo reinicia. Si no responde, vuelve al panel anterior. Lo hace `.github/workflows/deploy.yml`.
+
+Puesta en marcha (una vez):
+
+```bash
+# 1. Runner para el repo warden (token: repo warden → Settings → Actions → Runners → New self-hosted runner)
+sudo warden runner https://github.com/USUARIO/warden <TOKEN>
+
+# 2. Permiso para instalar el panel y reiniciarlo (edita USUARIO dentro del archivo)
+sudo cp examples/warden-deploy.sudoers /etc/sudoers.d/warden-deploy
+sudo visudo -cf /etc/sudoers.d/warden-deploy
+```
+
+Cada repo tiene su propio runner en su propia carpeta (`/opt/warden/actions-runner-USUARIO-REPO`), así que el de warden convive con los de tus apps. El workflow asume que el repo está en `/home/alejo/warden`; si lo tienes en otra ruta, cambia `WARDEN_DIR` en `deploy.yml` y el sudoers.
+
+Seguridad: el runner puede instalar como root el panel que compila. En un repo público, en Settings → Actions → General deja **"Require approval for all outside collaborators"**, para que nadie ajeno corra workflows en tu servidor.

@@ -2,7 +2,7 @@
 
 ## CI automático
 
-Cada push a `main`/`dev` o PR dispara tres jobs en GitHub Actions
+Cada push a `main` o PR dispara tres jobs en GitHub Actions
 (`.github/workflows/ci.yml`):
 
 | Job | Qué hace |

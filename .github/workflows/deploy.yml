@@ -1,0 +1,70 @@
+# Despliega warden en el propio servidor cuando algo llega a main.
+# Corre en el runner de warden en uburoom (self-hosted, etiqueta 'warden'): ver docs/CICD.md.
+#
+#   merge de un PR a main → git pull en ~/warden → compila el panel → instala el binario → reinicia el panel
+#
+# El comando `warden` y los módulos son el propio repo (/usr/local/bin/warden es un enlace a
+# ~/warden/bin/warden), así que el `git pull` ya los actualiza; solo el panel hay que compilarlo.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Un despliegue a la vez; nunca se cancela uno a medias.
+concurrency:
+  group: deploy-warden
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WARDEN_DIR: /home/alejo/warden
+
+jobs:
+  deploy:
+    name: Desplegar warden en el servidor
+    runs-on: [self-hosted, warden]
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Actualizar el código (solo avance rápido)
+        run: git -C "$WARDEN_DIR" pull --ff-only origin main
+
+      - name: Compilar el panel
+        run: |
+          cd "$WARDEN_DIR/panel"
+          go vet ./...
+          mkdir -p "$WARDEN_DIR/.build"
+          go build -o "$WARDEN_DIR/.build/warden-panel" .
+
+      - name: Guardar el panel actual por si hay que volver atrás
+        run: cp /usr/local/bin/warden-panel "$WARDEN_DIR/.build/warden-panel.anterior"
+
+      - name: Instalar y reiniciar el panel
+        run: |
+          sudo -n /usr/bin/install -m 755 "$WARDEN_DIR/.build/warden-panel" /usr/local/bin/warden-panel
+          sudo -n /usr/bin/systemctl restart warden-panel
+
+      - name: Comprobar que responde
+        run: |
+          for i in $(seq 1 15); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/ || true)"
+            if [[ "$code" =~ ^[23] ]]; then echo "El panel responde ($code)."; exit 0; fi
+            sleep 2
+          done
+          echo "::error::El panel no respondió (último código: $code)."
+          exit 1
+
+      - name: Volver al panel anterior si falló
+        if: failure()
+        run: |
+          if [ -f "$WARDEN_DIR/.build/warden-panel.anterior" ]; then
+            sudo -n /usr/bin/install -m 755 "$WARDEN_DIR/.build/warden-panel.anterior" /usr/local/bin/warden-panel
+            sudo -n /usr/bin/systemctl restart warden-panel
+            echo "Se restauró el panel anterior."
+          fi
