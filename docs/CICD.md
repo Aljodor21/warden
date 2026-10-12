@@ -57,7 +57,7 @@ El `.env` de una app tiene secretos y no va a GitHub. En el panel, **Catálogo �
 
 ## Registrar el runner después
 
-La pantalla de próximos pasos (con el formulario para pegar el token del runner) sale al guardar una app nueva, pero si no lo registraste en ese momento puedes volver: **Catálogo → app de CI/CD → Runner y pasos**.
+La pantalla de próximos pasos (con el formulario para pegar el token del runner) sale al guardar una app nueva, pero si no lo registraste en ese momento puedes volver: **Catálogo → app de CI/CD → Runner y pasos**. La pantalla revisa si el repo ya tiene un runner: si lo tiene, lo dice y no pide nada; si no, muestra el formulario para pegar el token.
 
 ## Desplegar warden mismo
 

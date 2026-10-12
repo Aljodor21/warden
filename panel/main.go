@@ -402,11 +402,11 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 	// El formulario promete "ver los próximos pasos": ahí está el registro del
 	// runner, que no existe en ningún otro lado del panel. Antes se redirigía
 	// al catálogo y esa pantalla quedaba huérfana.
-	render(w, "new_deploy_done.html", map[string]any{
+	render(w, "new_deploy_done.html", withRunnerStatus(map[string]any{
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "Name": c.Name, "Install": c.Install,
 		"Tag": c.Tag, "Container": c.Container, "Port": c.CFPort,
 		"Published": c.CFHost != "",
-	})
+	}, c.Install))
 }
 
 func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {

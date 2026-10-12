@@ -136,6 +136,17 @@ func (s *server) deployedComponent(tag string) (*Component, error) {
 	return c, nil
 }
 
+// withRunnerStatus agrega a los datos de la pantalla de pasos si el repo ya tiene un runner
+// registrado en este servidor (entonces no hay nada que registrar).
+func withRunnerStatus(data map[string]any, install string) map[string]any {
+	if owner, repo, ok := parseGitHubRepo(install); ok {
+		if service, found := findRunnerService(owner, repo); found {
+			data["RunnerFound"], data["RunnerService"] = true, service
+		}
+	}
+	return data
+}
+
 // handleAppSteps: vuelve a mostrar los próximos pasos (Dockerfile, workflow y registro del
 // runner) de una app de CI/CD ya guardada.
 func (s *server) handleAppSteps(w http.ResponseWriter, r *http.Request) {
@@ -144,10 +155,10 @@ func (s *server) handleAppSteps(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	render(w, "new_deploy_done.html", map[string]any{
+	render(w, "new_deploy_done.html", withRunnerStatus(map[string]any{
 		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "Name": c.Name, "Install": c.Install,
 		"Tag": c.Tag, "Container": c.Container, "Port": c.CFPort, "Published": false,
-	})
+	}, c.Install))
 }
 
 // handleEnvForm: muestra el .env guardado, o el ejemplo del repo si todavía no existe.
