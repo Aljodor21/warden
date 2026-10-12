@@ -6,10 +6,22 @@
 # Cada repo tiene su propio runner, en su propia carpeta: /opt/warden/actions-runner-<usuario>-<repo>.
 # (Un mismo runner no se puede registrar en dos repos.) RUNNER_DIR fuerza una carpeta concreta.
 RUNNER_BASE="${RUNNER_BASE:-/opt/warden}"
-RUNNER_USER="${RUNNER_USER:-${SUDO_USER:-$USER}}"
+
+# Usuario con el que corre el runner. El instalador de GitHub se niega a correr como root, y cuando
+# warden lo llama el panel (que corre como root) SUDO_USER llega vacío o 'root': en ese caso se usa
+# el dueño del repo de warden (el usuario del servidor). RUNNER_USER lo fuerza.
+_runner_user() {
+  local u="${RUNNER_USER:-${SUDO_USER:-}}"
+  if [ -z "$u" ] || [ "$u" = root ]; then
+    u="$(stat -c %U "${WARDEN_ROOT:-.}" 2>/dev/null || true)"
+  fi
+  [ -n "$u" ] && [ "$u" != root ] \
+    || die "No sé con qué usuario correr el runner (GitHub no permite root). Define RUNNER_USER=usuario."
+  printf '%s' "$u"
+}
 
 warden_runner() {
-  local url token name arch ver tarball slug dir
+  local url token name arch ver tarball slug dir user
   url="${1:-$(ui_input 'URL del repo (https://github.com/usuario/repo)' '')}"
   token="${2:-$(ui_input 'Token de registro (GitHub > repo > Settings > Actions > Runners)' '')}"
   [ -n "$url" ] && [ -n "$token" ] || die "Necesito la URL del repo y el token de registro."
@@ -27,8 +39,9 @@ warden_runner() {
     echo "[dry-run] descargaría y registraría el runner '$name' en $url"; return 0
   fi
 
+  user="$(_runner_user)" || exit 1
   has curl || ensure_pkg curl
-  mkdir -p "$dir"; chown "$RUNNER_USER" "$dir"
+  mkdir -p "$dir"
 
   if [ ! -f "$dir/config.sh" ]; then
     ver="$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest \
@@ -38,16 +51,23 @@ warden_runner() {
     log "Descargando runner $ver ($arch)"
     curl -fsSL -o "/tmp/$tarball" \
       "https://github.com/actions/runner/releases/download/v$ver/$tarball"
-    sudo -u "$RUNNER_USER" tar xzf "/tmp/$tarball" -C "$dir"
+    sudo -u "$user" tar xzf "/tmp/$tarball" -C "$dir" --no-same-owner
     rm -f "/tmp/$tarball"
     [ -f "$dir/bin/installdependencies.sh" ] && bash "$dir/bin/installdependencies.sh" || true
   fi
 
+  # Todo el contenido debe ser del usuario del runner (una carpeta a medias de un intento
+  # anterior puede traer otro dueño).
+  chown -R "$user" "$dir"
+
   log "Registrando el runner en $url"
-  sudo -u "$RUNNER_USER" bash -c \
-    "cd '$dir' && ./config.sh --url '$url' --token '$token' --name '$name' --labels warden --unattended --replace"
+  sudo -u "$user" bash -c \
+    "cd '$dir' && ./config.sh --url '$url' --token '$token' --name '$name' --labels warden --unattended --replace" \
+    || die "No se pudo registrar el runner (revisa el token: dura una hora y sirve para un solo repo)."
+  [ -f "$dir/.runner" ] || die "El registro no dejó el archivo .runner: el runner NO quedó registrado."
 
   log "Instalando el runner como servicio"
-  ( cd "$dir" && ./svc.sh install "$RUNNER_USER" && ./svc.sh start )
+  ( cd "$dir" && ./svc.sh install "$user" && ./svc.sh start ) \
+    || die "No pude instalar o arrancar el runner como servicio."
   ok "Runner '$name' registrado y corriendo (etiqueta: warden)."
 }
