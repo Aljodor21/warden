@@ -1,14 +1,14 @@
 name: CI
 
 # ───────────────────────── Cuándo corre ─────────────────────────
-# push a main/dev  → valida lo ya integrado y lo que estás probando en dev
+# push a main      → valida lo ya integrado
 # pull_request     → la compuerta: nada se mergea a main sin pasar esto
 # (no ponemos push a TODAS las ramas para no correr el CI dos veces en un PR
 #  ni gastar minutos en ramas de trabajo sueltas; cuando querés validar una,
-#  la pusheás a dev o abrís el PR).
+#  la pusheás a una rama y abrís el PR).
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   pull_request:
 
 # Si llegan commits nuevos mientras una corrida sigue en curso, cancela la

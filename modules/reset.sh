@@ -72,7 +72,12 @@ warden_reset() {
   _reset_down "$WARDEN_ROOT/stacks/ntfy/docker-compose.yml"
 
   log "Bajando apps del catálogo (instaladas por warden y desplegadas vía CI/CD)"
-  local tag runner_dir="${RUNNER_DIR:-/opt/warden/actions-runner}"
+  local tag d runner_dirs=()
+  if [ -n "${RUNNER_DIR:-}" ]; then
+    runner_dirs=("$RUNNER_DIR")
+  else
+    for d in "${RUNNER_BASE:-/opt/warden}"/actions-runner*; do [ -d "$d" ] && runner_dirs+=("$d"); done
+  fi
   while IFS='|' read -r tag _ _ _; do
     [ -n "$tag" ] || continue
     catalog_load "$tag" || continue
@@ -83,15 +88,19 @@ warden_reset() {
         # App de CI/CD: vive en su propio repo, clonado por el runner en
         # _work/<repo>/<repo>/ (estructura estándar de actions-runner).
         local reponame; reponame="$(basename "${COMP_INSTALL%.git}")"
-        _reset_down "$runner_dir/_work/$reponame/$reponame/docker-compose.yml" ;;
+        for d in "${runner_dirs[@]}"; do
+          _reset_down "$d/_work/$reponame/$reponame/docker-compose.yml"
+        done ;;
     esac
   done < <(catalog_each)
 
-  if [ -d "$runner_dir" ] && [ -f "$runner_dir/svc.sh" ]; then
-    log "Desinstalando el runner de GitHub Actions (queda offline en GitHub, podés borrarlo ahí si querés del todo)"
-    ( cd "$runner_dir" && ./svc.sh stop 2>/dev/null; ./svc.sh uninstall 2>/dev/null ) || true
-    run "rm -rf '$runner_dir'"
-  fi
+  for d in "${runner_dirs[@]}"; do
+    if [ -d "$d" ] && [ -f "$d/svc.sh" ]; then
+      log "Desinstalando el runner de GitHub Actions en $d (queda offline en GitHub, podés borrarlo ahí si querés del todo)"
+      ( cd "$d" && ./svc.sh stop 2>/dev/null; ./svc.sh uninstall 2>/dev/null ) || true
+      run "rm -rf '$d'"
+    fi
+  done
 
   if has docker; then
     log "Limpiando imágenes de Docker sin usar (libera espacio en disco)"

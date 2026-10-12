@@ -18,3 +18,6 @@ site/
 *.bak
 *.tmp
 *~
+
+# Binarios que compila el despliegue automático
+.build/
