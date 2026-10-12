@@ -66,6 +66,8 @@
               hx-target="#log-{{.Tag}}"
               hx-swap="innerHTML">Ver logs</button>
       {{end}}
+      <a class="btn secondary" href="/app/{{.Tag}}/steps">Runner y pasos</a>
+      <a class="btn secondary" href="/app/{{.Tag}}/env">Variables (.env)</a>
       <a class="btn secondary" href="/edit/{{.Tag}}">Editar</a>
     </div>
   </div>

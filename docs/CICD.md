@@ -47,6 +47,18 @@ de Cloudflare. Definís la app una vez y el despliegue la publica solo.
 git push → GitHub → runner en tu server → docker compose build/up → warden publish (Cloudflare)
 ```
 
+## Variables de entorno (.env) de una app
+
+El `.env` de una app tiene secretos y no va a GitHub. En el panel, **Catálogo → app de CI/CD → Variables (.env)**:
+
+- Si todavía no hay un `.env` guardado, el panel trae el ejemplo del repo de la app (`.env.docker.example`, `.env.example`, `.env.sample` o `example.env`, si el repo es público) para que cambies los valores por los reales. No se guarda nada hasta que le des **Guardar**.
+- Se guarda en `site/env/<tag>.env` (carpeta privada, fuera de git), con permiso `0600` y a nombre del dueño del repo de warden — el usuario del runner — para que el workflow de la app lo pueda leer: `cp ~/warden/site/env/<tag>.env .env`.
+- Hace falta el modo admin para verlo y editarlo.
+
+## Registrar el runner después
+
+La pantalla de próximos pasos (con el formulario para pegar el token del runner) sale al guardar una app nueva, pero si no lo registraste en ese momento puedes volver: **Catálogo → app de CI/CD → Runner y pasos**.
+
 ## Desplegar warden mismo
 
 Cada push a `main` del repo `warden` actualiza el servidor: `git pull` en `~/warden` (eso ya actualiza el comando `warden` y los módulos, porque `/usr/local/bin/warden` apunta al repo), compila el panel, lo instala y lo reinicia. Si no responde, vuelve al panel anterior. Lo hace `.github/workflows/deploy.yml`.
