@@ -1047,8 +1047,8 @@
 <p>El <code>deploy.yml</code> incluido hace: checkout → docker build → docker compose up → <code>warden publish</code>.</p>
 <p><strong>4. Asegurate que el catálogo tenga el componente:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># site/catalog/miapp.component</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="na">COMP_CF_HOST</span><span class="o">=</span><span class="s">&quot;miapp.tudominio.com&quot;</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="na">COMP_CF_PORT</span><span class="o">=</span><span class="s">&quot;8080&quot;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="na">COMP_CF_HOST</span><span class="o">=</span><span class="s">"miapp.tudominio.com"</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="na">COMP_CF_PORT</span><span class="o">=</span><span class="s">"8080"</span>
 </code></pre></div>
 <p><strong>5. <code>git push</code> → el runner lo toma, construye y publica.</strong></p>
 <p>También podés registrar runners desde el panel: <strong>Catálogo</strong> → editar la app → campo de token → <strong>Registrar runner</strong>.</p>

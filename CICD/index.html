@@ -835,6 +835,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#desplegar-warden-mismo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desplegar warden mismo
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -900,6 +911,18 @@ de Cloudflare. Definís la app una vez y el despliegue la publica solo.</p>
 <h2 id="flujo">Flujo<a class="headerlink" href="#flujo" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git push → GitHub → runner en tu server → docker compose build/up → warden publish (Cloudflare)
 </code></pre></div>
+<h2 id="desplegar-warden-mismo">Desplegar warden mismo<a class="headerlink" href="#desplegar-warden-mismo" title="Permanent link">&para;</a></h2>
+<p>Cada push a <code>main</code> del repo <code>warden</code> actualiza el servidor: <code>git pull</code> en <code>~/warden</code> (eso ya actualiza el comando <code>warden</code> y los módulos, porque <code>/usr/local/bin/warden</code> apunta al repo), compila el panel, lo instala y lo reinicia. Si no responde, vuelve al panel anterior. Lo hace <code>.github/workflows/deploy.yml</code>.</p>
+<p>Puesta en marcha (una vez):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 1. Runner para el repo warden (token: repo warden → Settings → Actions → Runners → New self-hosted runner)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>sudo<span class="w"> </span>warden<span class="w"> </span>runner<span class="w"> </span>https://github.com/USUARIO/warden<span class="w"> </span>&lt;TOKEN&gt;
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 2. Permiso para instalar el panel y reiniciarlo (edita USUARIO dentro del archivo)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>sudo<span class="w"> </span>cp<span class="w"> </span>examples/warden-deploy.sudoers<span class="w"> </span>/etc/sudoers.d/warden-deploy
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>sudo<span class="w"> </span>visudo<span class="w"> </span>-cf<span class="w"> </span>/etc/sudoers.d/warden-deploy
+</code></pre></div>
+<p>Cada repo tiene su propio runner en su propia carpeta (<code>/opt/warden/actions-runner-USUARIO-REPO</code>), así que el de warden convive con los de tus apps. El workflow asume que el repo está en <code>/home/alejo/warden</code>; si lo tienes en otra ruta, cambia <code>WARDEN_DIR</code> en <code>deploy.yml</code> y el sudoers.</p>
+<p>Seguridad: el runner puede instalar como root el panel que compila. En un repo público, en Settings → Actions → General deja <strong>"Require approval for all outside collaborators"</strong>, para que nadie ajeno corra workflows en tu servidor.</p>
 
 
 
