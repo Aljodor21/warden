@@ -836,6 +836,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#variables-de-entorno-env-de-una-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables de entorno (.env) de una app
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registrar-el-runner-despues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registrar el runner después
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#desplegar-warden-mismo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -911,6 +933,15 @@ de Cloudflare. Definís la app una vez y el despliegue la publica solo.</p>
 <h2 id="flujo">Flujo<a class="headerlink" href="#flujo" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git push → GitHub → runner en tu server → docker compose build/up → warden publish (Cloudflare)
 </code></pre></div>
+<h2 id="variables-de-entorno-env-de-una-app">Variables de entorno (.env) de una app<a class="headerlink" href="#variables-de-entorno-env-de-una-app" title="Permanent link">&para;</a></h2>
+<p>El <code>.env</code> de una app tiene secretos y no va a GitHub. En el panel, <strong>Catálogo → app de CI/CD → Variables (.env)</strong>:</p>
+<ul>
+<li>Si todavía no hay un <code>.env</code> guardado, el panel trae el ejemplo del repo de la app (<code>.env.docker.example</code>, <code>.env.example</code>, <code>.env.sample</code> o <code>example.env</code>, si el repo es público) para que cambies los valores por los reales. No se guarda nada hasta que le des <strong>Guardar</strong>.</li>
+<li>Se guarda en <code>site/env/&lt;tag&gt;.env</code> (carpeta privada, fuera de git), con permiso <code>0600</code> y a nombre del dueño del repo de warden — el usuario del runner — para que el workflow de la app lo pueda leer: <code>cp ~/warden/site/env/&lt;tag&gt;.env .env</code>.</li>
+<li>Hace falta el modo admin para verlo y editarlo.</li>
+</ul>
+<h2 id="registrar-el-runner-despues">Registrar el runner después<a class="headerlink" href="#registrar-el-runner-despues" title="Permanent link">&para;</a></h2>
+<p>La pantalla de próximos pasos (con el formulario para pegar el token del runner) sale al guardar una app nueva, pero si no lo registraste en ese momento puedes volver: <strong>Catálogo → app de CI/CD → Runner y pasos</strong>. La pantalla revisa si el repo ya tiene un runner: si lo tiene, lo dice y no pide nada; si no, muestra el formulario para pegar el token.</p>
 <h2 id="desplegar-warden-mismo">Desplegar warden mismo<a class="headerlink" href="#desplegar-warden-mismo" title="Permanent link">&para;</a></h2>
 <p>Cada push a <code>main</code> del repo <code>warden</code> actualiza el servidor: <code>git pull</code> en <code>~/warden</code> (eso ya actualiza el comando <code>warden</code> y los módulos, porque <code>/usr/local/bin/warden</code> apunta al repo), compila el panel, lo instala y lo reinicia. Si no responde, vuelve al panel anterior. Lo hace <code>.github/workflows/deploy.yml</code>.</p>
 <p>Puesta en marcha (una vez):</p>
