@@ -20,7 +20,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -397,7 +396,14 @@ func (s *server) handleNewDeploySave(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	http.Redirect(w, r, "/catalog?saved="+url.QueryEscape(c.Name), http.StatusSeeOther)
+	// El formulario promete "ver los próximos pasos": ahí está el registro del
+	// runner, que no existe en ningún otro lado del panel. Antes se redirigía
+	// al catálogo y esa pantalla quedaba huérfana.
+	render(w, "new_deploy_done.html", map[string]any{
+		"Page": "catalog", "AdminUnlocked": s.isAdmin(r), "Name": c.Name, "Install": c.Install,
+		"Tag": c.Tag, "Container": c.Container, "Port": c.CFPort,
+		"Published": c.CFHost != "",
+	})
 }
 
 func (s *server) handleEditForm(w http.ResponseWriter, r *http.Request) {

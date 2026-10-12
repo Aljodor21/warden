@@ -77,3 +77,23 @@ func sha256Hex(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:])
 }
+
+// TestNewDeployDonePageHasRunnerForm: al guardar una app de CI/CD el panel muestra los próximos
+// pasos, y ahí vive el formulario para registrar el runner (no hay otro lugar donde hacerlo).
+func TestNewDeployDonePageHasRunnerForm(t *testing.T) {
+	var buf bytes.Buffer
+	data := map[string]any{
+		"Page": "catalog", "AdminUnlocked": true, "Name": "Mi App", "Install": "https://github.com/u/mi-app",
+		"Tag": "mi-app", "Container": "mi-app", "Port": "8085", "Published": true,
+	}
+	if err := tmpl.ExecuteTemplate(&buf, "new_deploy_done.html", data); err != nil {
+		t.Fatalf("render falló: %v", err)
+	}
+	html := buf.String()
+	if !strings.Contains(html, `hx-post="/runner/register"`) {
+		t.Error("falta el formulario para registrar el runner")
+	}
+	if !strings.Contains(html, "https://github.com/u/mi-app") {
+		t.Error("el repo debería viajar en el formulario del runner")
+	}
+}
