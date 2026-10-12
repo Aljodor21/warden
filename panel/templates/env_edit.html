@@ -1,0 +1,44 @@
+{{define "env_edit.html"}}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><title>warden — variables de {{.Name}}</title>{{template "_style"}}
+  <script src="/static/htmx.min.js"></script>
+</head>
+<body>
+  {{template "nav" .}}
+  <div class="top">
+    <h1>Variables (.env) de '{{.Name}}'</h1>
+    <a class="btn secondary" href="/catalog">&larr; Ir al catálogo</a>
+  </div>
+
+  {{if .Saved}}<div class="ok-msg">Guardado. Se usan en el próximo despliegue.</div>{{end}}
+
+  <div class="panel">
+    <p>Aquí van las claves y valores de producción de la app (base de datos, correo, llaves...). Se guardan en
+      el servidor, en <code>{{.Path}}</code>, solo legibles por tu usuario — <strong>nunca en GitHub</strong>. El
+      despliegue de la app lo copia antes de levantar los contenedores.</p>
+
+    {{if not .AdminUnlocked}}
+    <div class="err">Desbloqueá el modo admin (botón de arriba a la derecha) para ver y editar las variables.</div>
+    {{else}}
+      {{if .Exists}}
+      <p class="muted">Editando el archivo guardado.</p>
+      {{else if .Content}}
+      <p class="muted">Todavía no hay un .env guardado. Te puse el ejemplo del repo (<code>{{.Source}}</code>): cambiá
+        los valores por los reales y guardá. No se guarda nada hasta que le des "Guardar".</p>
+      {{else}}
+      <p class="muted">Todavía no hay un .env guardado y no encontré un ejemplo en el repo. Escribí las variables
+        (<code>NOMBRE=valor</code>, una por línea) y guardá.</p>
+      {{end}}
+      <form method="post" action="/app/{{.Tag}}/env">
+        <textarea name="content" rows="26" spellcheck="false" autocomplete="off"
+                  style="width:100%; font-family:monospace; font-size:0.85rem"
+                  placeholder="NOMBRE=valor">{{.Content}}</textarea>
+        <p><button class="btn" type="submit">Guardar</button></p>
+      </form>
+    {{end}}
+  </div>
+</body>
+</html>
+{{end}}

@@ -97,3 +97,33 @@ func TestNewDeployDonePageHasRunnerForm(t *testing.T) {
 		t.Error("el repo debería viajar en el formulario del runner")
 	}
 }
+
+// TestNewDeployDoneHidesRunnerFormWhenRegistered: si el repo ya tiene runner, la pantalla lo dice y
+// no ofrece registrar otro.
+func TestNewDeployDoneHidesRunnerFormWhenRegistered(t *testing.T) {
+	base := func() map[string]any {
+		return map[string]any{
+			"Page": "catalog", "AdminUnlocked": true, "Name": "Mi App", "Install": "https://github.com/u/mi-app",
+			"Tag": "mi-app", "Container": "mi-app", "Port": "8085",
+		}
+	}
+	render1 := func(data map[string]any) string {
+		var buf bytes.Buffer
+		if err := tmpl.ExecuteTemplate(&buf, "new_deploy_done.html", data); err != nil {
+			t.Fatalf("render falló: %v", err)
+		}
+		return buf.String()
+	}
+	with := base()
+	with["RunnerFound"], with["RunnerService"] = true, "actions.runner.u-mi-app.srv-runner.service"
+	html := render1(with)
+	if strings.Contains(html, `hx-post="/runner/register"`) {
+		t.Error("con runner registrado no debe ofrecerse el formulario")
+	}
+	if !strings.Contains(html, "Ya hay un runner registrado") {
+		t.Error("debe avisar que ya hay un runner")
+	}
+	if !strings.Contains(render1(base()), `hx-post="/runner/register"`) {
+		t.Error("sin runner debe ofrecerse el formulario")
+	}
+}

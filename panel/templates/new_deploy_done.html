@@ -83,6 +83,12 @@ jobs:
 
   <div class="panel" style="margin-top:1rem">
     <h2>2. Registrar el runner (una sola vez por repo)</h2>
+    {{if .RunnerFound}}
+    <div class="ok-msg">Ya hay un runner registrado para este repo (<code>{{.RunnerService}}</code>) — no tienes que
+      registrar nada, pasa al paso 3.</div>
+    <p class="muted">Si alguna vez lo borras en GitHub, tienes que quitar también el servicio en el servidor antes de
+      registrar otro.</p>
+    {{else}}
     <p class="muted">¿Qué es esto? El "runner" es el programa que queda corriendo en ESTE server,
       escuchando avisos de GitHub. Cuando hacés push, GitHub no construye nada por su cuenta — le avisa
       a tu runner, y es TU server (no GitHub) el que clona el código, construye la imagen de Docker y la
@@ -95,6 +101,7 @@ jobs:
       <input type="password" name="token" placeholder="Pegá el token aquí" required>
       <p><button class="btn" type="submit">Registrar runner<span class="spinner"></span></button></p>
     </form>
+    {{end}}
     <div id="runner-reg-result"></div>
   </div>
 
